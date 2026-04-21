@@ -1,9 +1,9 @@
-# 📌 Timeline Working Progress — Xenxible Device Identifier
+Timeline Working Progress — Xenxible Device Identifier
 
-## 👤 Project Information
+Project Information
 
-* **Name:** Siti Syaziyah Binti Samiri
-* **Project:** Device Identifier
+Name	: Siti Syaziyah Binti Samiri
+Project	:Device Identifier
 
 ---
 
