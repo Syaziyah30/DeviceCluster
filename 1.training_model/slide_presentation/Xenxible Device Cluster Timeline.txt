@@ -1,0 +1,39 @@
+# 📌 Timeline Working Progress — Xenxible Device Identifier
+
+## 👤 Project Information
+
+* **Name:** Siti Syaziyah Binti Samiri
+* **Project:** Device Identifier
+
+---
+
+## 🚀 Development Scope
+
+**Developing Machine Learning Model (Section & Cluster)**
+
+---
+
+## 📅 Timeline & Tasks
+
+| Task Name                           | Priority | Start       | Finish      |
+| ----------------------------------- | -------- | ----------- | ----------- |
+| Synchronization with DevOps         | Medium   | 13 Oct 2025 | 30 Jun 2026 |
+| Research Model Development          | High     | 13 Oct 2025 | 3 Apr 2026  |
+| Proof of Concept                    | High     | 6 Apr 2026  | 7 Apr 2026  |
+| Data Preparation                    | High     | 8 Apr 2026  | 13 Apr 2026 |
+| Pipeline Overview                   | High     | 14 Apr 2026 | 15 Apr 2026 |
+| Model Training, Testing, Evaluation | High     | 16 Apr 2026 | 24 Apr 2026 |
+| Model Tuning & Refinement           | High     | 27 Apr 2026 | 30 Apr 2026 |
+| Model Application                   | High     | 4 May 2026  | 18 May 2026 |
+| Output Post Processing              | High     | 19 May 2026 | 22 May 2026 |
+| Model Integration (Python → C#)     | High     | 25 May 2026 | 28 May 2026 |
+| Backup Plan — Model Development     | Low      | 1 Jun 2026  | 5 Jun 2026  |
+
+---
+
+
+## ✅ Outcome
+
+A complete machine learning pipeline:
+
+* Data → Model → Evaluation → Deployment → Integration
