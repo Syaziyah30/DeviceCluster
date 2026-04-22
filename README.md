@@ -2,16 +2,14 @@
 
 ## Introduction
 
-This project classifies equipment into **Section** and **Cluster** using device identifiers.
+This project classifies equipment into Section and Cluster.
 
-It applies a **chained ML approach**, where Section prediction improves Cluster prediction.
+It applies a ML (chained approach), where Section prediction improves Cluster prediction.
 
 ⚠️ Currently in **development (training phase)**.
 
 ---
-
 ## Model Approach
-
 * **Stage 1:** Predict Section
 * **Stage 2:** Predict Cluster using:
 
@@ -21,20 +19,6 @@ It applies a **chained ML approach**, where Section prediction improves Cluster 
 ```
 Features → Section → Predicted Section → Cluster
 ```
-
----
-
-## Feature Engineering
-
-From `DEVICE_ID`:
-
-* Prefix, suffix, numeric block
-* Structure (length, digits, letters)
-* Project-based ranking (`numeric_block_rank`)
-
-Key features:
-
-* `numeric_block_rank`, `suffix_last_char`, `suffix_length`
 
 ---
 
