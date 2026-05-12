@@ -59,3 +59,21 @@ LL0000000021,OILTEK,,UNKNOWN,3.44,UNKNOWN,3.44,,unusual format — numeric field
 LL00000000102837,OILTEK,,UNKNOWN,3.84,UNKNOWN,3.5,,unusual format — numeric field width 14 digits exceeds training maximum of 6 digits (confidence penalised by KNN scorer),2026-05-11 16:18:18
 LL510,LIPICO,,UNKNOWN,,UNKNOWN,,unseen CUSTOMER 'LIPICO' — Please assign manually,,2026-05-11 16:18:18
 LL001,UNKNOWN_CO,,UNKNOWN,,UNKNOWN,,unseen CUSTOMER 'UNKNOWN_CO' — Please assign manually,,2026-05-11 16:18:18
+LL001,OILTEK,,UNKNOWN,58.29,UNKNOWN,58.6,,,2026-05-12 10:01:49
+LL510,OILTEK,,SECTION 2,94.53,CLUSTER 1,99.27,,,2026-05-12 10:01:49
+LL0000000021,OILTEK,,UNKNOWN,3.44,UNKNOWN,3.44,,unusual format — numeric field width 10 digits exceeds training maximum of 6 digits (confidence penalised by KNN scorer),2026-05-12 10:01:49
+LL00000000102837,OILTEK,,UNKNOWN,3.84,UNKNOWN,3.5,,unusual format — numeric field width 14 digits exceeds training maximum of 6 digits (confidence penalised by KNN scorer),2026-05-12 10:01:49
+LL510,LIPICO,,UNKNOWN,,UNKNOWN,,unseen CUSTOMER 'LIPICO' — Please assign manually,,2026-05-12 10:01:49
+LL001,UNKNOWN_CO,,UNKNOWN,,UNKNOWN,,unseen CUSTOMER 'UNKNOWN_CO' — Please assign manually,,2026-05-12 10:01:49
+LL001,OILTEK,,UNKNOWN,58.29,UNKNOWN,58.6,,,2026-05-12 15:18:57
+LL510,OILTEK,,SECTION 2,94.53,CLUSTER 1,99.27,,,2026-05-12 15:18:57
+LL0000000021,OILTEK,,UNKNOWN,3.44,UNKNOWN,3.44,,unusual format — numeric field width 10 digits exceeds training maximum of 6 digits (confidence penalised by KNN scorer),2026-05-12 15:18:57
+LL00000000102837,OILTEK,,UNKNOWN,3.84,UNKNOWN,3.5,,unusual format — numeric field width 14 digits exceeds training maximum of 6 digits (confidence penalised by KNN scorer),2026-05-12 15:18:57
+LL510,LIPICO,,UNKNOWN,,UNKNOWN,,unseen CUSTOMER 'LIPICO' — Please assign manually,,2026-05-12 15:18:57
+LL001,UNKNOWN_CO,,UNKNOWN,,UNKNOWN,,unseen CUSTOMER 'UNKNOWN_CO' — Please assign manually,,2026-05-12 15:18:57
+LL001,OILTEK,,SECTION 3,97.21,CLUSTER 1,97.74,,,2026-05-12 16:45:39
+LL510,OILTEK,,SECTION 2,94.53,CLUSTER 1,99.27,,,2026-05-12 16:45:39
+LL0000000021,OILTEK,,UNKNOWN,3.6,UNKNOWN,3.6,,unusual format — numeric field width 10 digits exceeds training maximum of 6 digits (confidence penalised by KNN scorer),2026-05-12 16:45:39
+LL00000000102837,OILTEK,,UNKNOWN,4.0,UNKNOWN,3.65,,unusual format — numeric field width 14 digits exceeds training maximum of 6 digits (confidence penalised by KNN scorer),2026-05-12 16:45:39
+LL510,LIPICO,,UNKNOWN,,UNKNOWN,,unseen CUSTOMER 'LIPICO' — Please assign manually,,2026-05-12 16:45:39
+LL001,UNKNOWN_CO,,UNKNOWN,,UNKNOWN,,unseen CUSTOMER 'UNKNOWN_CO' — Please assign manually,,2026-05-12 16:45:39
