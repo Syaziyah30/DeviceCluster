@@ -1,0 +1,28 @@
+{
+    "model_folder"          : "C:/Users/sitisyaziyah/source/repos/DeviceIdentifier2/Prediction_service/0.Equipment_Prediction/model_config",
+    "tfidf"                 : "tfidf_vectorizer.pkl",
+    "label_encoder"         : "label_encoder.pkl",
+    "initial_map"           : "initial_map.pkl",
+    "customer_specific_map" : "customer_specific_map.pkl",
+    "customer_initial_map"  : "customer_initial_map.pkl",
+    "customer_project_map"  : "customer_project_map.pkl",
+    "sgd_model"             : "sgd_model.pkl",
+    "sgd_calibrated"        : "sgd_calibrated.pkl",
+    "x_reference"           : "X_reference.pkl",
+    "classifier_pipeline"   : "classifier_pipeline.pkl",
+    "ref_row_map"           : "ref_row_map.pkl",
+    "ref_id_set"            : "ref_id_set.pkl",
+    "unknown_df"            : "unknown_df.pkl",
+    "tfidf_similarity"      : "tfidf_vectorizer_similarity.pkl",
+    "tfidf_sgd"             : "tfidf_vectorizer_sgd.pkl",
+
+    "nn"                    : "nn_reference_cosine.pkl",
+    "reference_index_map"   : "reference_index_map.pkl",
+    "centroids"             : "centroids.pkl",
+    "class_prefix_map"      : "class_prefix_map.pkl",
+    "composite_config"      : "composite_config.pkl",
+
+    "master_df"             : "master_df.pkl",
+    "reference_df"          : "reference_df.pkl"
+}
+
