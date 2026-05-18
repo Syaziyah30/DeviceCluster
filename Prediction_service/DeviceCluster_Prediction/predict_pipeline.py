@@ -120,35 +120,26 @@ class SafeLabelEncoder:
 # ============================================================
 
 def extract_numeric_block(device_id: str) -> int:
-    """First numeric run as integer, stripping leading zeros. Returns -1 if none."""
     match = re.search(r"\d+", str(device_id))
     return int(match.group()) if match else -1
 
 
 def extract_numeric_string(device_id: str) -> str:
-    """First numeric run preserving leading zeros. Returns '' if none."""
     match = re.search(r"\d+", str(device_id))
     return match.group() if match else ""
 
 
 def extract_suffix_letters(device_id: str) -> str:
-    """Letters immediately after the trailing numeric run, uppercased."""
     match = re.search(r"\d+([A-Za-z]*)$", str(device_id))
     return match.group(1).upper() if match else ""
 
 
 def extract_suffix_full(device_id: str) -> str:
-    """Everything after the trailing numeric run."""
     match = re.search(r"\d+(.*)$", str(device_id))
     return match.group(1) if match else ""
 
 
 def extract_numeric_suffix_shape(device_id: str) -> str:
-    """
-    Shape pattern from the first digit onwards.
-    Each character mapped to 'D' (digit) or 'L' (letter).
-    e.g. 'V01BP1' -> 'DDLLD', 'HL510' -> 'DDD'
-    """
     match = re.search(r"\d.*", str(device_id))
     if not match:
         return "NODIGIT"
