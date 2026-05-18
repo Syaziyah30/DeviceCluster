@@ -1,14 +1,3 @@
-"""
-predict_pipeline.py
-Two-stage device classification inference pipeline (Section -> Cluster).
-
-Usage (called from C#):
-    python predict_pipeline.py --device_id LL001 --customer OILTEK
-    python predict_pipeline.py --device_id LL001 --customer OILTEK --project A1706
-
-Output:
-    JSON string printed to stdout — C# reads and parses this.
-"""
 
 import os
 import re
@@ -16,7 +5,6 @@ import sys
 import json
 import pickle
 import logging
-import argparse
 import warnings
 import configparser
 from datetime import datetime
@@ -573,57 +561,43 @@ def export_unknown_for_review(result: pd.DataFrame, output_dir: str) -> str | No
 # MAIN — Entry point called by C#
 # ============================================================
 
+def _clean_nan(obj):
+    """Recursively replace NaN/inf floats with None for JSON serialization."""
+    if isinstance(obj, float) and (obj != obj or obj == float("inf") or obj == float("-inf")):
+        return None
+    if isinstance(obj, dict):
+        return {k: _clean_nan(v) for k, v in obj.items()}
+    if isinstance(obj, list):
+        return [_clean_nan(v) for v in obj]
+    return obj
+
+
 def main():
     """
-    CLI entry point for C# subprocess calls.
+    Batch entry point for C# subprocess calls.
 
-    C# passes device_id and customer as command-line arguments.
-    Python prints a single-line JSON string to stdout.
-    C# reads and parses that JSON.
+    C# sends JSON to stdin:
+        {"records": [{"device_id": "LL001", "customer": "OILTEK", "project": "A1706"}, ...]}
 
-    Example:
-        python predict_pipeline.py --device_id LL001 --customer OILTEK
-        python predict_pipeline.py --device_id LL001 --customer OILTEK --project A1706
+    Python prints a JSON array to stdout — C# reads and parses this.
     """
-    parser = argparse.ArgumentParser(description="Device cluster prediction")
-    parser.add_argument("--device_id", required=True, help="Device ID to predict")
-    parser.add_argument("--customer",  required=True, help="Customer name")
-    parser.add_argument("--project",   default="",    help="Project code (optional)")
-    args = parser.parse_args()
-
     try:
+        payload = json.load(sys.stdin)
+        records = payload.get("records", [])
+
         pipeline  = load_pipeline(MODEL_DIR)
-        records   = [{"device_id": args.device_id, "customer": args.customer, "project": args.project}]
         result_df = predict(records, pipeline, threshold=UNKNOWN_THRESHOLD)
 
         save_results(result_df, OUTPUT_DIR)
         export_unknown_for_review(result_df, OUTPUT_DIR)
 
-        row    = result_df.iloc[0]
-        output = {
-            "status"             : "ok",
-            "device_id"          : row["DEVICE_ID"],
-            "customer"           : row["CUSTOMER"],
-            "project"            : row["PROJECT"],
-            "predicted_section"  : row["PREDICTED_SECTION"],
-            "section_confidence" : row["SECTION_CONFIDENCE"],
-            "predicted_cluster"  : row["PREDICTED_CLUSTER"],
-            "cluster_confidence" : row["CLUSTER_CONFIDENCE"],
-            "rejection_reason"   : row["REJECTION_REASON"],
-            "format_warning"     : row["FORMAT_WARNING"],
-        }
+        out = _clean_nan(result_df.to_dict(orient="records"))
+        print(json.dumps(out))
 
     except Exception as e:
         logger.error("Prediction failed: %s", str(e))
-        output = {
-            "status" : "error",
-            "message": str(e),
-        }
-        print(json.dumps(output))
+        print(json.dumps({"status": "error", "message": str(e)}))
         sys.exit(1)
-
-    # Single-line JSON printed to stdout — C# reads this
-    print(json.dumps(output))
 
 
 if __name__ == "__main__":

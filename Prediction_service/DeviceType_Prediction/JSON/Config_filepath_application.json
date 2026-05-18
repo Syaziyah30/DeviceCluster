@@ -1,5 +1,5 @@
 {
-    "model_folder"          : "C:/Users/sitisyaziyah/source/repos/DeviceIdentifier2/Prediction_service/0.Equipment_Prediction/model_config",
+    "model_folder"          : "C:/Users/sitisyaziyah/source/repos/DeviceCluster/Prediction_service/DeviceType_Prediction/model_config_devicetype",
     "tfidf"                 : "tfidf_vectorizer.pkl",
     "label_encoder"         : "label_encoder.pkl",
     "initial_map"           : "initial_map.pkl",

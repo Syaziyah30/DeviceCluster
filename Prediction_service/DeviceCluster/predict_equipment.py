@@ -25,12 +25,12 @@ print("Import time:", round(time.time() - start, 2), "seconds", file=sys.stderr)
 # CONFIGURATION & FILE LOADING
 # =============================================================================
 
-# Read configuration (------------change path-----------)
-with open(r"C:\Users\sitisyaziyah\source\repos\DeviceCluster\Prediction_service\DeviceEquipment_Prediction\JSON\Config_filepath_application.json", "r") as f:
+# Read configuration 
+with open(r"C:\Users\sitisyaziyah\source\repos\DeviceCluster\Prediction_service\DeviceType_Prediction\JSON\Config_filepath_application.json", "r") as f:
     config = json.load(f)
 
 
-JSON_MODEL_FOLDER = Path(config["model_folder"]) # (------------change path-----------)
+JSON_MODEL_FOLDER = Path(config["model_folder"]) 
 MODEL_FOLDER = Path(r"C:\Users\sitisyaziyah\source\repos\DeviceCluster\Prediction_service\DeviceType_Prediction\model_config_devicetype")
 
 def load_file(filename):
