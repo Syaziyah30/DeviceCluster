@@ -30,7 +30,6 @@ public class UserManualAssignRequest
 	public List<ManualAssignment> assignments { get; set; }
 }
 
-// Step 2+3 — pipeline request sent to predict_pipeline.py
 public class PipelinePredictRequest
 {
 	public List<PipelineRecord> records { get; set; }
@@ -47,7 +46,6 @@ public class PipelineRecord
 
 #region Result Models
 
-// Step 1 — device type result from predict_equipment.py
 public class DeviceTypeResult
 {
 	public string customer { get; set; }
@@ -58,7 +56,6 @@ public class DeviceTypeResult
 	public string reason { get; set; }
 }
 
-// Step 2+3 — section and cluster result from predict_pipeline.py
 public class PipelineResult
 {
 	public string DEVICE_ID { get; set; }
@@ -105,12 +102,18 @@ public class PythonClient
 		using var process = new Process { StartInfo = psi };
 		process.Start();
 
-		await process.StandardInput.WriteAsync(jsonInput);
-		process.StandardInput.Close();
-
-		// Read stdout and stderr concurrently to avoid deadlock
 		var outputTask = process.StandardOutput.ReadToEndAsync();
 		var errorTask = process.StandardError.ReadToEndAsync();
+
+		try
+		{
+			await process.StandardInput.WriteAsync(jsonInput);
+			process.StandardInput.Close();
+		}
+		catch (IOException)
+		{
+			// Python exited before reading input
+		}
 
 		string output = await outputTask;
 		string error = await errorTask;
@@ -162,6 +165,14 @@ public class Program
 			var typeResults = JsonSerializer.Deserialize<List<DeviceTypeResult>>(typeJson, _jsonOpts);
 			PrintDeviceTypeTable(typeResults);
 
+			// Build a lookup: device_id → data_type  (used in Step 2 & 3 display)
+			var deviceTypeLookup = typeResults
+				.GroupBy(r => r.data_id)
+				.ToDictionary(
+					g => g.Key,
+					g => g.Last().data_type ?? "N/A"
+				);
+
 			Console.Write("\nPress Enter to predict Section...");
 			Console.ReadLine();
 
@@ -181,14 +192,14 @@ public class Program
 			string pipelineJson = await client.RunAsync(SCRIPT_PIPELINE, pipelineRequest);
 
 			var pipelineResults = JsonSerializer.Deserialize<List<PipelineResult>>(pipelineJson, _jsonOpts);
-			PrintSectionTable(pipelineResults);
+			PrintSectionTable(pipelineResults, deviceTypeLookup);
 
 			Console.Write("\nPress Enter to predict Cluster...");
 			Console.ReadLine();
 
-			// ── STEP 3: Cluster (reuses Step 2 results) ──────────────────────
-			Console.WriteLine("[Step 3/3] Cluster predictions:");
-			PrintClusterTable(pipelineResults);
+			// ── STEP 3: Cluster ───────────────────────────────────────────────
+			Console.WriteLine("[Step 3/3] Predicting clusters...");
+			PrintClusterTable(pipelineResults, deviceTypeLookup);
 		}
 		catch (Exception ex)
 		{
@@ -201,7 +212,6 @@ public class Program
 				Console.WriteLine($"\nInner Exception: {ex.InnerException.Message}");
 				Console.WriteLine(ex.InnerException.StackTrace);
 			}
-			System.Diagnostics.Debug.WriteLine(ex.ToString());
 		}
 		finally
 		{
@@ -212,13 +222,14 @@ public class Program
 
 	// ── Display Helpers ───────────────────────────────────────────────────────
 
+	// Step 1: Customer | Device ID | Device Type | Confidence
 	static void PrintDeviceTypeTable(List<DeviceTypeResult> results)
 	{
-		const int W = 106;
+		const int W = 80;
 		Console.WriteLine();
 		Console.WriteLine("===== STEP 1: DEVICE TYPE =====");
 		Console.WriteLine();
-		Console.WriteLine($"{"Customer",-12} | {"Device ID",-25} | {"Device Type",-25} | {"Confidence",10} | {"Reason",-20}");
+		Console.WriteLine($"{"Customer",-12} | {"Device ID",-25} | {"Device Type",-25} | {"Confidence",10}");
 		Console.WriteLine(new string('-', W));
 
 		foreach (var r in results)
@@ -228,52 +239,56 @@ public class Program
 				$"{r.customer,-12} | " +
 				$"{r.data_id,-25} | " +
 				$"{r.data_type,-25} | " +
-				$"{conf,10} | " +
-				$"{r.reason,-20}"
+				$"{conf,10}"
 			);
 		}
 	}
 
-	static void PrintSectionTable(List<PipelineResult> results)
+	// Step 2: Customer | Device ID | Device Type (Step 1) | Section | Confidence
+	static void PrintSectionTable(List<PipelineResult> results, Dictionary<string, string> deviceTypeLookup)
 	{
 		const int W = 110;
 		Console.WriteLine();
 		Console.WriteLine("===== STEP 2: SECTION =====");
 		Console.WriteLine();
-		Console.WriteLine($"{"Device ID",-25} | {"Customer",-12} | {"Section",-20} | {"Confidence %",12} | {"Warning",-30}");
+		Console.WriteLine($"{"Customer",-12} | {"Device ID",-25} | {"Device Type",-25} | {"Section",-20} | {"Confidence %",12}");
 		Console.WriteLine(new string('-', W));
 
 		foreach (var r in results)
 		{
+			string devType = deviceTypeLookup.TryGetValue(r.DEVICE_ID, out var dt) ? dt : "N/A";
 			string conf = r.SECTION_CONFIDENCE.HasValue ? r.SECTION_CONFIDENCE.Value.ToString("F2") + "%" : "N/A";
 			Console.WriteLine(
-				$"{r.DEVICE_ID,-25} | " +
 				$"{r.CUSTOMER,-12} | " +
+				$"{r.DEVICE_ID,-25} | " +
+				$"{devType,-25} | " +
 				$"{r.PREDICTED_SECTION,-20} | " +
-				$"{conf,12} | " +
-				$"{r.FORMAT_WARNING,-30}"
+				$"{conf,12}"
 			);
 		}
 	}
 
-	static void PrintClusterTable(List<PipelineResult> results)
+	// Step 3: Customer | Device ID | Device Type (Step 1) | Section (Step 2) | Cluster | Confidence
+	static void PrintClusterTable(List<PipelineResult> results, Dictionary<string, string> deviceTypeLookup)
 	{
-		const int W = 110;
+		const int W = 130;
 		Console.WriteLine();
 		Console.WriteLine("===== STEP 3: CLUSTER =====");
 		Console.WriteLine();
-		Console.WriteLine($"{"Device ID",-25} | {"Customer",-12} | {"Cluster",-20} | {"Confidence %",12} | {"Rejection Reason",-30}");
+		Console.WriteLine($"{"Customer",-12} | {"Device ID",-25} | {"Device Type",-25} | {"Section",-20} | {"Cluster",-20} | {"Confidence %",12}");
 		Console.WriteLine(new string('-', W));
 
 		foreach (var r in results)
 		{
+			string devType = deviceTypeLookup.TryGetValue(r.DEVICE_ID, out var dt) ? dt : "N/A";
 			string conf = r.CLUSTER_CONFIDENCE.HasValue ? r.CLUSTER_CONFIDENCE.Value.ToString("F2") + "%" : "N/A";
 			Console.WriteLine(
-				$"{r.DEVICE_ID,-25} | " +
 				$"{r.CUSTOMER,-12} | " +
+				$"{r.DEVICE_ID,-25} | " +
+				$"{devType,-25} | " +
+				$"{r.PREDICTED_SECTION,-20} | " +
 				$"{r.PREDICTED_CLUSTER,-20} | " +
-				$"{conf,12} | " +
-				$"{r.REJECTION_REASON,-30}"
+				$"{conf,12}"
 			);
 		}
 	}

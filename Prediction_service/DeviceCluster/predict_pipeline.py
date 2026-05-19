@@ -52,7 +52,7 @@ def load_config(config_path: str = None) -> configparser.ConfigParser:
 
 
 # Read config once at module load
-_cfg              = load_config()
+_cfg              = load_config() 
 MODEL_DIR         = _cfg["PATHS"]["MODEL_DIR"].strip()
 OUTPUT_DIR        = _cfg["PATHS"]["OUTPUT_DIR"].strip()
 UNKNOWN_THRESHOLD = float(_cfg["SETTINGS"]["UNKNOWN_THRESHOLD"].strip())
