@@ -160,10 +160,13 @@ public class Program
 
 			// ── STEP 1: Device Type ───────────────────────────────────────────
 			Console.WriteLine("[Step 1/3] Predicting device types...");
+			var sw = Stopwatch.StartNew();
 			string typeJson = await client.RunAsync(SCRIPT_TYPE, request);
+			sw.Stop();
 
 			var typeResults = JsonSerializer.Deserialize<List<DeviceTypeResult>>(typeJson, _jsonOpts);
 			PrintDeviceTypeTable(typeResults);
+			Console.WriteLine($"Time taken to predict : {sw.Elapsed.TotalSeconds:F1} secs");
 
 			// Build a lookup: device_id → data_type  (used in Step 2 & 3 display)
 			var deviceTypeLookup = typeResults
@@ -189,10 +192,14 @@ public class Program
 				}).ToList()
 			};
 
+			sw.Restart();
 			string pipelineJson = await client.RunAsync(SCRIPT_PIPELINE, pipelineRequest);
+			sw.Stop();
+			double step2Secs = sw.Elapsed.TotalSeconds; // ← declared here, used in Step 3
 
 			var pipelineResults = JsonSerializer.Deserialize<List<PipelineResult>>(pipelineJson, _jsonOpts);
 			PrintSectionTable(pipelineResults, deviceTypeLookup);
+			Console.WriteLine($"Time taken to predict : {step2Secs:F1} secs");
 
 			Console.Write("\nPress Enter to predict Cluster...");
 			Console.ReadLine();
@@ -200,6 +207,9 @@ public class Program
 			// ── STEP 3: Cluster ───────────────────────────────────────────────
 			Console.WriteLine("[Step 3/3] Predicting clusters...");
 			PrintClusterTable(pipelineResults, deviceTypeLookup);
+			Console.WriteLine($"Time taken to predict : {step2Secs:F1} secs");
+
+
 		}
 		catch (Exception ex)
 		{
