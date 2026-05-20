@@ -13,25 +13,40 @@ from pathlib import Path
 import joblib
 import numpy as np
 import pandas as pd
-from scipy.sparse import load_npz, vstack, save_npz
+from scipy.sparse import vstack, save_npz
 from sklearn.neighbors import NearestNeighbors
 import traceback
+import threading
 
-warnings.filterwarnings("ignore")
 
-print("Import time:", round(time.time() - start, 2), "seconds", file=sys.stderr)
+import logging
+
+logging.basicConfig(
+    level=logging.getLevelName(os.environ.get("LOG_LEVEL", "INFO")),
+    format="%(asctime)s [%(levelname)s] %(message)s",
+    stream=sys.stderr
+)
+logger = logging.getLogger(__name__)
 
 # =============================================================================
 # CONFIGURATION & FILE LOADING
 # =============================================================================
 
 # Read configuration 
-with open(r"C:\Users\sitisyaziyah\source\repos\DeviceCluster\Prediction_service\DeviceType_Prediction\JSON\Config_filepath_application.json", "r") as f:
+_config_path = os.environ.get(
+    "DEVICE_CLUSTER_CONFIG",
+    r"C:\Users\sitisyaziyah\source\repos\DeviceCluster\Prediction_service\DeviceType_Prediction\JSON\Config_filepath_application.json"
+)
+with open(_config_path, "r", encoding="utf-8") as f:
     config = json.load(f)
 
+MAX_BATCH_SIZE = int(os.environ.get("MAX_BATCH_SIZE", "5000")) 
 
 JSON_MODEL_FOLDER = Path(config["model_folder"]) 
-MODEL_FOLDER = Path(r"C:\Users\sitisyaziyah\source\repos\DeviceCluster\Prediction_service\DeviceType_Prediction\model_config_devicetype")
+MODEL_FOLDER = Path(config.get(
+    "model_config_folder",
+    r"C:\Users\sitisyaziyah\source\repos\DeviceCluster\Prediction_service\DeviceType_Prediction\model_config_devicetype"
+))
 
 def load_file(filename):
     """Helper function for loading pkl/npz files"""
@@ -61,13 +76,12 @@ master_df               = load_file(config["master_df"])
 reference_df            = load_file(config["reference_df"])
 
 # Composite config parameters
-alpha = composite_config.get("alpha", 0.5)
-prefix_boost = composite_config.get("prefix_boost", 1.0)
+ALPHA_PREFIX_WEIGHT = composite_config.get("alpha", 0.65)
 top_k_default = composite_config.get("top_k_default", 10)
 
-print("[INFO] All features loaded successfully.", file=sys.stderr)
-print(f"[INFO] master_df loaded: {len(master_df)} rows.", file=sys.stderr)
-print(f"[INFO] reference_df loaded: {len(reference_df)} rows.", file=sys.stderr)
+logger.info("All features loaded successfully.")
+logger.info(f"master_df loaded: {len(master_df)} rows.")
+logger.info(f"reference_df loaded: {len(reference_df)} rows.")
 
 # =============================================================================
 # CLASS INDEX MAP HANDLING
@@ -123,7 +137,11 @@ def load_class_index_map(path):
     # Sanity check: contiguous indices
     vals = sorted(class_index_map.values())
     if vals != list(range(len(vals))):
-        raise AssertionError("class_index_map indices must be contiguous 0..N-1")
+        print(
+            "[WARN] class_index_map indices are not contiguous (0..N-1). "
+            "This may cause issues with partial_fit class alignment.",
+            file=sys.stderr
+        )
 
     return class_index_map, int2label_map
 
@@ -149,6 +167,9 @@ reference_index = reference_df.set_index('data_id', drop=False)
 PENDING_NEW_ROWS = []
 PENDING_ADDS_COUNTER = 0
 BATCH_ADD_SIZE = 50
+CUSTOMER_CODE = "UNKNOWN" 
+
+_model_lock = threading.Lock()
 
 current_time = datetime.now().strftime("%H:%M %d/%m/%Y")
 print(f"Model loaded on {current_time}", file=sys.stderr)
@@ -276,9 +297,9 @@ def predict_with_sgd_model_batch(X_matrix, model=sgd_model):
         probs = model.predict_proba(X_matrix)
         probs = np.atleast_2d(probs)
         top_pos = np.argmax(probs, axis=1)
-        model_classes = np.array(getattr(model, "classes_", None))
+        model_classes = np.array(getattr(model, "classes_", []))
         
-        if model_classes is None:
+        if model_classes == 0:
             class_values = top_pos
             labels = [int2label_map.get(int(p), str(p)) for p in class_values]
         else:
@@ -334,7 +355,7 @@ def _flush_pending_new_rows(reference_df, X_reference, ref_id_set):
     if not PENDING_NEW_ROWS:
         return reference_df, X_reference, ref_id_set
 
-    pending_df = pd.DataFrame(PENDING_NEW_ROWS, columns=['data_id', 'data_type', 'client'])
+    pending_df = pd.DataFrame(PENDING_NEW_ROWS, columns=['data_id', 'data_type', 'customer'])
     reference_df = pd.concat([reference_df, pending_df], ignore_index=True)
 
     PENDING_NEW_ROWS = []
@@ -367,79 +388,80 @@ def incremental_learning(
     global PENDING_NEW_ROWS, PENDING_ADDS_COUNTER, BATCH_ADD_SIZE
     global reference_index, ref_row_map
 
-    id_norm = id_str
+    with _model_lock: 
+        id_norm = id_str
 
-    if flush_batch_size is None:
-        flush_batch_size = ref_epoch_rebuild if ref_epoch_rebuild is not None else BATCH_ADD_SIZE
+        if flush_batch_size is None:
+            flush_batch_size = ref_epoch_rebuild if ref_epoch_rebuild is not None else BATCH_ADD_SIZE
 
-    # Add new class if needed
-    if true_label not in class_index_map:
-        next_idx = max(class_index_map.values()) + 1 if class_index_map else 0
-        class_index_map[true_label] = int(next_idx)
-        atomic_write_json(class_index_map, CLASS_MAP_FILE)
-        int2label_map[int(next_idx)] = str(true_label)
-        print(f"[INFO] Added new class '{true_label}' -> idx {next_idx}", file=sys.stderr)
+        # Add new class if needed
+        if true_label not in class_index_map:
+            next_idx = max(class_index_map.values()) + 1 if class_index_map else 0
+            class_index_map[true_label] = int(next_idx)
+            atomic_write_json(class_index_map, CLASS_MAP_FILE)
+            int2label_map[int(next_idx)] = str(true_label)
+            print(f"[INFO] Added new class '{true_label}' -> idx {next_idx}", file=sys.stderr)
 
-    # Transform and label
-    X_new = tfidf_sgd.transform([id_norm])
-    y_new = np.array([class_index_map[true_label]], dtype=int)
+        # Transform and label
+        X_new = tfidf_sgd.transform([id_norm])
+        y_new = np.array([class_index_map[true_label]], dtype=int)
 
-    # Partial fit
-    classes_idx = np.arange(0, max(class_index_map.values()) + 1, dtype=int)
-    try:
-        sgd_model.partial_fit(X_new, y_new, classes=classes_idx)
-    except Exception as e:
-        raise RuntimeError(f"partial_fit failed: {e}")
-
-    # Add to reference if new
-    if id_norm not in ref_id_set:
+        # Partial fit
+        classes_idx = np.arange(0, max(class_index_map.values()) + 1, dtype=int)
         try:
-            X_reference = vstack([X_reference, X_new])
+            sgd_model.partial_fit(X_new, y_new, classes=classes_idx)
         except Exception as e:
-            print(f"[WARN] vstack failed: {e}", file=sys.stderr)
+            raise RuntimeError(f"partial_fit failed: {e}")
 
-        ref_id_set.add(id_norm)
-        PENDING_NEW_ROWS.append([id_norm, true_label, customer])
-        PENDING_ADDS_COUNTER += 1
-        ref_row_map[id_norm] = {'data_id': id_norm, 'data_type': true_label, 'customer': customer}
+        # Add to reference if new
+        if id_norm not in ref_id_set:
+            try:
+                X_reference = vstack([X_reference, X_new])
+            except Exception as e:
+                print(f"[WARN] vstack failed: {e}", file=sys.stderr)
 
-        # Flush if buffer is full
-        if len(PENDING_NEW_ROWS) >= flush_batch_size:
+            ref_id_set.add(id_norm)
+            PENDING_NEW_ROWS.append([id_norm, true_label, customer])
+            PENDING_ADDS_COUNTER += 1
+            ref_row_map[id_norm] = {'data_id': id_norm, 'data_type': true_label, 'customer': customer}
+
+            # Flush if buffer is full
+            if len(PENDING_NEW_ROWS) >= flush_batch_size:
+                try:
+                    reference_df, X_reference, ref_id_set = _flush_pending_new_rows(reference_df, X_reference, ref_id_set)
+                    reference_index = reference_df.set_index('data_id', drop=False)
+                    ref_row_map = reference_index.to_dict(orient='index')
+                    print(f"[INFO] Flushed {flush_batch_size} pending rows.", file=sys.stderr)
+                except Exception as e:
+                    print(f"[WARN] Flush failed: {e}", file=sys.stderr)
+
+        # Re-fit NN if provided
+        if nn is not None:
+            try:
+                nn = NearestNeighbors(
+                    n_neighbors=min(10, X_reference.shape[0]),
+                    metric='cosine',
+                    algorithm='brute'
+                ).fit(X_reference)
+            except Exception as e:
+                print(f"[WARN] NN re-fit failed: {e}", file=sys.stderr)
+
+        # Persist if requested
+        if persist_folder is not None:
             try:
                 reference_df, X_reference, ref_id_set = _flush_pending_new_rows(reference_df, X_reference, ref_id_set)
-                reference_index = reference_df.set_index('data_id', drop=False)
-                ref_row_map = reference_index.to_dict(orient='index')
-                print(f"[INFO] Flushed {flush_batch_size} pending rows.", file=sys.stderr)
             except Exception as e:
-                print(f"[WARN] Flush failed: {e}", file=sys.stderr)
+                print(f"[WARN] Flush before persist failed: {e}", file=sys.stderr)
 
-    # Re-fit NN if provided
-    if nn is not None:
-        try:
-            nn = NearestNeighbors(
-                n_neighbors=min(10, X_reference.shape[0]),
-                metric='cosine',
-                algorithm='brute'
-            ).fit(X_reference)
-        except Exception as e:
-            print(f"[WARN] NN re-fit failed: {e}", file=sys.stderr)
+            persist_folder = Path(persist_folder)
+            persist_folder.mkdir(parents=True, exist_ok=True)
+            joblib.dump(sgd_model, persist_folder / "sgd_model.pkl")
+            joblib.dump(label_encoder, persist_folder / "label_encoder.pkl")
+            joblib.dump(reference_df, persist_folder / "reference_df.pkl")
+            joblib.dump(X_reference, persist_folder / config.get("x_reference", "X_reference.pkl"))
+            atomic_write_json(class_index_map, persist_folder / "class_index_map.json")
 
-    # Persist if requested
-    if persist_folder is not None:
-        try:
-            reference_df, X_reference, ref_id_set = _flush_pending_new_rows(reference_df, X_reference, ref_id_set)
-        except Exception as e:
-            print(f"[WARN] Flush before persist failed: {e}", file=sys.stderr)
-
-        persist_folder = Path(persist_folder)
-        persist_folder.mkdir(parents=True, exist_ok=True)
-        joblib.dump(sgd_model, persist_folder / "sgd_model.pkl")
-        joblib.dump(label_encoder, persist_folder / "label_encoder.pkl")
-        joblib.dump(reference_df, persist_folder / "reference_df.pkl")
-        save_npz(persist_folder / "X_reference.npz", X_reference)
-        atomic_write_json(class_index_map, persist_folder / "class_index_map.json")
-
-    return reference_df, X_reference, ref_id_set, label_encoder, nn
+        return reference_df, X_reference, ref_id_set, label_encoder, nn
 
 def persist_all_model_state(config, model_folder: Path):
     """Persist all model artifacts to disk"""
@@ -479,6 +501,7 @@ def persist_all_model_state(config, model_folder: Path):
 
 def user_manual_assign(assignments, customer, project_code):
     """Batch manual assignment of equipment types"""
+    global reference_df, X_reference, ref_id_set, label_encoder, nn 
     applied = []
 
     for item in assignments:
@@ -516,6 +539,7 @@ def user_manual_assign(assignments, customer, project_code):
 
 def import_equipment_helper(equipment_list, customer, project_code):
     """Import authoritative equipment list"""
+    global reference_df, X_reference, ref_id_set, label_encoder, nn
     applied = []
 
     for item in equipment_list:
@@ -572,8 +596,7 @@ def predict_from_list(data_ids, project_code, customer_code=None):
 
     # Customer resolution
     if customer_code is None:
-        customer_project_map[project_code] = customer_project_map.get(project_code, "UNKNOWN")
-        CUSTOMER_CODE = customer_project_map[project_code]
+        CUSTOMER_CODE = customer_project_map.get(project_code, "UNKNOWN")
     else:
         CUSTOMER_CODE = customer_code
 
@@ -581,12 +604,16 @@ def predict_from_list(data_ids, project_code, customer_code=None):
     predictions_bulk = []
 
     # Thresholds
-    ALPHA_PREFIX_WEIGHT = 0.65
     INITIAL_DICT_CONF = 0.75
     COSINE_THRESHOLD = 0.60
     SGD_STRONG_THRESHOLD = 0.60
 
-    print("..............Model is loading..............", file=sys.stderr)
+    # Preprocess inputs
+    user_inputs = preprocess_input_raw_series_vectorized(test_ids['data_id'])
+    N_inputs = len(user_inputs)
+    display_ids = make_display_id_series(test_ids['data_id'])
+
+    print(f"[INFO] Running prediction on {N_inputs} items.", file=sys.stderr)
 
     # Preprocess inputs
     user_inputs = preprocess_input_raw_series_vectorized(test_ids['data_id'])
@@ -601,8 +628,16 @@ def predict_from_list(data_ids, project_code, customer_code=None):
     X_test_sim = tfidf_similarity.transform(user_inputs)
 
     # Validate feature dimensions
-    assert X_test_sgd.shape[1] == sgd_model.coef_.shape[1], "SGD feature mismatch"
-    assert X_test_sim.shape[1] == X_reference.shape[1], "Similarity feature mismatch"
+    if X_test_sgd.shape[1] != sgd_model.coef_.shape[1]:
+        raise ValueError(
+            f"SGD feature mismatch: input has {X_test_sgd.shape[1]} features, "
+            f"model expects {sgd_model.coef_.shape[1]}"
+        )
+    if X_test_sim.shape[1] != X_reference.shape[1]:
+        raise ValueError(
+            f"Similarity feature mismatch: input has {X_test_sim.shape[1]} features, "
+            f"reference has {X_reference.shape[1]}"
+        )
 
     # SGD predictions
     sgd_confs = np.full(N_inputs, np.nan, dtype=float)
@@ -739,11 +774,9 @@ def predict_from_list(data_ids, project_code, customer_code=None):
             prefix_scores = np.array([1.0 if (p == input_prefix_norm and p != "") else 0.0 for p in ref_prefixes])
 
         # Composite similarity
-        alpha = ALPHA_PREFIX_WEIGHT
-        composite_scores = (alpha * prefix_scores) + ((1 - alpha) * sims)
+        composite_scores = (ALPHA_PREFIX_WEIGHT * prefix_scores) + ((1 - ALPHA_PREFIX_WEIGHT) * sims)
 
         best_idx_local = int(np.argmax(composite_scores))
-        best_row_id = cand_ids[best_idx_local]
         cosine_label = cand_types[best_idx_local]
         composite_sim = float(composite_scores[best_idx_local])
         tfidf_sim = float(sims[best_idx_local])
@@ -751,7 +784,13 @@ def predict_from_list(data_ids, project_code, customer_code=None):
         best_ref_prefix = ref_prefixes_raw[best_idx_local]
 
         # Fusion decision logic
-        if (not np.isnan(sgd_conf)) and sgd_conf >= SGD_STRONG_THRESHOLD:
+        if exact_flag and exact_label:
+            pred_label = exact_label
+            confidence = 1.0
+            source = "exact_match"
+            reason = "exact_match"
+
+        elif (not np.isnan(sgd_conf)) and sgd_conf >= SGD_STRONG_THRESHOLD:
             pred_label = sgd_label
             confidence = sgd_conf
             source = "sgd"
@@ -879,6 +918,10 @@ def run_cli():
                 raise ValueError("project_code is required in JSON input.")
             if not isinstance(data_ids, list) or not data_ids:
                 raise ValueError("data_ids must be a non-empty list.")
+            if len(data_ids) > MAX_BATCH_SIZE:
+                raise ValueError(
+                    f"data_ids length {len(data_ids)} exceeds maximum allowed batch size of {MAX_BATCH_SIZE}."
+                )
 
             print(f"[INFO] Project: {project_code}, Customer: {customer_code}", file=sys.stderr)
 
