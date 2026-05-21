@@ -1,6 +1,3 @@
-# Claude script - Hybrid Model with Fusion Decision Prediction
-# Refined and optimized version
-
 import time
 start = time.time()
 from datetime import datetime
