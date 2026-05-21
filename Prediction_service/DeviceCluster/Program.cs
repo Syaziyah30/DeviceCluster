@@ -132,7 +132,7 @@ public class PythonClient
 #region Program
 
 public class Program
-{
+{		
 	const string PYTHON_EXE = @"C:\Users\sitisyaziyah\AppData\Local\Programs\Python\Python313\python.exe";
 	const string SCRIPT_TYPE = @"C:\Users\sitisyaziyah\source\repos\DeviceCluster\Prediction_service\DeviceCluster\predict_equipment.py";
 	const string SCRIPT_PIPELINE = @"C:\Users\sitisyaziyah\source\repos\DeviceCluster\Prediction_service\DeviceCluster\predict_pipeline.py";

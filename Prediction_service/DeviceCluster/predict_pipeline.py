@@ -58,6 +58,20 @@ OUTPUT_DIR        = _cfg["PATHS"]["OUTPUT_DIR"].strip()
 UNKNOWN_THRESHOLD = float(_cfg["SETTINGS"]["UNKNOWN_THRESHOLD"].strip())
 
 
+
+# ============================================================
+# PIPELINE CACHE                                            
+# ============================================================
+
+_pipeline: dict | None = None
+
+def get_pipeline() -> dict:
+    global _pipeline
+    if _pipeline is None:
+        _pipeline = load_pipeline(MODEL_DIR)
+    return _pipeline
+
+
 # ============================================================
 # SafeLabelEncoder
 # ============================================================
@@ -453,6 +467,15 @@ def predict(
 
         clu_conf_adj, _ = apply_ood_penalty(clu_conf_raw, df_feat, pipeline)
 
+        # When section confidence is below threshold, penalise cluster confidence
+        # using joint probability (product). Guarantees clu_conf < threshold whenever
+        # sec_conf < threshold, because: sec < T  =>  sec * clu < T * clu <= T.
+        clu_conf_adj = np.where(
+            sec_conf_adj < threshold,
+            clu_conf_adj * sec_conf_adj,
+            clu_conf_adj,
+        )
+
         clu_decoded = le_cluster.inverse_transform(clu_pred_enc)
         clu_decoded = np.where(
             (clu_decoded == SafeLabelEncoder.UNKNOWN_LABEL) |
@@ -462,6 +485,7 @@ def predict(
 
         sec_final = np.where(sec_conf_adj >= threshold, sec_decoded, "UNKNOWN")
         clu_final = np.where(clu_conf_adj >= threshold, clu_decoded, "UNKNOWN")
+        clu_final = np.where(sec_final == "UNKNOWN", "UNKNOWN", clu_final)
 
         for i, orig_idx in enumerate(elig_idx):
             pred_section[orig_idx] = sec_final[i]
@@ -585,7 +609,7 @@ def main():
         payload = json.load(sys.stdin)
         records = payload.get("records", [])
 
-        pipeline  = load_pipeline(MODEL_DIR)
+        pipeline = get_pipeline()
         result_df = predict(records, pipeline, threshold=UNKNOWN_THRESHOLD)
 
         save_results(result_df, OUTPUT_DIR)

@@ -691,7 +691,7 @@ def predict_from_list(data_ids, project_code, customer_code=None):
         # Skip all-letters inputs
         if re.fullmatch(r"[A-Z]+", user_input.replace(" ", "")):
             predictions_bulk.append([
-                display_id, "Unknown", 0.0, "all_letters", "",
+                display_id, "UNKNOWN", 0.0, "all_letters", "",
                 input_prefix, "", np.nan, np.nan, np.nan, np.nan, "all_letters"
             ])
             continue
@@ -810,7 +810,7 @@ def predict_from_list(data_ids, project_code, customer_code=None):
 
         else:
             if not pred_label:
-                pred_label = "Unknown"
+                pred_label = "UNKNOWN"
             confidence = max(
                 0.0 if np.isnan(composite_sim) else composite_sim,
                 0.0 if np.isnan(sgd_conf) else sgd_conf
