@@ -29,21 +29,28 @@ logger = logging.getLogger(__name__)
 # CONFIGURATION & FILE LOADING
 # =============================================================================
 
-# Read configuration 
-_config_path = os.environ.get(
+_script_dir  = Path(__file__).resolve().parent
+_service_dir = _script_dir.parent
+
+_config_path = Path(os.environ.get(
     "DEVICE_CLUSTER_CONFIG",
-    r"C:\Users\sitisyaziyah\source\repos\DeviceCluster\Prediction_service\DeviceType_Prediction\JSON\Config_filepath_application.json"
-)
+    _service_dir / "DeviceType_Prediction" / "JSON" / "Config_filepath_application.json"
+))
+
+if not _config_path.exists():
+    raise FileNotFoundError(
+        f"Config not found at: {_config_path}\n"
+        f"Set DEVICE_CLUSTER_CONFIG environment variable to override."
+    )
+
 with open(_config_path, "r", encoding="utf-8") as f:
     config = json.load(f)
 
-MAX_BATCH_SIZE = int(os.environ.get("MAX_BATCH_SIZE", "5000")) 
+_config_dir       = _config_path.parent                               # .../JSON/
+JSON_MODEL_FOLDER = (_config_dir / config["model_folder"]).resolve()  # .../model_config_devicetype/
+MODEL_FOLDER      = JSON_MODEL_FOLDER                                  # same folder
 
-JSON_MODEL_FOLDER = Path(config["model_folder"]) 
-MODEL_FOLDER = Path(config.get(
-    "model_config_folder",
-    r"C:\Users\sitisyaziyah\source\repos\DeviceCluster\Prediction_service\DeviceType_Prediction\model_config_devicetype"
-))
+MAX_BATCH_SIZE = int(os.environ.get("MAX_BATCH_SIZE", "5000"))
 
 def load_file(filename):
     """Helper function for loading pkl/npz files"""
