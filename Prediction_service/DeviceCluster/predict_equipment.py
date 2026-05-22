@@ -34,7 +34,7 @@ _service_dir = _script_dir.parent
 
 _config_path = Path(os.environ.get(
     "DEVICE_CLUSTER_CONFIG",
-    _service_dir / "DeviceType_Prediction" / "JSON" / "Config_filepath_application.json"
+    _service_dir / "DeviceType_Prediction" / "Config_devicetype.json"
 ))
 
 if not _config_path.exists():

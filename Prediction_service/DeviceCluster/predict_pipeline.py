@@ -33,17 +33,15 @@ logger = logging.getLogger(__name__)
 # ============================================================
 
 def load_config(config_path: str = None) -> configparser.ConfigParser:
-    """
-    Load settings from config.ini.
-    Looks for config.ini in the same folder as this script by default.
-    """
     if config_path is None:
-        config_path = os.path.join(os.path.dirname(os.path.abspath(__file__)), "config.ini")
+        _script_dir = os.path.dirname(os.path.abspath(__file__))          # .../DeviceCluster/
+        _parent_dir = os.path.dirname(_script_dir)                         # .../Prediction_service/
+        config_path = os.path.join(_parent_dir, "DeviceCluster_Prediction", "config_sectioncluster.ini")
 
     if not os.path.exists(config_path):
         raise FileNotFoundError(
-            f"config.ini not found at: {config_path}\n"
-            f"Please create config.ini next to predict_pipeline.py."
+            f"config_sectioncluster.ini not found at: {config_path}\n"
+            f"Please ensure config_sectioncluster.ini exists in DeviceCluster_Prediction/"
         )
 
     cfg = configparser.ConfigParser()
@@ -53,13 +51,15 @@ def load_config(config_path: str = None) -> configparser.ConfigParser:
 
 
 # Read config once at module load
-_cfg              = load_config()
+_cfg      = load_config()
 
-# Base directory = folder where predict_pipeline.py lives
-_BASE_DIR         = os.path.dirname(os.path.abspath(__file__))
+# Base directory = DeviceCluster_Prediction/ folder (where model_config lives)
+_BASE_DIR = os.path.join(
+    os.path.dirname(os.path.dirname(os.path.abspath(__file__))),  # .../Prediction_service/
+    "DeviceCluster_Prediction"                                     # .../DeviceCluster_Prediction/
+)
 
 MODEL_DIR         = os.path.join(_BASE_DIR, _cfg["PATHS"]["MODEL_DIR"].strip())
-OUTPUT_DIR        = os.path.join(_BASE_DIR, _cfg["PATHS"]["OUTPUT_DIR"].strip())
 UNKNOWN_THRESHOLD = float(_cfg["SETTINGS"]["UNKNOWN_THRESHOLD"].strip())
 
 
@@ -514,58 +514,58 @@ def predict(
 # EXPORT UNKNOWNS FOR MANUAL REVIEW
 # ============================================================
 
-def export_unknown_for_review(result: pd.DataFrame, output_dir: str) -> str | None:
-    """
-    Export all UNKNOWN rows (blocked or low-confidence) to Excel
-    for manual assignment.
+# def export_unknown_for_review(result: pd.DataFrame, output_dir: str) -> str | None:
+#     """
+#     Export all UNKNOWN rows (blocked or low-confidence) to Excel
+#     for manual assignment.
 
-    Returns the export file path, or None if no UNKNOWNs found.
-    """
-    os.makedirs(output_dir, exist_ok=True)
+#     Returns the export file path, or None if no UNKNOWNs found.
+#     """
+#     os.makedirs(output_dir, exist_ok=True)
 
-    mask = (
-        (result["REJECTION_REASON"] != "") |
-        (result["PREDICTED_SECTION"] == "UNKNOWN") |
-        (result["PREDICTED_CLUSTER"]  == "UNKNOWN")
-    )
-    unknown_df = result[mask].copy()
+#     mask = (
+#         (result["REJECTION_REASON"] != "") |
+#         (result["PREDICTED_SECTION"] == "UNKNOWN") |
+#         (result["PREDICTED_CLUSTER"]  == "UNKNOWN")
+#     )
+#     unknown_df = result[mask].copy()
 
-    if unknown_df.empty:
-        logger.info("No UNKNOWN rows — nothing exported for manual assignment.")
-        return None
+#     if unknown_df.empty:
+#         logger.info("No UNKNOWN rows — nothing exported for manual assignment.")
+#         return None
 
-    unknown_df["UNKNOWN_TYPE"] = unknown_df["REJECTION_REASON"].apply(
-        lambda r: "BLOCKED" if r else "LOW_CONFIDENCE"
-    )
-    unknown_df["ASSIGNED_SECTION"] = ""
-    unknown_df["ASSIGNED_CLUSTER"] = ""
+#     unknown_df["UNKNOWN_TYPE"] = unknown_df["REJECTION_REASON"].apply(
+#         lambda r: "BLOCKED" if r else "LOW_CONFIDENCE"
+#     )
+#     unknown_df["ASSIGNED_SECTION"] = ""
+#     unknown_df["ASSIGNED_CLUSTER"] = ""
 
-    cols = ["DEVICE_ID", "CUSTOMER"]
-    if "PROJECT" in unknown_df.columns:
-        cols.append("PROJECT")
-    cols += [
-        "UNKNOWN_TYPE",
-        "REJECTION_REASON",
-        "FORMAT_WARNING",
-        "SECTION_CONFIDENCE",
-        "CLUSTER_CONFIDENCE",
-        "ASSIGNED_SECTION",
-        "ASSIGNED_CLUSTER",
-    ]
-    unknown_df = unknown_df[cols]
+#     cols = ["DEVICE_ID", "CUSTOMER"]
+#     if "PROJECT" in unknown_df.columns:
+#         cols.append("PROJECT")
+#     cols += [
+#         "UNKNOWN_TYPE",
+#         "REJECTION_REASON",
+#         "FORMAT_WARNING",
+#         "SECTION_CONFIDENCE",
+#         "CLUSTER_CONFIDENCE",
+#         "ASSIGNED_SECTION",
+#         "ASSIGNED_CLUSTER",
+#     ]
+#     unknown_df = unknown_df[cols]
 
-    timestamp = datetime.now().strftime("%Y%m%d_%H%M%S")
-    out_path  = os.path.join(output_dir, f"pending_manual_{timestamp}.xlsx")
-    unknown_df.to_excel(out_path, index=False)
+#     timestamp = datetime.now().strftime("%Y%m%d_%H%M%S")
+#     out_path  = os.path.join(output_dir, f"pending_manual_{timestamp}.xlsx")
+#     unknown_df.to_excel(out_path, index=False)
 
-    logger.info(
-        "%d UNKNOWN row(s) exported — LOW_CONFIDENCE: %d | BLOCKED: %d | Path: %s",
-        len(unknown_df),
-        (unknown_df["UNKNOWN_TYPE"] == "LOW_CONFIDENCE").sum(),
-        (unknown_df["UNKNOWN_TYPE"] == "BLOCKED").sum(),
-        out_path,
-    )
-    return out_path
+#     logger.info(
+#         "%d UNKNOWN row(s) exported — LOW_CONFIDENCE: %d | BLOCKED: %d | Path: %s",
+#         len(unknown_df),
+#         (unknown_df["UNKNOWN_TYPE"] == "LOW_CONFIDENCE").sum(),
+#         (unknown_df["UNKNOWN_TYPE"] == "BLOCKED").sum(),
+#         out_path,
+#     )
+#     return out_path
 
 
 # ============================================================
