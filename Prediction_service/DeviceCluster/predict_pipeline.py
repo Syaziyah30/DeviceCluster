@@ -51,11 +51,23 @@ def load_config(config_path: str = None) -> configparser.ConfigParser:
     return cfg
 
 
+# # Read config once at module load
+# _cfg              = load_config() 
+# MODEL_DIR         = _cfg["PATHS"]["MODEL_DIR"].strip()
+# OUTPUT_DIR        = _cfg["PATHS"]["OUTPUT_DIR"].strip()
+# UNKNOWN_THRESHOLD = float(_cfg["SETTINGS"]["UNKNOWN_THRESHOLD"].strip())
+
+
 # Read config once at module load
-_cfg              = load_config() 
-MODEL_DIR         = _cfg["PATHS"]["MODEL_DIR"].strip()
-OUTPUT_DIR        = _cfg["PATHS"]["OUTPUT_DIR"].strip()
+_cfg              = load_config()
+
+# Base directory = folder where predict_pipeline.py lives
+_BASE_DIR         = os.path.dirname(os.path.abspath(__file__))
+
+MODEL_DIR         = os.path.join(_BASE_DIR, _cfg["PATHS"]["MODEL_DIR"].strip())
+OUTPUT_DIR        = os.path.join(_BASE_DIR, _cfg["PATHS"]["OUTPUT_DIR"].strip())
 UNKNOWN_THRESHOLD = float(_cfg["SETTINGS"]["UNKNOWN_THRESHOLD"].strip())
+
 
 
 
