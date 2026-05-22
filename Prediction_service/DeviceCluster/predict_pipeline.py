@@ -511,25 +511,6 @@ def predict(
 
 
 # ============================================================
-# SAVE RESULTS
-# ============================================================
-
-# def save_results(result: pd.DataFrame, output_dir: str) -> None:
-#     """Append prediction results to the running CSV log."""
-#     os.makedirs(output_dir, exist_ok=True)
-#     result = result.copy()
-#     result["PREDICTED_AT"] = datetime.now().strftime("%Y-%m-%d %H:%M:%S")
-#     results_path = os.path.join(output_dir, "application_results.csv")
-#     result.to_csv(
-#         results_path,
-#         mode="a",
-#         header=not os.path.exists(results_path),
-#         index=False,
-#     )
-#     logger.info("Results saved to: %s", results_path)
-
-
-# ============================================================
 # EXPORT UNKNOWNS FOR MANUAL REVIEW
 # ============================================================
 
@@ -617,9 +598,6 @@ def main():
 
         pipeline = get_pipeline()
         result_df = predict(records, pipeline, threshold=UNKNOWN_THRESHOLD)
-
-        # save_results(result_df, OUTPUT_DIR)
-        # export_unknown_for_review(result_df, OUTPUT_DIR)
 
         out = _clean_nan(result_df.to_dict(orient="records"))
         print(json.dumps(out))
