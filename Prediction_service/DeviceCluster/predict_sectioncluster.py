@@ -29,38 +29,36 @@ logger = logging.getLogger(__name__)
 
 
 # ============================================================
-# LOAD CONFIG FROM config.ini
+# LOAD CONFIG FROM config_secioncluster.json
 # ============================================================
 
-def load_config(config_path: str = None) -> configparser.ConfigParser:
+def load_config(config_path: str = None) -> dict:
     if config_path is None:
         _script_dir = os.path.dirname(os.path.abspath(__file__))          # .../DeviceCluster/
         _parent_dir = os.path.dirname(_script_dir)                         # .../Prediction_service/
-        config_path = os.path.join(_parent_dir, "DeviceCluster_Prediction", "config_sectioncluster.ini")
+        config_path = os.path.join(_parent_dir, "DeviceCluster_Prediction", "config_sectioncluster.json")
 
     if not os.path.exists(config_path):
         raise FileNotFoundError(
-            f"config_sectioncluster.ini not found at: {config_path}\n"
-            f"Please ensure config_sectioncluster.ini exists in DeviceCluster_Prediction/"
+            f"config_sectioncluster.json not found at: {config_path}\n"
+            f"Please ensure config_sectioncluster.json exists in DeviceCluster_Prediction/"
         )
 
-    cfg = configparser.ConfigParser()
-    cfg.read(config_path)
-    return cfg
-
+    with open(config_path, "r", encoding="utf-8") as f:
+        return json.load(f)
 
 
 # Read config once at module load
-_cfg      = load_config()
+_cfg = load_config()
 
-# Base directory = DeviceCluster_Prediction/ folder (where model_config lives)
+# Base directory = DeviceCluster_Prediction/ folder
 _BASE_DIR = os.path.join(
     os.path.dirname(os.path.dirname(os.path.abspath(__file__))),  # .../Prediction_service/
     "DeviceCluster_Prediction"                                     # .../DeviceCluster_Prediction/
 )
 
-MODEL_DIR         = os.path.join(_BASE_DIR, _cfg["PATHS"]["MODEL_DIR"].strip())
-UNKNOWN_THRESHOLD = float(_cfg["SETTINGS"]["UNKNOWN_THRESHOLD"].strip())
+MODEL_DIR         = os.path.join(_BASE_DIR, _cfg["model_folder"])
+UNKNOWN_THRESHOLD = float(_cfg["unknown_threshold"])
 
 
 
