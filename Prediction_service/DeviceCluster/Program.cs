@@ -130,16 +130,24 @@ public class PythonClient
 #endregion
 
 #region Program
-
 public class Program
-{		
-	const string PYTHON_EXE = @"C:\Users\sitisyaziyah\AppData\Local\Programs\Python\Python313\python.exe";
-	const string SCRIPT_TYPE = @"C:\Users\sitisyaziyah\source\repos\DeviceCluster\Prediction_service\DeviceCluster\predict_equipment.py";
-	const string SCRIPT_PIPELINE = @"C:\Users\sitisyaziyah\source\repos\DeviceCluster\Prediction_service\DeviceCluster\predict_sectioncluster.py";
-	const string PROJECT_JSON = @"C:\Users\sitisyaziyah\source\repos\DeviceCluster\Prediction_service\TestDevice\A1825.json";
+{
+	// Get the directory where the executable lives at runtime
+	static readonly string _baseDir = AppContext.BaseDirectory;
+
+	// Go up from bin/Debug/net10.0  →  project root (Prediction_service/DeviceCluster)
+	static readonly string _projectDir = Path.GetFullPath(Path.Combine(_baseDir, @"..\..\..\"));
+
+	// Go up one more level to Prediction_service root
+	static readonly string _serviceDir = Path.GetFullPath(Path.Combine(_baseDir, @"..\..\..\..\"));
+
+	const string PYTHON_EXE = @"C:\Users\sitisyaziyah\AppData\Local\Programs\Python\Python313\python.exe"; // keep absolute — this is a user install
+
+	static readonly string SCRIPT_TYPE = Path.Combine(_projectDir, "predict_equipment.py");
+	static readonly string SCRIPT_PIPELINE = Path.Combine(_projectDir, "predict_sectioncluster.py");
+	static readonly string PROJECT_JSON = Path.Combine(_serviceDir, "TestDevice", "A1825.json");
 
 	static readonly JsonSerializerOptions _jsonOpts = new() { PropertyNameCaseInsensitive = true };
-
 	public static async Task Main(string[] args)
 	{
 		try
