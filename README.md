@@ -75,6 +75,107 @@ Features → Section → Predicted Section → Cluster
 
 ---
 
+## C# Service Execution
+
+The ML pipeline is orchestrated by a **.NET 10.0 console application** that manages subprocess communication with Python.
+
+**Solution:** `Prediction_service/DeviceCluster/DeviceCluster.slnx`
+**Entry point:** `Prediction_service/DeviceCluster/Program.cs`
+**Target framework:** `.NET 10.0` (console executable)
+
+---
+
+### Execution Flow
+
+The service runs three sequential steps on a batch of device IDs read from a JSON input file:
+
+```
+Input JSON (project_code, customer_code, data_ids[])
+        │
+        ▼
+┌───────────────────────────┐
+│ Step 1 — Device Type      │  predict_equipment.py
+│ Hybrid: exact match +     │  22 equipment classes
+│ SGD + TF-IDF + dict       │
+└───────────┬───────────────┘
+            │  DeviceTypeResult[]
+            ▼
+┌───────────────────────────┐
+│ Step 2 — Section          │  predict_sectioncluster.py
+│ XGBoost (27+ features)    │  OOD penalty applied
+│ + OOD KNN penalty         │
+└───────────┬───────────────┘
+            │  PipelineResult[] (with PREDICTED_SECTION)
+            ▼
+┌───────────────────────────┐
+│ Step 3 — Cluster          │  Same script result
+│ XGBoost chained on        │  Confidence chained on
+│ predicted Section         │  Section confidence
+└───────────────────────────┘
+```
+
+---
+
+### Python Subprocess Protocol
+
+C# spawns Python as a child process for each step using `System.Diagnostics.Process`:
+
+| Parameter | Value |
+|---|---|
+| Python executable | `C:\Users\sitisyaziyah\AppData\Local\Programs\Python\Python313\python.exe` |
+| Launch flag | `-u` (unbuffered stdout) |
+| Shell execute | `false` (direct process, no cmd.exe) |
+| Window | `CreateNoWindow = true` |
+| Encoding | UTF-8 (stdout + stderr) |
+| Input method | Write JSON to `stdin`, then close to signal EOF |
+
+**Request/response per step:**
+
+**Step 1 — Device Type**
+```jsonc
+// stdin → predict_equipment.py
+{ "project_code": "A1825", "customer_code": "Lipico", "data_ids": ["CR1234", "PU001"] }
+
+// stdout ← predict_equipment.py
+[{ "data_id": "CR1234", "data_type": "COOLER", "confidence": 0.92, "reason": "sgd_strong" }, ...]
+```
+
+**Step 2 & 3 — Section + Cluster**
+```jsonc
+// stdin → predict_sectioncluster.py
+{ "records": [{ "device_id": "CR1234", "customer": "Lipico", "project": "A1825" }] }
+
+// stdout ← predict_sectioncluster.py
+[{
+  "DEVICE_ID": "CR1234", "CUSTOMER": "Lipico", "PROJECT": "A1825",
+  "PREDICTED_SECTION": "SectionA", "SECTION_CONFIDENCE": 87.4,
+  "PREDICTED_CLUSTER": "Cluster2", "CLUSTER_CONFIDENCE": 74.1,
+  "REJECTION_REASON": "", "FORMAT_WARNING": ""
+}]
+```
+
+---
+
+### Configuration
+
+| File | Purpose |
+|---|---|
+| `config_sectioncluster.json` | `model_folder` path + `unknown_threshold` (0.60) |
+| `Config_devicetype.json` | Paths to all Device Type model artefacts |
+| `config.ini` | Runtime `MODEL_DIR`, `OUTPUT_DIR`, `UNKNOWN_THRESHOLD` |
+
+---
+
+### Deployment Notes
+
+* Python 3.13 must be installed at the path hardcoded in `Program.cs`
+* All `.pkl` model files must be present in `DeviceCluster_Prediction/model_config/`
+* Input devices are read from `TestDevice/<project>.json` (`project_code`, `customer_code`, `data_ids`)
+* The compiled executable is at `bin/Debug/net10.0/DeviceCluster.exe`; for release build use `dotnet publish`
+* No network calls — fully local inference
+
+---
+
 ## Status 🚧
 
 * ✅ Pipeline & chaining implemented
@@ -97,8 +198,12 @@ Features → Section → Predicted Section → Cluster
 ## Reference
 
 * Training notebook: `1.training_model/Section XGB Model - Model Training.ipynb`
-* Inference script: `Prediction_service/DeviceCluster/predict_sectioncluster.py`
-* Config: `Prediction_service/DeviceCluster_Prediction/config_sectioncluster.json`
+* Inference script (Section/Cluster): `Prediction_service/DeviceCluster/predict_sectioncluster.py`
+* Inference script (Device Type): `Prediction_service/DeviceCluster/predict_equipment.py`
+* C# orchestrator: `Prediction_service/DeviceCluster/Program.cs`
+* C# solution: `Prediction_service/DeviceCluster/DeviceCluster.slnx`
+* Section/Cluster config: `Prediction_service/DeviceCluster_Prediction/config_sectioncluster.json`
+* Device Type config: `Prediction_service/DeviceType_Prediction/Config_devicetype.json`
 
 ---
 
