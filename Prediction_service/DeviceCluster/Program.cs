@@ -75,13 +75,14 @@ public class PipelineResult
 
 public class PythonClient
 {
-	private readonly string _pythonExe;
+	private readonly string _pythonExe; // Private — unchanged
 
 	public PythonClient(string pythonExe)
 	{
 		_pythonExe = pythonExe;
 	}
 
+	// ✅ Keep public — external callers (Program) depend on this
 	public async Task<string> RunAsync(string scriptPath, object request)
 	{
 		string jsonInput = JsonSerializer.Serialize(request);
@@ -130,24 +131,31 @@ public class PythonClient
 #endregion
 
 #region Program
+
 public class Program
 {
-	// Get the directory where the executable lives at runtime
-	static readonly string _baseDir = AppContext.BaseDirectory;
 
-	// Go up from bin/Debug/net10.0  →  project root (Prediction_service/DeviceCluster)
-	static readonly string _projectDir = Path.GetFullPath(Path.Combine(_baseDir, @"..\..\..\"));
+	private static readonly string _baseDir = AppContext.BaseDirectory;
 
-	// Go up one more level to Prediction_service root
-	static readonly string _serviceDir = Path.GetFullPath(Path.Combine(_baseDir, @"..\..\..\..\"));
+	private static readonly string _projectDir = Path.GetFullPath(Path.Combine(_baseDir, @"..\..\..\"));
 
-	const string PYTHON_EXE = @"C:\Users\sitisyaziyah\AppData\Local\Programs\Python\Python313\python.exe"; // keep absolute — this is a user install
+	private static readonly string _serviceDir = Path.GetFullPath(Path.Combine(_baseDir, @"..\..\..\..\"));
 
-	static readonly string SCRIPT_TYPE = Path.Combine(_projectDir, "predict_equipment.py");
-	static readonly string SCRIPT_PIPELINE = Path.Combine(_projectDir, "predict_sectioncluster.py");
-	static readonly string PROJECT_JSON = Path.Combine(_serviceDir, "TestDevice", "A1825.json");
+	private const string PYTHON_EXE = @"C:\Users\sitisyaziyah\AppData\Local\Programs\Python\Python313\python.exe";
 
-	static readonly JsonSerializerOptions _jsonOpts = new() { PropertyNameCaseInsensitive = true };
+	// only passed to RunAsync() inside Main()
+	private static readonly string SCRIPT_TYPE = Path.Combine(_projectDir, "predict_equipment.py");
+
+	// only passed to RunAsync() inside Main()
+	private static readonly string SCRIPT_PIPELINE = Path.Combine(_projectDir, "predict_sectioncluster.py");
+
+	// only read inside Main()
+	private static readonly string PROJECT_JSON = Path.Combine(_serviceDir, "TestDevice", "A1825.json");
+
+	// only used inside Program for deserialization
+	private static readonly JsonSerializerOptions _jsonOpts = new() { PropertyNameCaseInsensitive = true };
+
+	// Public — entry point, must remain accessible by the runtime
 	public static async Task Main(string[] args)
 	{
 		try
@@ -203,7 +211,7 @@ public class Program
 			sw.Restart();
 			string pipelineJson = await client.RunAsync(SCRIPT_PIPELINE, pipelineRequest);
 			sw.Stop();
-			double step2Secs = sw.Elapsed.TotalSeconds; // ← declared here, used in Step 3
+			double step2Secs = sw.Elapsed.TotalSeconds;
 
 			var pipelineResults = JsonSerializer.Deserialize<List<PipelineResult>>(pipelineJson, _jsonOpts);
 			PrintSectionTable(pipelineResults, deviceTypeLookup);
@@ -216,8 +224,6 @@ public class Program
 			Console.WriteLine("[Step 3/3] Predicting clusters...");
 			PrintClusterTable(pipelineResults, deviceTypeLookup);
 			Console.WriteLine($"Time taken to predict : {step2Secs:F1} secs");
-
-
 		}
 		catch (Exception ex)
 		{
@@ -240,8 +246,8 @@ public class Program
 
 	// ── Display Helpers ───────────────────────────────────────────────────────
 
-	// Step 1: Customer | Device ID | Device Type | Confidence
-	static void PrintDeviceTypeTable(List<DeviceTypeResult> results)
+	// Private — display helper, only called inside Main()
+	private static void PrintDeviceTypeTable(List<DeviceTypeResult> results)
 	{
 		const int W = 80;
 		Console.WriteLine();
@@ -262,8 +268,8 @@ public class Program
 		}
 	}
 
-	// Step 2: Customer | Device ID | Device Type (Step 1) | Section | Confidence
-	static void PrintSectionTable(List<PipelineResult> results, Dictionary<string, string> deviceTypeLookup)
+	// Private — display helper, only called inside Main()
+	private static void PrintSectionTable(List<PipelineResult> results, Dictionary<string, string> deviceTypeLookup)
 	{
 		const int W = 110;
 		Console.WriteLine();
@@ -286,8 +292,8 @@ public class Program
 		}
 	}
 
-	// Step 3: Customer | Device ID | Device Type (Step 1) | Section (Step 2) | Cluster | Confidence
-	static void PrintClusterTable(List<PipelineResult> results, Dictionary<string, string> deviceTypeLookup)
+	// Private — display helper, only called inside Main()
+	private static void PrintClusterTable(List<PipelineResult> results, Dictionary<string, string> deviceTypeLookup)
 	{
 		const int W = 130;
 		Console.WriteLine();
