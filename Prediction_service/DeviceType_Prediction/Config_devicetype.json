@@ -15,7 +15,6 @@
     "unknown_df"            : "unknown_df.pkl",
     "tfidf_similarity"      : "tfidf_vectorizer_similarity.pkl",
     "tfidf_sgd"             : "tfidf_vectorizer_sgd.pkl",
-
     "nn"                    : "nn_reference_cosine.pkl",
     "reference_index_map"   : "reference_index_map.pkl",
     "centroids"             : "centroids.pkl",
