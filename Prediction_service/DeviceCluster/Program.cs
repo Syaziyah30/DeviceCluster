@@ -6,8 +6,8 @@ using System.Linq;
 using System.Text;
 using System.Text.Json;
 using System.Threading.Tasks;
-using DeviceIdentifierLibrary.Models;    // ← from your DLL
-using DeviceIdentifierLibrary.Services;  // ← from your DLL
+using DeviceIdentifierLibrary.Models;    // ← from DLL 
+using DeviceIdentifierLibrary.Services;  // ← from DLL
 
 public class Program
 {
@@ -25,7 +25,7 @@ public class Program
 	{
 		try
 		{
-			var client = new PythonClient(PYTHON_EXE); // ← comes from DLL now
+			var client = new PythonClient(PYTHON_EXE); // ← comes from DLL 
 
 			if (!File.Exists(PROJECT_JSON))
 				throw new FileNotFoundException($"Project JSON not found: {PROJECT_JSON}");
