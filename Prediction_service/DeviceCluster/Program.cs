@@ -6,8 +6,8 @@ using System.Linq;
 using System.Text;
 using System.Text.Json;
 using System.Threading.Tasks;
-using DeviceIdentifierLibrary.Models;    // ← from DLL 
-using DeviceIdentifierLibrary.Services;  // ← from DLL
+using DeviceIdentifierLibrary.Models;
+using DeviceIdentifierLibrary.Services;
 
 public class Program
 {
@@ -15,7 +15,8 @@ public class Program
 	private static readonly string _projectDir = Path.GetFullPath(Path.Combine(_baseDir, @"..\..\..\"));
 	private static readonly string _serviceDir = Path.GetFullPath(Path.Combine(_baseDir, @"..\..\..\..\"));
 
-	private const string PYTHON_EXE = @"C:\Users\sitisyaziyah\AppData\Local\Programs\Python\Python313\python.exe";
+	// using relative path
+	private static readonly string PYTHON_EXE = Environment.GetEnvironmentVariable("PYTHON_EXE") ?? "python";
 	private static readonly string SCRIPT_TYPE = Path.Combine(_projectDir, "predict_equipment.py");
 	private static readonly string SCRIPT_PIPELINE = Path.Combine(_projectDir, "predict_sectioncluster.py");
 	private static readonly string PROJECT_JSON = Path.Combine(_serviceDir, "TestDevice", "A1825.json");
@@ -25,12 +26,12 @@ public class Program
 	{
 		try
 		{
-			var client = new PythonClient(PYTHON_EXE); // ← comes from DLL 
+			var client = new PythonClient(PYTHON_EXE); // ← comes from DLL
 
 			if (!File.Exists(PROJECT_JSON))
 				throw new FileNotFoundException($"Project JSON not found: {PROJECT_JSON}");
 
-			var request = JsonSerializer.Deserialize<DevicePredictRequest>( // ← from DLL
+			var request = JsonSerializer.Deserialize<DevicePredictRequest>(
 				File.ReadAllText(PROJECT_JSON, Encoding.UTF8)
 			);
 
@@ -45,7 +46,7 @@ public class Program
 			string typeJson = await client.RunAsync(SCRIPT_TYPE, request);
 			sw.Stop();
 
-			var typeResults = JsonSerializer.Deserialize<List<DeviceTypeResult>>(typeJson, _jsonOpts); // ← from DLL
+			var typeResults = JsonSerializer.Deserialize<List<DeviceTypeResult>>(typeJson, _jsonOpts);
 			PrintDeviceTypeTable(typeResults);
 			Console.WriteLine($"Time taken: {sw.Elapsed.TotalSeconds:F1} secs");
 
@@ -58,9 +59,9 @@ public class Program
 
 			// STEP 2: Section
 			Console.WriteLine("[Step 2/3] Predicting sections...");
-			var pipelineRequest = new PipelinePredictRequest // ← from DLL
+			var pipelineRequest = new PipelinePredictRequest
 			{
-				records = typeResults.Select(r => new PipelineRecord // ← from DLL
+				records = typeResults.Select(r => new PipelineRecord
 				{
 					device_id = r.data_id,
 					customer = r.customer ?? request.customer_code,
@@ -73,7 +74,7 @@ public class Program
 			sw.Stop();
 			double step2Secs = sw.Elapsed.TotalSeconds;
 
-			var pipelineResults = JsonSerializer.Deserialize<List<PipelineResult>>(pipelineJson, _jsonOpts); // ← from DLL
+			var pipelineResults = JsonSerializer.Deserialize<List<PipelineResult>>(pipelineJson, _jsonOpts);
 			PrintSectionTable(pipelineResults, deviceTypeLookup);
 			Console.WriteLine($"Time taken: {step2Secs:F1} secs");
 
@@ -96,7 +97,6 @@ public class Program
 		}
 	}
 
-	// these Print helpers stay here — they write to Console, not reusable logic
 	private static void PrintDeviceTypeTable(List<DeviceTypeResult> results)
 	{
 		Console.WriteLine("\n===== STEP 1: DEVICE TYPE =====\n");
