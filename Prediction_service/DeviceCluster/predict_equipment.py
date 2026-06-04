@@ -87,9 +87,9 @@ logger.info("All features loaded successfully.")
 logger.info(f"master_df loaded: {len(master_df)} rows.")
 logger.info(f"reference_df loaded: {len(reference_df)} rows.")
 
-# =============================================================================
+# ===========================================================================
 # CLASS INDEX MAP HANDLING
-# =============================================================================
+# ===========================================================================
 
 def readjson(path):
     """Read JSON file with UTF-8 encoding"""
