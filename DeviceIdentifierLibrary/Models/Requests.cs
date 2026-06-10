@@ -11,13 +11,13 @@ namespace DeviceIdentifierLibrary.Models
 		public List<string> data_ids { get; set; }
 	}
 
-	public class ManualAssignment
+	public class ManualAssignment // no usage in Program.cs
 	{
 		public string data_id { get; set; }
 		public string equipment { get; set; }
 	}
 
-	public class UserManualAssignRequest
+	public class UserManualAssignRequest // no usage in Program.cs
 	{
 		public string action { get; set; } = "user_manual_assign";
 		public string project_code { get; set; }

@@ -26,12 +26,12 @@ public class Program
 	{
 		try
 		{
-			var client = new PythonClient(PYTHON_EXE); // ← comes from DLL
+			var client = new PythonClient(PYTHON_EXE); // ← PythonClient comes from DLL
 
 			if (!File.Exists(PROJECT_JSON))
 				throw new FileNotFoundException($"Project JSON not found: {PROJECT_JSON}");
 
-			var request = JsonSerializer.Deserialize<DevicePredictRequest>(
+			var request = JsonSerializer.Deserialize<DevicePredictRequest>( // ← DevicePredictRequest comes from DLL
 				File.ReadAllText(PROJECT_JSON, Encoding.UTF8)
 			);
 
@@ -46,7 +46,7 @@ public class Program
 			string typeJson = await client.RunAsync(SCRIPT_TYPE, request);
 			sw.Stop();
 
-			var typeResults = JsonSerializer.Deserialize<List<DeviceTypeResult>>(typeJson, _jsonOpts);
+			var typeResults = JsonSerializer.Deserialize<List<DeviceTypeResult>>(typeJson, _jsonOpts); // <-DeviceTypeResult from DLL
 			PrintDeviceTypeTable(typeResults);
 			Console.WriteLine($"Time taken: {sw.Elapsed.TotalSeconds:F1} secs");
 
@@ -59,9 +59,9 @@ public class Program
 
 			// STEP 2: Section
 			Console.WriteLine("[Step 2/3] Predicting sections...");
-			var pipelineRequest = new PipelinePredictRequest
+			var pipelineRequest = new PipelinePredictRequest            // <- PipelinePredictRequest from DLL
 			{
-				records = typeResults.Select(r => new PipelineRecord
+				records = typeResults.Select(r => new PipelineRecord   // <- PipelineRecord from DLL
 				{
 					device_id = r.data_id,
 					customer = r.customer ?? request.customer_code,
@@ -74,7 +74,7 @@ public class Program
 			sw.Stop();
 			double step2Secs = sw.Elapsed.TotalSeconds;
 
-			var pipelineResults = JsonSerializer.Deserialize<List<PipelineResult>>(pipelineJson, _jsonOpts);
+			var pipelineResults = JsonSerializer.Deserialize<List<PipelineResult>>(pipelineJson, _jsonOpts); // <-PipelineResult from DLL
 			PrintSectionTable(pipelineResults, deviceTypeLookup);
 			Console.WriteLine($"Time taken: {step2Secs:F1} secs");
 
@@ -97,7 +97,7 @@ public class Program
 		}
 	}
 
-	private static void PrintDeviceTypeTable(List<DeviceTypeResult> results)
+	private static void PrintDeviceTypeTable(List<DeviceTypeResult> results) // <-DeviceTypeResult from DLL
 	{
 		Console.WriteLine("\n===== STEP 1: DEVICE TYPE =====\n");
 		Console.WriteLine($"{"Customer",-12} | {"Device ID",-25} | {"Device Type",-25} | {"Confidence",10}");
@@ -109,7 +109,7 @@ public class Program
 		}
 	}
 
-	private static void PrintSectionTable(List<PipelineResult> results, Dictionary<string, string> lookup)
+	private static void PrintSectionTable(List<PipelineResult> results, Dictionary<string, string> lookup) // <-PipelineResult from DLL
 	{
 		Console.WriteLine("\n===== STEP 2: SECTION =====\n");
 		Console.WriteLine($"{"Customer",-12} | {"Device ID",-25} | {"Device Type",-25} | {"Section",-20} | {"Confidence %",12}");
@@ -122,7 +122,7 @@ public class Program
 		}
 	}
 
-	private static void PrintClusterTable(List<PipelineResult> results, Dictionary<string, string> lookup)
+	private static void PrintClusterTable(List<PipelineResult> results, Dictionary<string, string> lookup) // <-PipelineResult from DLL
 	{
 		Console.WriteLine("\n===== STEP 3: CLUSTER =====\n");
 		Console.WriteLine($"{"Customer",-12} | {"Device ID",-25} | {"Device Type",-25} | {"Section",-20} | {"Cluster",-20} | {"Confidence %",12}");
