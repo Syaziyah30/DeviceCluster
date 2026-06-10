@@ -6,7 +6,8 @@ using System.Linq;
 using System.Text;
 using System.Text.Json;
 using System.Threading.Tasks;
-using DeviceIdentifierLibrary.Models;
+using DeviceIdentifierLibrary.ModelRequest;
+using DeviceIdentifierLibrary.ModelResult;
 using DeviceIdentifierLibrary.Services;
 
 public class Program

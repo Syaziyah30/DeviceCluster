@@ -1,7 +1,7 @@
 ﻿using System;
 using System.Collections.Generic;
 using System.Text;
-using DeviceIdentifierLibrary.Models;
+using DeviceIdentifierLibrary.ModelRequest;
 
 namespace DeviceIdentifierLibrary.ModelRequest
 {
