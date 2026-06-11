@@ -6,6 +6,8 @@ using System.Linq;
 using System.Text;
 using System.Text.Json;
 using System.Threading.Tasks;
+
+// derived from dll library
 using DeviceIdentifierLibrary.ModelRequest;
 using DeviceIdentifierLibrary.ModelResult;
 using DeviceIdentifierLibrary.Services;
