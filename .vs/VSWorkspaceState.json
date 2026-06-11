@@ -1,9 +1,10 @@
 {
   "ExpandedNodes": [
     "",
-    "\\Prediction_service",
+    "\\DeviceIdentifierLibrary.ManualTest",
+    "\\DeviceIdentifierLibrary\\ModelResult",
     "\\Prediction_service\\DeviceCluster"
   ],
-  "SelectedNode": "\\Prediction_service\\DeviceCluster\\Program.cs",
+  "SelectedNode": "\\Prediction_service",
   "PreviewInSolutionExplorer": false
 }
