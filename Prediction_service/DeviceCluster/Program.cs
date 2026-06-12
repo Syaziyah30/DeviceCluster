@@ -26,7 +26,7 @@ public class Program
 	private static readonly string SQL_OUTPUT_JSON = Path.Combine(_serviceDir, "data", "devices.json"); // ← output path for SQL result
 	private static readonly JsonSerializerOptions _jsonOpts = new() { PropertyNameCaseInsensitive = true };
 
-	// ── SQL connection string ──────────────────────────────────────────────────
+	// SQL connection string 
 	private const string SQL_CONN = "Server=128.100.20.33\\neptune;Database=XenCreator;" +
 									"User Id=rndsa;Password=RnD_123;TrustServerCertificate=True;";
 
