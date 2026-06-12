@@ -6,13 +6,13 @@
 // =======================================
 
 // Test 1: DeviceTypeResult model only (no Python needed)
-//TestDeviceTypeResult.Run();
+TestDeviceTypeResult.Run();
 
 // Test 2: PipelineResult model only (no Python needed)
 TestPipelineResult.Run();
 
 
 // Test 3: Full Python call (needs Python + script path)
-//await TestPythonClient.RunAsync();
+await TestPythonClient.RunAsync();
 
 Console.WriteLine("All selected tests completed.");
