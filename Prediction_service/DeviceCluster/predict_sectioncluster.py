@@ -35,8 +35,8 @@ logger = logging.getLogger(__name__)
 def load_config(config_path: str = None) -> dict:
     if config_path is None:
         _script_dir = os.path.dirname(os.path.abspath(__file__))          # .../DeviceCluster/
-        _parent_dir = os.path.dirname(_script_dir)                         # .../Prediction_service/
-        config_path = os.path.join(_parent_dir, "DeviceCluster_Prediction", "config_sectioncluster.json")
+        # _parent_dir = os.path.dirname(_script_dir)                         # .../Prediction_service/
+        config_path = os.path.join(_script_dir,"predict_sectioncluster_folder" , "config_sectioncluster.json")
 
     if not os.path.exists(config_path):
         raise FileNotFoundError(
