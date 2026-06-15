@@ -9,8 +9,8 @@ class Program
 
 		Console.WriteLine();
 		Console.WriteLine("  ╔══════════════════════════════════════════════════════════════════════════════╗");
-		Console.WriteLine("  ║           DEVICE SECTION ASSIGNMENT SIMULATOR                              ║");
-		Console.WriteLine("  ║           6 sections  ·  3 slots each  ·  cascading displacement           ║");
+		Console.WriteLine("  ║           DEVICE SECTION ASSIGNMENT SIMULATOR                                ║");
+		Console.WriteLine("  ║           6 sections  ·  3 slots each  ·  cascading displacement             ║");
 		Console.WriteLine("  ╚══════════════════════════════════════════════════════════════════════════════╝");
 
 		var manager = new SectionManager(sectionCount: 6, capacityPerSection: 3);

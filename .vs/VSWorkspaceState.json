@@ -2,8 +2,9 @@
   "ExpandedNodes": [
     "",
     "\\DeviceIdentifierLibrary",
+    "\\DeviceIdentifierLibrary\\ModelRequest",
     "\\DeviceIdentifierLibrary\\Services"
   ],
-  "SelectedNode": "\\DeviceIdentifierLibrary\\Services\\PythonClient.cs",
+  "SelectedNode": "\\DeviceIdentifierLibrary\\ModelRequest\\ManualAssignment.cs",
   "PreviewInSolutionExplorer": false
 }
