@@ -1,7 +1,0 @@
-{
-  "model_folder"      : "model_config",
-  "unknown_threshold" : 0.60,
-  "paths": {
-    "output_dir"      : "output"
-  }
-}
