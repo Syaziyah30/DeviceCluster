@@ -30,11 +30,10 @@ logger = logging.getLogger(__name__)
 # =============================================================================
 
 _script_dir  = Path(__file__).resolve().parent
-_service_dir = _script_dir.parent
 
 _config_path = Path(os.environ.get(
     "DEVICE_CLUSTER_CONFIG",
-    _service_dir / "DeviceType_Prediction" / "Config_devicetype.json"
+    _script_dir / "predict_equipment_folder" / "Config_devicetype.json"
 ))
 
 if not _config_path.exists():
@@ -46,8 +45,8 @@ if not _config_path.exists():
 with open(_config_path, "r", encoding="utf-8") as f:
     config = json.load(f)
 
-_config_dir       = _config_path.parent                               # .../JSON/
-JSON_MODEL_FOLDER = (_config_dir / config["model_folder"]).resolve()  # .../model_config_devicetype/
+_config_dir       = _config_path.parent                               # .../predict_equipment_folder/
+JSON_MODEL_FOLDER = (_config_dir / config["model_folder"]).resolve()  # .../predict_equipment_folder/model_config_devicetype/
 MODEL_FOLDER      = JSON_MODEL_FOLDER                                  # same folder
 
 MAX_BATCH_SIZE = int(os.environ.get("MAX_BATCH_SIZE", "5000"))
