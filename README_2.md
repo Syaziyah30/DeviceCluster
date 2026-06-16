@@ -1,17 +1,23 @@
 # DeviceIdentifierLibrary — Reference Guide
 
-> **Full pipeline:** Device Type → Section → Cluster  
-> **Runtime:** Python ML scripts called as subprocesses from a .NET 10 C# service  
-> **Status:** Device Type ✅ production-ready · Section/Cluster ⚠️ under optimisation
+| | |
+|---|---|
+| **Full pipeline** | Device Type → Section → Cluster |
+| **Runtime** | Python ML scripts called as subprocesses from a .NET 10 C# service |
+| **Status** | Device Type ✅ production-ready · Section/Cluster ⚠️ under optimisation |
 
 ---
 
-## Architecture Overview
+
+# 🍀 Architecture Overview
 
 ```
+             Data Source DB SQL
+                    │ Using C# (SQL -> Json)
+                    ▼
 Input JSON (project_code, customer_code, data_ids[])
-        │
-        ▼
+                    │
+                    ▼
 ┌───────────────────────────────────────────────────┐
 │ Step 1 — Device Type          redict_equipment.py │
 │ Hybrid: exact match + SGD + TF-IDF cosine + dict  │
@@ -35,56 +41,56 @@ Input JSON (project_code, customer_code, data_ids[])
 
 ---
 
-## Step 1 — Device Type (`predict_equipment.py`)
+# 1️⃣ — Device Type (`predict_equipment.py`)
 
-### Model Approach
+## 📍 Model Approach : SGD Classifier
 
 Hybrid classifier combining four sources, resolved in strict priority order:
 
 ```
-1. All-letters input?              → UNKNOWN (hard block, no inference)
-2. Exact match in ref_id_set?      → label from reference_df,  confidence = 1.0
-3. SGD confidence >= 0.60?         → SGD label
-4. Composite similarity >= 0.60?   → Nearest-neighbour cosine label
-5. Dictionary (initial_map) match? → dict label,               confidence = 0.75
-6. None of the above               → UNKNOWN, confidence = max(composite, sgd)
+1. All-letters                         → UNKNOWN (hard block, no inference)
+2. Exact match from training dataset   → label from reference_df,  confidence = 1.0
+3. SGD confidence >= 0.60              → SGD label
+4. Composite similarity >= 0.60        → Nearest-neighbour cosine label
+5. Dictionary (initial_map) match?     → dict label, confidence = 0.75
+6. None of the above                   → UNKNOWN, confidence = max(composite, sgd)
 ```
 
-### Thresholds
+## 📍 Configuration Thresholds
 
 | Constant | Value | Purpose |
 |---|---|---|
-| `SGD_STRONG_THRESHOLD` | `0.60` | Minimum SGD confidence to accept SGD label |
-| `COSINE_THRESHOLD` | `0.60` | Minimum composite score to accept NN/cosine label |
-| `INITIAL_DICT_CONF` | `0.75` | Fixed confidence assigned for dictionary-only match |
-| `ALPHA_PREFIX_WEIGHT` | `0.65` (from `composite_config`) | Prefix weight in composite formula |
-| `top_k_default` | `10` (from `composite_config`) | Nearest neighbours retrieved per query |
+| `SGD_STRONG_THRESHOLD`  | `0.60` | Minimum SGD confidence to accept SGD label |
+| `COSINE_THRESHOLD`      | `0.60` | Minimum composite score to accept NN/cosine label |
+| `INITIAL_DICT_CONF`     | `0.75` | Fixed confidence assigned for dictionary-only match |
+| `ALPHA_PREFIX_WEIGHT`   | `0.65` (from `composite_config`) | Prefix weight in composite formula |
+| `top_k_default`         | `10` (from `composite_config`) | Nearest neighbours retrieved per query |
 
-**Composite similarity formula:**
+📍 **Formula Composite similarity:**
 ```
 composite_score = (0.65 × prefix_score) + (0.35 × cosine_similarity)
 ```
 
-### Batch & Buffer Settings
+## 📍Batch & Buffer Settings
 
 | Constant | Value | Purpose |
 |---|---|---|
 | `MAX_BATCH_SIZE` | `5000` (env: `MAX_BATCH_SIZE`) | Max `data_ids` per call |
-| `BATCH_ADD_SIZE` | `50` | Incremental learning flush buffer |
-| `ref_epoch_rebuild` | `50` | NN re-fit trigger (rows added) |
+| `BATCH_ADD_SIZE` | `50`                           | Incremental learning flush buffer |
+| `ref_epoch_rebuild` | `50`                        | NN re-fit trigger (rows added) |
 
 > Flush happens when `len(PENDING_NEW_ROWS) >= flush_batch_size`.
 
-### Dictionary / Prefix Matching Rules
+## 📍 Dictionary / Prefix Matching Rules
 
-Prefix from `initial_map` accepted **only if** remainder after prefix is:
+➡️ Prefix from `initial_map` accepted **only if** remainder after prefix is:
 - **Empty** — exact match (e.g. `CR` matches key `CR`)
 - **All digits** — numeric suffix (e.g. `CR1234` matches key `CR`)
 
-Rejected if remainder contains any letters (`CR123ABC` does **not** match `CR`).  
-Special case: inputs starting with `SP` also probe the stripped version (`probe[2:]`).
+➡️ Rejected if remainder contains any letters (`CR123ABC` does **not** match `CR`).  
+➡️ Special case: inputs starting with `SP` also probe the stripped version (`probe[2:]`).
 
-### Output Columns (Device Type)
+## 📍 Output Columns (Device Type)
 
 | Column | Description |
 |---|---|
@@ -96,7 +102,7 @@ Special case: inputs starting with `SP` also probe the stripped version (`probe[
 | `sgd_conf` | Raw SGD confidence (may differ from final) |
 | `reason` | Internal decision reason |
 
-#### `reason` Values
+## 📍 `reason` Values
 
 | `reason` | Trigger |
 |---|---|
@@ -107,7 +113,7 @@ Special case: inputs starting with `SP` also probe the stripped version (`probe[
 | `initial_dict_only` | Dictionary match, no other confident source |
 | `no_confident_source` | Fallback — returns UNKNOWN |
 
-#### `source` Values
+## 📍 `source` Values
 
 | `source` | Meaning |
 |---|---|
@@ -117,7 +123,7 @@ Special case: inputs starting with `SP` also probe the stripped version (`probe[
 | `initial_dict` | Dictionary/prefix only |
 | `unknown` | No confident source |
 
-### CLI Actions (`predict_equipment.py`)
+## 📍 CLI Actions (`predict_equipment.py`)
 
 | `action` | Description | Persists to disk? |
 |---|---|---|
@@ -125,7 +131,7 @@ Special case: inputs starting with `SP` also probe the stripped version (`probe[
 | `user_manual_assign` | Manually assign labels + incremental learn | ✅ Yes (full persist) |
 | `import_equipment` | Bulk import authoritative list + incremental learn | ❌ No |
 
-**JSON payloads:**
+📍 **JSON payloads:**
 
 ```jsonc
 // predict
@@ -141,40 +147,29 @@ Special case: inputs starting with `SP` also probe the stripped version (`probe[
   "equipment_list": [{ "data_id": "CR1234", "equipment": "Control Room" }] }
 ```
 
-### Model Components Loaded at Startup
 
-| Variable | Role |
-|---|---|
-| `tfidf_similarity` | Vectoriser for cosine/NN similarity |
-| `tfidf_sgd` | Vectoriser for SGD model |
-| `sgd_model` | Main incremental SGD classifier |
-| `pipeline` | Full sklearn pipeline |
-| `nn` | Pre-fit NearestNeighbors (k=10, cosine) |
-| `label_encoder` | Maps class indices ↔ label strings |
-| `initial_map` | Prefix → equipment type dictionary |
-| `reference_df` | Ground-truth reference rows |
-| `X_reference` | TF-IDF matrix of reference rows |
-| `ref_id_set` | Set of known IDs for exact match |
-| `master_df` | Full master dataset |
-| `centroids` | Cluster centroids |
-| `composite_config` | Alpha, top_k, and other tuning params |
+## 📍 Incremental Learning Notes
 
-### Incremental Learning Notes
+— updates live via `partial_fit`, flushed to disk every 50 rows.  
+`user_manual_assign` saves immediately · `import_equipment` does not.
 
-- `partial_fit` is called on `sgd_model` for every new labelled sample.
-- New classes are auto-registered in `class_index_map.json` with the next available index.
-- `reference_df` and `X_reference` updated in memory immediately; disk flush batched at 50 rows.
-- `user_manual_assign` always calls `persist_all_model_state` (full disk save).
-- `import_equipment` does **not** persist automatically.
-- Thread safety handled via `_model_lock` (`threading.Lock`).
+
+## 📍 Features
+
+| Variable                          | Role |
+|---                                |---|
+| `sgd_model`                       | Main classifier |
+| `tfidf_sgd` / `tfidf_similarity`  | Text vectorisers |
+| `nn`                              | Nearest neighbour (k=10, cosine) |
+| `initial_map`                     | Prefix → equipment type |
+| `reference_df` / `ref_id_set`     | Ground-truth reference |
+
 
 ---
 
-## Step 2 & 3 — Section & Cluster (`predict_sectioncluster.py`)
+# 🍀 Step 2️⃣ & 3️⃣ — Section & Cluster (`predict_sectioncluster.py`)
 
-### Model Approach
-
-Chained XGBoost classification:
+## 📍 Model Approach = Chained XGBoost classification
 
 ```
 Features → [XGBoost] → Predicted Section → Features + Section → [XGBoost] → Cluster
@@ -183,26 +178,11 @@ Features → [XGBoost] → Predicted Section → Features + Section → [XGBoost
 - **Stage 1:** Predict Section
 - **Stage 2:** Predict Cluster using original features **plus** Predicted Section
 
-### Features (27+ engineered per device ID)
+## 📍 Thresholds & Penalties
 
-Numeric block, digit/letter counts, suffix shape (e.g. `DLLD`), leading zeros, suffix analysis, encoded customer, encoded suffix letter and last character, encoded shape.
-
-Label encoders used (all via `SafeLabelEncoder` with `__UNKNOWN__` sentinel):
-
-| Encoder | Target |
-|---|---|
-| `le_customer` | CUSTOMER |
-| `le_suffix_letter` | Trailing letter suffix of device ID |
-| `le_suffix_last` | Last character of suffix |
-| `le_shape` | Numeric+letter pattern shape |
-| `le_section` | SECTION target |
-| `le_cluster` | CLUSTER target |
-
-### Thresholds & Penalties
-
-| Parameter | Value | Purpose |
-|---|---|---|
-| `unknown_threshold` | `0.60` (from `config_sectioncluster.json`) | Section confidence gate for chaining |
+| Parameter           | Value                     | Purpose  |
+|---                  |---                        |---|
+| `unknown_threshold` | `0.60`                    |  Section confidence gate for chaining |
 | OOD penalty formula | `adjusted = raw / (1 + max(0, dist - threshold) / threshold)` | KNN distance penalty on raw confidence |
 
 **Confidence chaining rule:**  
@@ -212,14 +192,14 @@ If Section confidence < `0.60`, Cluster confidence is multiplied by Section conf
 cluster_conf_final = cluster_raw_conf × section_conf   (when section_conf < 0.60)
 ```
 
-### Input Validation
+## 📍Input Validation
 
-| Type | Condition | Behaviour |
-|---|---|---|
-| Hard rejection | Unseen CUSTOMER or missing DEVICE_ID | Returns `REJECTION_REASON`, no prediction |
-| Soft warning | Numeric field width outside training distribution | Confidence penalised by KNN scorer, returns `FORMAT_WARNING` |
+| Condition                                         | Behaviour |
+|---                                                |---|
+|Unseen CUSTOMER or missing DEVICE_ID               | Returns `REJECTION_REASON`, no prediction |
+|Numeric field width outside training distribution  | Confidence penalised by KNN scorer, returns `FORMAT_WARNING` |
 
-### Output Columns (Section & Cluster)
+## 📍Output Columns (Section & Cluster)
 
 | Column | Description |
 |---|---|
@@ -230,7 +210,7 @@ cluster_conf_final = cluster_raw_conf × section_conf   (when section_conf < 0.6
 | `REJECTION_REASON` | Set if device is hard-blocked |
 | `FORMAT_WARNING` | Set if numeric field width is outside training distribution |
 
-### Model Artefacts
+# 🍀Model Artefacts
 
 | File | Contents |
 |---|---|
@@ -240,18 +220,25 @@ cluster_conf_final = cluster_raw_conf × section_conf   (when section_conf < 0.6
 
 ---
 
-## C# Subprocess Protocol
+# 🍀C# Subprocess Protocol
 
 C# spawns Python as a child process for each step via `System.Diagnostics.Process`.
 
-| Parameter | Value |
-|---|---|
-| Python executable | `C:\Users\sitisyaziyah\AppData\Local\Programs\Python\Python313\python.exe` |
-| Launch flag | `-u` (unbuffered stdout) |
-| Shell execute | `false` (direct process) |
-| Window | `CreateNoWindow = true` |
-| Encoding | UTF-8 (stdout + stderr) |
-| Input method | Write JSON to `stdin`, close to signal EOF |
+**Paths (resolved at runtime, relative to executable)**
+
+| Variable          | Points to                     |
+|---                |---                            |
+| `SCRIPT_TYPE`     | `predict_equipment.py`        |
+| `SCRIPT_PIPELINE` | `predict_sectioncluster.py`   |
+| `PROJECT_JSON`    | `TestDevice/A1825.json`       |
+| `SQL_OUTPUT_JSON` | `data/devices.json`           |
+
+**Registry (SQL connection string)**
+
+| Key   | Value                                             |
+|---    |---                                                |
+| Hive  | `HKEY_CURRENT_USER\Software\XenxibleIdentifier`   |
+| Field | `connectionstring`                                |
 
 **Step 1 request/response:**
 ```jsonc
@@ -278,7 +265,7 @@ C# spawns Python as a child process for each step via `System.Diagnostics.Proces
 
 ---
 
-## Configuration Files
+## 📍 Configuration Files
 
 | File | Purpose |
 |---|---|
@@ -288,7 +275,7 @@ C# spawns Python as a child process for each step via `System.Diagnostics.Proces
 
 ---
 
-## Environment Variables (`predict_equipment.py`)
+## 📍 Environment Variables (`predict_equipment.py`)
 
 | Variable | Default | Purpose |
 |---|---|---|
@@ -298,7 +285,7 @@ C# spawns Python as a child process for each step via `System.Diagnostics.Proces
 
 ---
 
-## File & Path Reference
+## 📍 Filepath Reference
 
 | Path | Description |
 |---|---|
@@ -315,7 +302,7 @@ C# spawns Python as a child process for each step via `System.Diagnostics.Proces
 
 ---
 
-## Deployment Notes
+## 📍 Deployment Notes
 
 - Python 3.13 must be installed at the path hardcoded in `Program.cs`
 - All `.pkl` model files must be present in `DeviceCluster_Prediction/model_config/`
@@ -325,18 +312,17 @@ C# spawns Python as a child process for each step via `System.Diagnostics.Proces
 
 ---
 
-## Current Status
+## 📍 Current Status
 
-| Component | Status |
-|---|---|
-| Device Type prediction | ✅ Production-ready |
-| Section prediction | ✅ Stable |
-| Cluster prediction | ⚠️ Under optimisation — not production-ready |
-| C# service integration | ✅ Complete |
-| OOD detection & confidence penalty | ✅ Implemented |
-| Input validation (customer gate, format warnings) | ✅ Implemented |
-| Incremental learning (Device Type) | ✅ Implemented |
-
-### Next Steps
-- Improve Cluster accuracy (hyperparameter tuning, expand training data)
-- Expand to more customers / projects
+| Component                                           | Status |
+|---                                                  |---|
+| Device Type prediction                              | ✅ Completed |
+| Device Section prediction                           | ✅ Completed |
+| Device Cluster prediction                           | ✅ Completed |
+| C# service integration                              | ✅ Complete |
+| OOD detection & confidence penalty                  | ✅ Completed |
+| Input validation (customer gate, format warnings)   | ✅ Completed |
+| Incremental learning (Device Type)                  | ✅ Completed |
+| Development DLL library                             | ✅ Completed |
+| Logic Script                                        | ❌ Not Started Yet |
+| Testing DLL Library                                 | ❌ Pending |
