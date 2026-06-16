@@ -11,4 +11,10 @@
     <ProjectReference Include="..\..\DeviceIdentifierLibrary\DeviceIdentifierLibrary.csproj" />
   </ItemGroup>
 
+  <ItemGroup>
+    <Reference Include="AppRegistryEditor">
+      <HintPath>..\..\..\..\..\Documents\AppRegistryEditor.dll</HintPath>
+    </Reference>
+  </ItemGroup>
+
 </Project>

@@ -27,8 +27,29 @@ public class Program
 	private static readonly JsonSerializerOptions _jsonOpts = new() { PropertyNameCaseInsensitive = true };
 
 	// SQL connection string 
-	private const string SQL_CONN = "Server=128.100.20.33\\neptune;Database=XenCreator;" +
-									"User Id=rndsa;Password=RnD_123;TrustServerCertificate=True;";
+	private const string PROJECT_NAME = "XenxibleIdentifier";
+	private const string PROJECT_FOLDER = "Software";
+
+	private static string GetConnectionString()
+	{
+		Dictionary<string, object?> registryValues = AppRegistryEditor
+			.RegistryEditor
+			.GetAllRegistry(PROJECT_NAME, null);
+
+		
+			if (!registryValues.TryGetValue("connectionstring", out object? value) || value is null)
+			throw new InvalidOperationException(
+				$"Registry key 'connectionstring' not found under " +
+				$"HKEY_CURRENT_USER\\{PROJECT_FOLDER}\\{PROJECT_NAME}.");
+
+		string connectionString = value.ToString()!;
+
+		if (string.IsNullOrWhiteSpace(connectionString))
+			throw new InvalidOperationException(
+				"'connectionstring' in registry is empty.");
+
+		return connectionString;
+	}
 
 	public static async Task Main(string[] args)
 	{
@@ -41,6 +62,7 @@ public class Program
 
 			// ── STEP 0: Load reference data from SQL Server ───────────────────
 			Console.WriteLine("[Step 0/3] Loading reference data from SQL Server...");
+			string SQL_CONN = GetConnectionString();           
 			var sqlReader = new PythonSQL(SQL_CONN);   // ← PythonSQL comes from DLL
 			await sqlReader.QueryToJsonFileAsync(
 				"SELECT * FROM DummyInput",         

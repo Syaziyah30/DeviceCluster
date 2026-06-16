@@ -13,23 +13,23 @@ Input JSON (project_code, customer_code, data_ids[])
         │
         ▼
 ┌───────────────────────────────────────────────────┐
-│ Step 1 — Device Type          predict_equipment.py │
+│ Step 1 — Device Type          redict_equipment.py │
 │ Hybrid: exact match + SGD + TF-IDF cosine + dict  │
-│ 22 equipment classes                               │
+│ 22 equipment classes                              │
 └───────────────────┬───────────────────────────────┘
                     │  DeviceTypeResult[]
                     ▼
 ┌───────────────────────────────────────────────────┐
-│ Step 2 — Section           predict_sectioncluster.py│
-│ XGBoost (27+ engineered features)                  │
-│ OOD KNN penalty applied                            │
+│ Step 2 — Section         predict_sectioncluster.py│
+│ XGBoost (27+ engineered features)                 │
+│ OOD KNN penalty applied                           │
 └───────────────────┬───────────────────────────────┘
                     │  PipelineResult[] (with PREDICTED_SECTION)
                     ▼
 ┌───────────────────────────────────────────────────┐
-│ Step 3 — Cluster           predict_sectioncluster.py│
-│ XGBoost chained on Predicted Section               │
-│ Confidence penalised by Section confidence         │
+│ Step 3 — Cluster         predict_sectioncluster.py│
+│ XGBoost chained on Predicted Section              │
+│ Confidence penalised by Section confidence        │
 └───────────────────────────────────────────────────┘
 ```
 

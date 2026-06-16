@@ -53,14 +53,12 @@ _cfg = load_config()
 
 # Base directory = DeviceCluster_Prediction/ folder
 _BASE_DIR = os.path.join(
-    os.path.dirname(os.path.dirname(os.path.abspath(__file__))),  # .../Prediction_service/
-    "DeviceCluster_Prediction"                                     # .../DeviceCluster_Prediction/
+    os.path.dirname(os.path.abspath(__file__)), 
+    "predict_sectioncluster_folder"
 )
 
 MODEL_DIR         = os.path.join(_BASE_DIR, _cfg["model_folder"])
 UNKNOWN_THRESHOLD = float(_cfg["unknown_threshold"])
-
-
 
 
 # ============================================================
