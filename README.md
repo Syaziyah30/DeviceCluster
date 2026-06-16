@@ -1,3 +1,8 @@
+# Device Identifier
+## 2 Part
+1️⃣ Device Type ➡️ SGD Classifer
+2️⃣ Device Section & Cluster ➡️ XG Boost
+
 # Section & Cluster Classification (XGBoost Chained Model)
 
 ## Introduction
