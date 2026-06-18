@@ -6,13 +6,14 @@
 
         Console.WriteLine();
         Console.WriteLine("  ╔══════════════════════════════════════════════════════════════════════════════╗");
-        Console.WriteLine("  ║           DEVICE SECTION ASSIGNMENT SIMULATOR                              ║");
-        Console.WriteLine("  ║           6 sections  ·  3 slots each  ·  cascading displacement           ║");
+        Console.WriteLine("  ║           DEVICE SECTION ASSIGNMENT SIMULATOR                                ║");
+        Console.WriteLine("  ║           6 sections  ·  3 slots each  ·  cascading displacement             ║");
         Console.WriteLine("  ╚══════════════════════════════════════════════════════════════════════════════╝");
 
         var manager = new SectionManager(sectionCount: 6, capacityPerSection: 3);
 
-        // ── Phase 1: fill all slots ────────────────────────────────────────
+        // -- Progress : ON INTERNAL TESTING - still in try and error it still not working as per requested
+        // ── Phase 1: fill all slots ──────────────────────────────────────── 
         Console.WriteLine();
         Console.WriteLine("  ██  PHASE 1 — INITIAL FILL");
 
@@ -32,7 +33,7 @@
             MakeDevice("KKK011",      12,   18,   26,   82,   38,   22),
             MakeDevice("LLL012",      80,   35,   22,   15,   10,    7),
             MakeDevice("MMM013",      11,   72,   30,   24,   17,    9),
-            MakeDevice("NNN014",      17,   2q1,   68,   40,   30,   20),
+            MakeDevice("NNN014",      17,   21,   68,   40,   30,   20),
             MakeDevice("OOO015",      10,   15,   24,   79,   35,   21),
             MakeDevice("PPP016",      13,   19,   22,   30,   88,   42),
             MakeDevice("QQQ017",      16,   23,   28,   35,   84,   38),

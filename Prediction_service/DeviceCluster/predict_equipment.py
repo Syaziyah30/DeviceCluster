@@ -581,7 +581,6 @@ def import_equipment_helper(equipment_list, customer, project_code):
 
 # =============================================================================
 # MAIN PREDICTION FUNCTION
-# =============================================================================
 
 def predict_from_list(data_ids, project_code, customer_code=None):
     """
