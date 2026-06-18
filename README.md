@@ -41,7 +41,7 @@ Input JSON (project_code, customer_code, data_ids[])
 
 ---
 
-# 1️⃣ — Device Type (`predict_equipment.py`)
+# 1️⃣ Device Type (`predict_equipment.py`)
 
 ## 📍 Model Approach : SGD Classifier
 
