@@ -2,13 +2,28 @@
 
 | | |
 |---|---|
-| **Full pipeline** | Device Type → Section → Cluster |
-| **Runtime** | Python ML scripts called as subprocesses from a .NET 10 C# service |
-| **Status** | Device Type ✅ production-ready · Section/Cluster ⚠️ under optimisation |
+| **Full pipeline ML** | Device Type → Section → Cluster |
+| **Runtime**           | Python ML scripts called as subprocesses from a .NET 10 C# service |
+
 
 ---
+## 📍 Current Status
+
+| Component                                           | Status |
+|---                                                  |---|
+| Device Type prediction                              | ✅ Completed |
+| Device Section prediction                           | ✅ Completed |
+| Device Cluster prediction                           | ✅ Completed |
+| C# service integration                              | ✅ Complete |
+| OOD detection & confidence penalty                  | ✅ Completed |
+| Input validation (customer gate, format warnings)   | ✅ Completed |
+| Incremental learning (Device Type)                  | ✅ Completed |
+| Development DLL library                             | ✅ Completed |
+| Logic Script                                        | ❌ Not Started Yet |
+| Testing DLL Library                                 | ❌ Pending |
 
 
+---
 # 🍀 Architecture Overview
 
 ```
