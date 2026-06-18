@@ -244,8 +244,8 @@ C# spawns Python as a child process for each step via `System.Diagnostics.Proces
 |---                |---                            |
 | `SCRIPT_TYPE`     | `predict_equipment.py`        |
 | `SCRIPT_PIPELINE` | `predict_sectioncluster.py`   |
-| `PROJECT_JSON`    | `TestDevice/A1825.json`       |
-| `SQL_OUTPUT_JSON` | `data/devices.json`           |
+| `PROJECT_JSON`    | `DeviceCluster/Prediction_service/TestDevice/A1825.json`       |
+| `SQL_OUTPUT_JSON` | `DeviceCluster/Prediction_service/data/devices.json`           |
 
 **Registry (SQL connection string)**
 
