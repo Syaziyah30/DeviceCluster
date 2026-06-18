@@ -28,7 +28,8 @@
              Data Source DB SQL
                     │ Using C# (SQL -> Json)
                     ▼
-Input JSON (project_code, customer_code, data_ids[])
+                Input JSON 
+      (project_code, customer_code, data_ids[])
                     │
                     ▼
 ┌───────────────────────────────────────────────────┐
