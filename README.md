@@ -3,7 +3,7 @@
 | | |
 |---|---|
 | **Full pipeline ML** | Device Type → Section → Cluster |
-| **Runtime**           | Python ML scripts called as subprocesses from a .NET 10 C# service |
+| **Runtime**           | C# reads SQL DB → saves as JSON → Python ML scripts process → output to UI  |
 
 
 ---
@@ -15,9 +15,7 @@
 | Device Section prediction                           | ✅ Completed |
 | Device Cluster prediction                           | ✅ Completed |
 | C# service integration                              | ✅ Complete |
-| OOD detection & confidence penalty                  | ✅ Completed |
-| Input validation (customer gate, format warnings)   | ✅ Completed |
-| Incremental learning (Device Type)                  | ✅ Completed |
+| Incremental learning                                | ✅ Completed |
 | Development DLL library                             | ✅ Completed |
 | Logic Script                                        | ❌ Not Started Yet |
 | Testing DLL Library                                 | ❌ Pending |
