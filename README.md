@@ -61,7 +61,7 @@ Input JSON (project_code, customer_code, data_ids[])
 Hybrid classifier combining four sources, resolved in strict priority order:
 
 ```
-1. All-letters                         → UNKNOWN (hard block, no inference)
+1. All-letters                         → UNKNOWN 
 2. Exact match from training dataset   → label from reference_df,  confidence = 1.0
 3. SGD confidence >= 0.60              → SGD label
 4. Composite similarity >= 0.60        → Nearest-neighbour cosine label
