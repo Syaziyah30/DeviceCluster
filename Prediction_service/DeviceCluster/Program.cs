@@ -60,7 +60,7 @@ public class Program
 			if (!File.Exists(PROJECT_JSON))
 				throw new FileNotFoundException($"Project JSON not found: {PROJECT_JSON}");
 
-			// ── STEP 0: Load device list from SQL Server → save as JSON ───────
+			// ── PREPARATION 1/3: Load device list from SQL Server → save as JSON ───────
 			Console.WriteLine("[Preparation 1/3] Loading reference data from SQL Server...");
 			string SQL_CONN = GetConnectionString();
 			var sqlReader = new PythonSQL(SQL_CONN); // ← PythonSQL comes from DLL
@@ -69,14 +69,19 @@ public class Program
 				SQL_OUTPUT_JSON
 			);
 			Console.WriteLine($"[Preparation 1/3] Reference data saved → {SQL_OUTPUT_JSON} \n");
-			 //─────────────────────────────────────────────────────────────────
+			//─────────────────────────────────────────────────────────────────
 
-			// ── STEP 0.1: Import Equipment List from SQL Server ───────────────
+
+
+			// ── PREPARATION 2/3: Import Equipment List from SQL Server ───────────────
 			// TODO (Deployment): Uncomment when EquipmentList table is ready in DB
 			// TODO (Deployment): Ensure DB table has columns: data_id, equipment, customer, project_code
+
+
+
 			Console.WriteLine("[Preparation 2/3] Importing equipment list from SQL Server...");
 
-			
+
 			//string equipmentJson = await sqlReader.QueryToEquipmentJsonAsync(
 			//	"SELECT data_id, equipment, customer, project_code FROM EquipmentList WHERE project_code = 'A1825'"
 			//);
@@ -90,8 +95,8 @@ public class Program
 			//};
 
 			//await client.RunAsync(SCRIPT_TYPE, importPayload);
-			//Console.WriteLine("[Step 0.2/3] Equipment list imported ✓\n");
-			
+			//Console.WriteLine("[Preparation 2/3] Equipment list imported ✓\n");
+
 
 			Console.WriteLine("[Preparation 2/3] Skipped — equipment table not available yet.\n");
 			// ─────────────────────────────────────────────────────────────────
