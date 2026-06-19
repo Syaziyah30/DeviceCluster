@@ -1,7 +1,3 @@
-
-
-## new script for predict_sectioncluster.py
-
 import os
 import re
 import sys
