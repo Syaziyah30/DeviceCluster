@@ -61,39 +61,39 @@ public class Program
 				throw new FileNotFoundException($"Project JSON not found: {PROJECT_JSON}");
 
 			// ── STEP 0: Load device list from SQL Server → save as JSON ───────
-			Console.WriteLine("[Step 0/3] Loading reference data from SQL Server...");
+			Console.WriteLine("[Preparation 1/3] Loading reference data from SQL Server...");
 			string SQL_CONN = GetConnectionString();
 			var sqlReader = new PythonSQL(SQL_CONN); // ← PythonSQL comes from DLL
 			await sqlReader.QueryToJsonFileAsync(
 				"SELECT * FROM DummyInput",  // TODO (Deployment): Replace with actual table
 				SQL_OUTPUT_JSON
 			);
-			Console.WriteLine($"[Step 0/3] Reference data saved → {SQL_OUTPUT_JSON} \n");
-			// ─────────────────────────────────────────────────────────────────
+			Console.WriteLine($"[Preparation 1/3] Reference data saved → {SQL_OUTPUT_JSON} \n");
+			 //─────────────────────────────────────────────────────────────────
 
-			// ── STEP 0.5: Import Equipment List from SQL Server ───────────────
+			// ── STEP 0.1: Import Equipment List from SQL Server ───────────────
 			// TODO (Deployment): Uncomment when EquipmentList table is ready in DB
 			// TODO (Deployment): Ensure DB table has columns: data_id, equipment, customer, project_code
-			Console.WriteLine("[Step 0.5/3] Importing equipment list from SQL Server...");
+			Console.WriteLine("[Preparation 2/3] Importing equipment list from SQL Server...");
 
-			/*
-			string equipmentJson = await sqlReader.QueryToEquipmentJsonAsync(
-				"SELECT data_id, equipment, customer, project_code FROM EquipmentList WHERE project_code = 'A1825'"
-			);
+			
+			//string equipmentJson = await sqlReader.QueryToEquipmentJsonAsync(
+			//	"SELECT data_id, equipment, customer, project_code FROM EquipmentList WHERE project_code = 'A1825'"
+			//);
 
-			var importPayload = new
-			{
-				action         = "import_equipment",
-				project_code   = request.project_code,
-				customer       = request.customer_code,
-				equipment_list = JsonSerializer.Deserialize<List<object>>(equipmentJson)
-			};
+			//var importPayload = new
+			//{
+			//	action         = "import_equipment",
+			//	project_code   = request.project_code,
+			//	customer       = request.customer_code,
+			//	equipment_list = JsonSerializer.Deserialize<List<object>>(equipmentJson)
+			//};
 
-			await client.RunAsync(SCRIPT_TYPE, importPayload);
-			Console.WriteLine("[Step 0.5/3] Equipment list imported ✓\n");
-			*/
+			//await client.RunAsync(SCRIPT_TYPE, importPayload);
+			//Console.WriteLine("[Step 0.2/3] Equipment list imported ✓\n");
+			
 
-			Console.WriteLine("[Step 0.5/3] Skipped — equipment table not available yet.\n");
+			Console.WriteLine("[Preparation 2/3] Skipped — equipment table not available yet.\n");
 			// ─────────────────────────────────────────────────────────────────
 
 			var request = JsonSerializer.Deserialize<DevicePredictRequest>( // ← DevicePredictRequest comes from DLL
@@ -106,7 +106,7 @@ public class Program
 				.ToList();
 
 			// ── STEP 1: Device Type ───────────────────────────────────────────
-			Console.WriteLine("[Step 1/3] Predicting device types...");
+			Console.WriteLine("[Model Prediction Step 1/3] Predicting device types...");
 			var sw = Stopwatch.StartNew();
 			string typeJson = await client.RunAsync(SCRIPT_TYPE, request);
 			sw.Stop();
@@ -123,7 +123,7 @@ public class Program
 			Console.ReadLine();
 
 			// ── STEP 2: Section ───────────────────────────────────────────────
-			Console.WriteLine("[Step 2/3] Predicting sections...");
+			Console.WriteLine("[Model Prediction Step 2/3] Predicting sections...");
 			var pipelineRequest = new PipelinePredictRequest           // ← PipelinePredictRequest from DLL
 			{
 				records = typeResults.Select(r => new PipelineRecord   // ← PipelineRecord from DLL
@@ -147,7 +147,7 @@ public class Program
 			Console.ReadLine();
 
 			// ── STEP 3: Cluster ───────────────────────────────────────────────
-			Console.WriteLine("[Step 3/3] Predicting clusters...");
+			Console.WriteLine("[Model Prediction Step 3/3] Predicting clusters...");
 			PrintClusterTable(pipelineResults, deviceTypeLookup);
 			Console.WriteLine($"Time taken: {step2Secs:F1} secs");
 		}

@@ -3,20 +3,16 @@
   "WorkspaceRootPath": "C:\\Users\\sitisyaziyah\\source\\repos\\DeviceCluster\\",
   "Documents": [
     {
-      "AbsoluteMoniker": "D:0:0:{A2FE74E1-B743-11D0-AE1A-00A0C90FFFC3}|\u003CMiscFiles\u003E|C:\\Users\\sitisyaziyah\\source\\repos\\DeviceCluster\\DeviceIdentifierLibrary\\DeviceIdentifierLibrary.csproj||{FA3CD31E-987B-443A-9B81-186104E8DAC1}",
-      "RelativeMoniker": "D:0:0:{A2FE74E1-B743-11D0-AE1A-00A0C90FFFC3}|\u003CMiscFiles\u003E|solutionrelative:DeviceIdentifierLibrary\\DeviceIdentifierLibrary.csproj||{FA3CD31E-987B-443A-9B81-186104E8DAC1}"
-    },
-    {
-      "AbsoluteMoniker": "D:0:0:{A2FE74E1-B743-11D0-AE1A-00A0C90FFFC3}|\u003CMiscFiles\u003E|C:\\Users\\sitisyaziyah\\source\\repos\\DeviceCluster\\LogicSection\\Program.cs||{A6C744A8-0E4A-4FC6-886A-064283054674}",
-      "RelativeMoniker": "D:0:0:{A2FE74E1-B743-11D0-AE1A-00A0C90FFFC3}|\u003CMiscFiles\u003E|solutionrelative:LogicSection\\Program.cs||{A6C744A8-0E4A-4FC6-886A-064283054674}"
-    },
-    {
       "AbsoluteMoniker": "D:0:0:{A2FE74E1-B743-11D0-AE1A-00A0C90FFFC3}|\u003CMiscFiles\u003E|C:\\Users\\sitisyaziyah\\source\\repos\\DeviceCluster\\LogicSection\\LogicSection.csproj||{FA3CD31E-987B-443A-9B81-186104E8DAC1}",
       "RelativeMoniker": "D:0:0:{A2FE74E1-B743-11D0-AE1A-00A0C90FFFC3}|\u003CMiscFiles\u003E|solutionrelative:LogicSection\\LogicSection.csproj||{FA3CD31E-987B-443A-9B81-186104E8DAC1}"
     },
     {
       "AbsoluteMoniker": "D:0:0:{A2FE74E1-B743-11D0-AE1A-00A0C90FFFC3}|\u003CMiscFiles\u003E|C:\\Users\\sitisyaziyah\\source\\repos\\DeviceCluster\\LogicSection\\LogicAssignment.cs||{A6C744A8-0E4A-4FC6-886A-064283054674}",
       "RelativeMoniker": "D:0:0:{A2FE74E1-B743-11D0-AE1A-00A0C90FFFC3}|\u003CMiscFiles\u003E|solutionrelative:LogicSection\\LogicAssignment.cs||{A6C744A8-0E4A-4FC6-886A-064283054674}"
+    },
+    {
+      "AbsoluteMoniker": "D:0:0:{A2FE74E1-B743-11D0-AE1A-00A0C90FFFC3}|\u003CMiscFiles\u003E|C:\\Users\\sitisyaziyah\\source\\repos\\DeviceCluster\\LogicSection\\Program.cs||{A6C744A8-0E4A-4FC6-886A-064283054674}",
+      "RelativeMoniker": "D:0:0:{A2FE74E1-B743-11D0-AE1A-00A0C90FFFC3}|\u003CMiscFiles\u003E|solutionrelative:LogicSection\\Program.cs||{A6C744A8-0E4A-4FC6-886A-064283054674}"
     },
     {
       "AbsoluteMoniker": "D:0:0:{A2FE74E1-B743-11D0-AE1A-00A0C90FFFC3}|\u003CMiscFiles\u003E|C:\\Users\\sitisyaziyah\\source\\repos\\DeviceCluster\\DeviceIdentifierLibrary\\ModelRequest\\ManualAssignment.cs||{A6C744A8-0E4A-4FC6-886A-064283054674}",
@@ -30,7 +26,7 @@
       "DocumentGroups": [
         {
           "DockedWidth": 200,
-          "SelectedChildIndex": 2,
+          "SelectedChildIndex": 4,
           "Children": [
             {
               "$type": "Bookmark",
@@ -42,46 +38,33 @@
             },
             {
               "$type": "Document",
-              "DocumentIndex": 0,
-              "Title": "DeviceIdentifierLibrary.csproj",
-              "DocumentMoniker": "C:\\Users\\sitisyaziyah\\source\\repos\\DeviceCluster\\DeviceIdentifierLibrary\\DeviceIdentifierLibrary.csproj",
-              "RelativeDocumentMoniker": "DeviceIdentifierLibrary\\DeviceIdentifierLibrary.csproj",
-              "ToolTip": "C:\\Users\\sitisyaziyah\\source\\repos\\DeviceCluster\\DeviceIdentifierLibrary\\DeviceIdentifierLibrary.csproj",
-              "RelativeToolTip": "DeviceIdentifierLibrary\\DeviceIdentifierLibrary.csproj",
-              "ViewState": "AgIAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAA==",
-              "Icon": "ae27a6b0-e345-4288-96df-5eaf394ee369.000758|",
-              "WhenOpened": "2026-06-18T02:27:44.96Z",
-              "EditorCaption": ""
-            },
-            {
-              "$type": "Document",
-              "DocumentIndex": 1,
+              "DocumentIndex": 2,
               "Title": "Program.cs",
               "DocumentMoniker": "C:\\Users\\sitisyaziyah\\source\\repos\\DeviceCluster\\LogicSection\\Program.cs",
               "RelativeDocumentMoniker": "LogicSection\\Program.cs",
               "ToolTip": "C:\\Users\\sitisyaziyah\\source\\repos\\DeviceCluster\\LogicSection\\Program.cs",
               "RelativeToolTip": "LogicSection\\Program.cs",
-              "ViewState": "AgIAABoAAAAAAAAAAAAAwBsAAABIAAAAAAAAAA==",
+              "ViewState": "AgIAAAAAAAAAAAAAAAAAABsAAABIAAAAAAAAAA==",
               "Icon": "ae27a6b0-e345-4288-96df-5eaf394ee369.000738|",
               "WhenOpened": "2026-06-18T02:10:30.894Z",
               "EditorCaption": ""
             },
             {
               "$type": "Document",
-              "DocumentIndex": 3,
+              "DocumentIndex": 1,
               "Title": "LogicAssignment.cs",
               "DocumentMoniker": "C:\\Users\\sitisyaziyah\\source\\repos\\DeviceCluster\\LogicSection\\LogicAssignment.cs",
               "RelativeDocumentMoniker": "LogicSection\\LogicAssignment.cs",
               "ToolTip": "C:\\Users\\sitisyaziyah\\source\\repos\\DeviceCluster\\LogicSection\\LogicAssignment.cs",
               "RelativeToolTip": "LogicSection\\LogicAssignment.cs",
-              "ViewState": "AgIAAF4AAAAAAAAAAAAAwGwAAAA0AAAAAAAAAA==",
+              "ViewState": "AgIAAAAAAAAAAAAAAAAAAAoAAAAaAAAAAAAAAA==",
               "Icon": "ae27a6b0-e345-4288-96df-5eaf394ee369.000738|",
               "WhenOpened": "2026-06-18T02:10:19.429Z",
               "EditorCaption": ""
             },
             {
               "$type": "Document",
-              "DocumentIndex": 2,
+              "DocumentIndex": 0,
               "Title": "LogicSection.csproj",
               "DocumentMoniker": "C:\\Users\\sitisyaziyah\\source\\repos\\DeviceCluster\\LogicSection\\LogicSection.csproj",
               "RelativeDocumentMoniker": "LogicSection\\LogicSection.csproj",
@@ -94,7 +77,7 @@
             },
             {
               "$type": "Document",
-              "DocumentIndex": 4,
+              "DocumentIndex": 3,
               "Title": "ManualAssignment.cs",
               "DocumentMoniker": "C:\\Users\\sitisyaziyah\\source\\repos\\DeviceCluster\\DeviceIdentifierLibrary\\ModelRequest\\ManualAssignment.cs",
               "RelativeDocumentMoniker": "DeviceIdentifierLibrary\\ModelRequest\\ManualAssignment.cs",
@@ -102,8 +85,7 @@
               "RelativeToolTip": "DeviceIdentifierLibrary\\ModelRequest\\ManualAssignment.cs",
               "ViewState": "AgIAAAAAAAAAAAAAAAAAAAwAAAAAAAAAAAAAAA==",
               "Icon": "ae27a6b0-e345-4288-96df-5eaf394ee369.000738|",
-              "WhenOpened": "2026-06-12T02:18:22.636Z",
-              "EditorCaption": ""
+              "WhenOpened": "2026-06-12T02:18:22.636Z"
             }
           ]
         }

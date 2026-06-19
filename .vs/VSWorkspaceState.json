@@ -3,10 +3,7 @@
     "",
     "\\DeviceIdentifierLibrary",
     "\\DeviceIdentifierLibrary\\ModelRequest",
-    "\\DeviceIdentifierLibrary\\Services",
-    "\\Prediction_service",
-    "\\Prediction_service\\DeviceCluster"
+    "\\DeviceIdentifierLibrary\\Services"
   ],
-  "SelectedNode": "\\DeviceIdentifierLibrary\\ModelRequest\\ManualAssignment.cs",
   "PreviewInSolutionExplorer": false
 }
