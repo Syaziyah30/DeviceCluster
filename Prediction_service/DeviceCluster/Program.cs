@@ -53,9 +53,18 @@ public class Program
 	public static async Task Main(string[] args)
 	{
 		Console.OutputEncoding = System.Text.Encoding.UTF8;
+
+		DevicePredictRequest? request = null;
+		PythonClient? client = null;
+
+		// ◄── MODIFIED: moved typeResults and pipelineResults outside try{}
+		//               so they are accessible in the OUTPUT RESULT block
+		List<DeviceTypeResult>? typeResults = null;
+		List<PipelineResult>? pipelineResults = null;
+
 		try
 		{
-			var client = new PythonClient(PYTHON_EXE); // ← PythonClient comes from DLL
+			client = new PythonClient(PYTHON_EXE); // ← PythonClient comes from DLL
 
 			if (!File.Exists(PROJECT_JSON))
 				throw new FileNotFoundException($"Project JSON not found: {PROJECT_JSON}");
@@ -77,10 +86,7 @@ public class Program
 			// TODO (Deployment): Uncomment when EquipmentList table is ready in DB
 			// TODO (Deployment): Ensure DB table has columns: data_id, equipment, customer, project_code
 
-
-
 			Console.WriteLine("[Preparation 2/3] Importing equipment list from SQL Server...");
-
 
 			//string equipmentJson = await sqlReader.QueryToEquipmentJsonAsync(
 			//	"SELECT data_id, equipment, customer, project_code FROM EquipmentList WHERE project_code = 'A1825'"
@@ -97,15 +103,14 @@ public class Program
 			//await client.RunAsync(SCRIPT_TYPE, importPayload);
 			//Console.WriteLine("[Preparation 2/3] Equipment list imported ✓\n");
 
-
 			Console.WriteLine("[Preparation 2/3] Skipped — equipment table not available yet.\n");
 			// ─────────────────────────────────────────────────────────────────
 
-			var request = JsonSerializer.Deserialize<DevicePredictRequest>( // ← DevicePredictRequest comes from DLL
+			request = JsonSerializer.Deserialize<DevicePredictRequest>(
 				File.ReadAllText(PROJECT_JSON, Encoding.UTF8)
 			);
 
-			request.data_ids = request.data_ids
+			request!.data_ids = request.data_ids
 				.Select(id => id.Replace("\uFEFF", "").Trim())
 				.Where(id => !string.IsNullOrEmpty(id))
 				.ToList();
@@ -116,7 +121,7 @@ public class Program
 			string typeJson = await client.RunAsync(SCRIPT_TYPE, request);
 			sw.Stop();
 
-			var typeResults = JsonSerializer.Deserialize<List<DeviceTypeResult>>(typeJson, _jsonOpts); // ← DeviceTypeResult from DLL
+			typeResults = JsonSerializer.Deserialize<List<DeviceTypeResult>>(typeJson, _jsonOpts); // ◄── MODIFIED: removed "var" (declared above)
 			PrintDeviceTypeTable(typeResults);
 			Console.WriteLine($"Time taken: {sw.Elapsed.TotalSeconds:F1} secs");
 
@@ -144,7 +149,7 @@ public class Program
 			sw.Stop();
 			double step2Secs = sw.Elapsed.TotalSeconds;
 
-			var pipelineResults = JsonSerializer.Deserialize<List<PipelineResult>>(pipelineJson, _jsonOpts); // ← PipelineResult from DLL
+			pipelineResults = JsonSerializer.Deserialize<List<PipelineResult>>(pipelineJson, _jsonOpts); // ◄── MODIFIED: removed "var" (declared above)
 			PrintSectionTable(pipelineResults, deviceTypeLookup);
 			Console.WriteLine($"Time taken: {step2Secs:F1} secs");
 
@@ -155,6 +160,84 @@ public class Program
 			Console.WriteLine("[Model Prediction Step 3/3] Predicting clusters...");
 			PrintClusterTable(pipelineResults, deviceTypeLookup);
 			Console.WriteLine($"Time taken: {step2Secs:F1} secs");
+
+			// ── OUTPUT RESULT: Manual Correction (user-triggered) ────────────
+			// TODO (Deployment): Replace Console prompts with actual UI input
+			Console.Write("\n[OUTPUT RESULT] Correct any prediction? (y/n): ");
+			string? userInput = Console.ReadLine();
+
+			if (userInput?.Trim().ToLower() == "y")
+			{
+				Console.Write("Device ID to correct: ");
+				string? deviceId = Console.ReadLine()?.Trim();
+
+				if (!string.IsNullOrEmpty(deviceId))
+				{
+					// ◄── MODIFIED: look up device in results to detect UNKNOWN fields
+					var matchedType = typeResults?.FirstOrDefault(r => r.data_id == deviceId);
+					var matchedPipeline = pipelineResults?.FirstOrDefault(r => r.DEVICE_ID == deviceId);
+
+					// ◄── MODIFIED: check which fields are UNKNOWN
+					bool typeIsUnknown = matchedType?.data_type?.ToUpper() == "UNKNOWN" || matchedType == null;
+					bool sectionIsUnknown = matchedPipeline?.PREDICTED_SECTION?.ToUpper() == "UNKNOWN" || matchedPipeline == null;
+					bool clusterIsUnknown = matchedPipeline?.PREDICTED_CLUSTER?.ToUpper() == "UNKNOWN" || matchedPipeline == null;
+
+					if (!typeIsUnknown && !sectionIsUnknown && !clusterIsUnknown)
+					{
+						// ◄── MODIFIED: skip if nothing is UNKNOWN
+						Console.WriteLine($"[OUTPUT RESULT] '{deviceId}' has no UNKNOWN fields. No correction needed.");
+					}
+					else
+					{
+						// ◄── MODIFIED: only ask for UNKNOWN fields, keep existing values otherwise
+						string? correctType = matchedType?.data_type;
+						string? correctSection = matchedPipeline?.PREDICTED_SECTION;
+						string? correctCluster = matchedPipeline?.PREDICTED_CLUSTER;
+
+						if (typeIsUnknown)
+						{
+							Console.Write("Correct equipment type    : ");
+							correctType = Console.ReadLine()?.Trim();
+						}
+						if (sectionIsUnknown)
+						{
+							Console.Write("Correct equipment section : ");
+							correctSection = Console.ReadLine()?.Trim();
+						}
+						if (clusterIsUnknown)
+						{
+							Console.Write("Correct equipment cluster : ");
+							correctCluster = Console.ReadLine()?.Trim();
+						}
+
+						// ◄── MODIFIED: send type correction to Python (only type goes to predict_equipment.py)
+						if (!string.IsNullOrEmpty(correctType))
+						{
+							var assignPayload = new
+							{
+								action = "user_manual_assign",
+								project_code = request!.project_code,
+								customer = request!.customer_code,
+								assignments = new[]
+								{
+									new { data_id = deviceId, equipment = correctType }
+								}
+							};
+
+							Console.WriteLine($"[OUTPUT RESULT] Sending correction for '{deviceId}'...");
+							string assignResult = await client!.RunAsync(SCRIPT_TYPE, assignPayload);
+							Console.WriteLine($"[OUTPUT RESULT] Done: {assignResult}\n");
+						}
+
+						// ◄── MODIFIED: summary of what was corrected
+						Console.WriteLine($"[OUTPUT RESULT] Correction summary for '{deviceId}':");
+						if (typeIsUnknown) Console.WriteLine($"  Type    : {correctType}");
+						if (sectionIsUnknown) Console.WriteLine($"  Section : {correctSection}  ← logged only, pending section model support");
+						if (clusterIsUnknown) Console.WriteLine($"  Cluster : {correctCluster}  ← logged only, pending cluster model support");
+					}
+				}
+			}
+			// ─────────────────────────────────────────────────────────────────
 		}
 		catch (Exception ex)
 		{
