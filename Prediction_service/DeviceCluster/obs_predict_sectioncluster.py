@@ -1,7 +1,4 @@
 
-
-## new script for predict_sectioncluster.py
-
 import os
 import re
 import sys
@@ -9,6 +6,7 @@ import json
 import pickle
 import logging
 import warnings
+import configparser
 from datetime import datetime
 
 import numpy as np
@@ -31,13 +29,14 @@ logger = logging.getLogger(__name__)
 
 
 # ============================================================
-# LOAD CONFIG FROM config_sectioncluster.json
+# LOAD CONFIG FROM config_secioncluster.json
 # ============================================================
 
 def load_config(config_path: str = None) -> dict:
     if config_path is None:
-        _script_dir = os.path.dirname(os.path.abspath(__file__))
-        config_path = os.path.join(_script_dir, "predict_sectioncluster_folder", "config_sectioncluster.json")
+        _script_dir = os.path.dirname(os.path.abspath(__file__))          # .../DeviceCluster/
+        # _parent_dir = os.path.dirname(_script_dir)                         # .../Prediction_service/
+        config_path = os.path.join(_script_dir,"predict_sectioncluster_folder" , "config_sectioncluster.json")
 
     if not os.path.exists(config_path):
         raise FileNotFoundError(
@@ -52,15 +51,18 @@ def load_config(config_path: str = None) -> dict:
 # Read config once at module load
 _cfg = load_config()
 
-_BASE_DIR         = os.path.join(os.path.dirname(os.path.abspath(__file__)), "predict_sectioncluster_folder")
+# Base directory = DeviceCluster_Prediction/ folder
+_BASE_DIR = os.path.join(
+    os.path.dirname(os.path.abspath(__file__)), 
+    "predict_sectioncluster_folder"
+)
+
 MODEL_DIR         = os.path.join(_BASE_DIR, _cfg["model_folder"])
 UNKNOWN_THRESHOLD = float(_cfg["unknown_threshold"])
 
-# ◄── ADDED: corrections file path — sits beside config in predict_sectioncluster_folder/
-MANUAL_ASSIGN_SECTION_CLUSTER = os.path.join(_BASE_DIR, "manual_assign_sectioncluster.json")
 
 # ============================================================
-# PIPELINE CACHE
+# PIPELINE CACHE                                            
 # ============================================================
 
 _pipeline: dict | None = None
@@ -77,6 +79,12 @@ def get_pipeline() -> dict:
 # ============================================================
 
 class SafeLabelEncoder:
+    """
+    LabelEncoder extended with an '__UNKNOWN__' sentinel class.
+    Unseen labels at transform time are mapped to '__UNKNOWN__'
+    instead of raising an error.
+    """
+
     UNKNOWN_LABEL = "__UNKNOWN__"
 
     def __init__(self):
@@ -119,17 +127,21 @@ def extract_numeric_block(device_id: str) -> int:
     match = re.search(r"\d+", str(device_id))
     return int(match.group()) if match else -1
 
+
 def extract_numeric_string(device_id: str) -> str:
     match = re.search(r"\d+", str(device_id))
     return match.group() if match else ""
+
 
 def extract_suffix_letters(device_id: str) -> str:
     match = re.search(r"\d+([A-Za-z]*)$", str(device_id))
     return match.group(1).upper() if match else ""
 
+
 def extract_suffix_full(device_id: str) -> str:
     match = re.search(r"\d+(.*)$", str(device_id))
     return match.group(1) if match else ""
+
 
 def extract_numeric_suffix_shape(device_id: str) -> str:
     match = re.search(r"\d.*", str(device_id))
@@ -143,6 +155,7 @@ def extract_numeric_suffix_shape(device_id: str) -> str:
 # ============================================================
 
 def load_pipeline(model_dir: str) -> dict:
+    """Load all saved model artefacts and configuration from model_dir."""
     required_files = ["model_section.pkl", "model_cluster.pkl", "pipeline_config.pkl"]
     for fname in required_files:
         fpath = os.path.join(model_dir, fname)
@@ -182,6 +195,10 @@ def load_pipeline(model_dir: str) -> dict:
 # ============================================================
 
 def validate_records(records: list[dict]) -> None:
+    """
+    Validate that each record has the required keys and non-empty values.
+    Raises ValueError with a descriptive message on failure.
+    """
     if not records:
         raise ValueError("Input records list is empty.")
 
@@ -199,6 +216,14 @@ def validate_records(records: list[dict]) -> None:
 # ============================================================
 
 def check_entities(df: pd.DataFrame, pipeline: dict) -> tuple[pd.Series, pd.Series]:
+    """
+    Returns:
+        rejection_reasons : hard-block Series (non-empty -> row excluded from inference)
+        format_warnings   : soft-warning Series (non-empty -> prediction runs, KNN penalises)
+
+    Hard block  : missing or unseen CUSTOMER, missing DEVICE_ID.
+    Soft warning: numeric field width outside training distribution.
+    """
     known_customers = pipeline["known_customers"]
     reliable_widths = pipeline.get("reliable_widths", None)
     max_num_width   = pipeline.get("max_num_width",   None)
@@ -250,6 +275,7 @@ def check_entities(df: pd.DataFrame, pipeline: dict) -> tuple[pd.Series, pd.Seri
 # ============================================================
 
 def build_features(df: pd.DataFrame, config: dict) -> pd.DataFrame:
+    """Replicate training feature engineering exactly."""
     le_suffix_lt   = config["le_suffix_letter"]
     le_suffix_last = config["le_suffix_last"]
     le_customer    = config["le_customer"]
@@ -314,6 +340,17 @@ def apply_ood_penalty(
     df_feat: pd.DataFrame,
     pipeline: dict,
 ) -> tuple[np.ndarray, np.ndarray]:
+    """
+    Penalise XGBoost confidence scores based on distance from training distribution.
+
+    Penalty formula:
+        ratio    = max(0, distance - threshold) / threshold
+        adjusted = conf_raw / (1 + ratio)
+
+        distance = 0          -> adjusted = conf_raw        (no change)
+        distance = threshold  -> adjusted = conf_raw / 2    (50% reduction)
+        distance >> threshold -> adjusted approaches 0
+    """
     ood_scaler    = pipeline.get("ood_scaler",    None)
     ood_knn       = pipeline.get("ood_knn",       None)
     ood_features  = pipeline.get("ood_features",  None)
@@ -331,6 +368,7 @@ def apply_ood_penalty(
         .fillna(0)
     )
     X_ood_scaled = ood_scaler.transform(X_ood)
+
     distances, _ = ood_knn.kneighbors(X_ood_scaled)
     avg_dist      = distances.mean(axis=1)
 
@@ -349,6 +387,23 @@ def predict(
     pipeline: dict,
     threshold: float = UNKNOWN_THRESHOLD,
 ) -> pd.DataFrame:
+    """
+    Run two-stage (Section -> Cluster) inference on a list of device records.
+
+    Parameters
+    ----------
+    records   : list of dicts with keys 'device_id' and 'customer'
+    pipeline  : loaded pipeline dict from load_pipeline()
+    threshold : minimum adjusted confidence to emit a label (else 'UNKNOWN')
+
+    Returns
+    -------
+    pd.DataFrame with columns:
+        DEVICE_ID, CUSTOMER, PROJECT,
+        PREDICTED_SECTION, SECTION_CONFIDENCE,
+        PREDICTED_CLUSTER, CLUSTER_CONFIDENCE,
+        REJECTION_REASON, FORMAT_WARNING
+    """
     validate_records(records)
 
     config        = pipeline["config"]
@@ -384,17 +439,21 @@ def predict(
             .fillna(0)
         )
 
-        sec_proba_raw           = model_section.predict_proba(X_sec)
-        sec_pred_enc            = np.argmax(sec_proba_raw, axis=1)
-        sec_conf_raw            = sec_proba_raw.max(axis=1)
-        sec_conf_adj, _         = apply_ood_penalty(sec_conf_raw, df_feat, pipeline)
+        # Stage 1 — Section
+        sec_proba_raw = model_section.predict_proba(X_sec)
+        sec_pred_enc  = np.argmax(sec_proba_raw, axis=1)
+        sec_conf_raw  = sec_proba_raw.max(axis=1)
+
+        sec_conf_adj, _ = apply_ood_penalty(sec_conf_raw, df_feat, pipeline)
 
         sec_decoded = le_section.inverse_transform(sec_pred_enc)
         sec_decoded = np.where(
-            (sec_decoded == SafeLabelEncoder.UNKNOWN_LABEL) | (sec_decoded == "__OOD__"),
+            (sec_decoded == SafeLabelEncoder.UNKNOWN_LABEL) |
+            (sec_decoded == "__OOD__"),
             "UNKNOWN", sec_decoded,
         )
 
+        # Stage 2 — Cluster (chained: inject predicted section)
         X_clu = (
             df_feat[[f for f in cluster_features if f != "predicted_section"]]
             .apply(pd.to_numeric, errors="coerce")
@@ -404,11 +463,15 @@ def predict(
         X_clu["predicted_section"] = sec_pred_enc
         X_clu = X_clu[cluster_features]
 
-        clu_proba_raw           = model_cluster.predict_proba(X_clu)
-        clu_pred_enc            = np.argmax(clu_proba_raw, axis=1)
-        clu_conf_raw            = clu_proba_raw.max(axis=1)
-        clu_conf_adj, _         = apply_ood_penalty(clu_conf_raw, df_feat, pipeline)
+        clu_proba_raw = model_cluster.predict_proba(X_clu)
+        clu_pred_enc  = np.argmax(clu_proba_raw, axis=1)
+        clu_conf_raw  = clu_proba_raw.max(axis=1)
 
+        clu_conf_adj, _ = apply_ood_penalty(clu_conf_raw, df_feat, pipeline)
+
+        # When section confidence is below threshold, penalise cluster confidence
+        # using joint probability (product). Guarantees clu_conf < threshold whenever
+        # sec_conf < threshold, because: sec < T  =>  sec * clu < T * clu <= T.
         clu_conf_adj = np.where(
             sec_conf_adj < threshold,
             clu_conf_adj * sec_conf_adj,
@@ -417,7 +480,8 @@ def predict(
 
         clu_decoded = le_cluster.inverse_transform(clu_pred_enc)
         clu_decoded = np.where(
-            (clu_decoded == SafeLabelEncoder.UNKNOWN_LABEL) | (clu_decoded == "__OOD__"),
+            (clu_decoded == SafeLabelEncoder.UNKNOWN_LABEL) |
+            (clu_decoded == "__OOD__"),
             "UNKNOWN", clu_decoded,
         )
 
@@ -443,50 +507,69 @@ def predict(
 
 
 # ============================================================
-# SAVE CORRECTION                                          ◄── ADDED
+# EXPORT UNKNOWNS FOR MANUAL REVIEW
 # ============================================================
 
-def save_manual_assign_sectioncluster(device_id: str, customer: str, project: str,
-                    					correct_section: str = None, correct_cluster: str = None) -> dict:
-    """
-    Append a manual correction to manual_corrections.json.
-    Used as training data during next XGBoost retrain.
-    """
-    # Load existing corrections
-    if os.path.exists(MANUAL_ASSIGN_SECTION_CLUSTER):
-        with open(MANUAL_ASSIGN_SECTION_CLUSTER, "r", encoding="utf-8") as f:
-            corrections = json.load(f)
-    else:
-        corrections = []
+# def export_unknown_for_review(result: pd.DataFrame, output_dir: str) -> str | None:
+#     """
+#     Export all UNKNOWN rows (blocked or low-confidence) to Excel
+#     for manual assignment.
 
-    entry = {
-        "device_id"       : device_id,
-        "customer"        : customer,
-        "project"         : project,
-        "correct_section" : correct_section,
-        "correct_cluster" : correct_cluster,
-        "corrected_at"    : datetime.now().strftime("%Y-%m-%d %H:%M:%S")
-    }
+#     Returns the export file path, or None if no UNKNOWNs found.
+#     """
+#     os.makedirs(output_dir, exist_ok=True)
 
-    corrections.append(entry)
+#     mask = (
+#         (result["REJECTION_REASON"] != "") |
+#         (result["PREDICTED_SECTION"] == "UNKNOWN") |
+#         (result["PREDICTED_CLUSTER"]  == "UNKNOWN")
+#     )
+#     unknown_df = result[mask].copy()
 
-    # Atomic write — prevent file corruption on crash
-    tmp_path = MANUAL_ASSIGN_SECTION_CLUSTER + ".tmp"
-    with open(tmp_path, "w", encoding="utf-8") as f:
-        json.dump(corrections, f, ensure_ascii=False, indent=2)
-    os.replace(tmp_path, MANUAL_ASSIGN_SECTION_CLUSTER)
+#     if unknown_df.empty:
+#         logger.info("No UNKNOWN rows — nothing exported for manual assignment.")
+#         return None
 
-    logger.info("Correction saved: %s → section=%s, cluster=%s",
-                device_id, correct_section, correct_cluster)
+#     unknown_df["UNKNOWN_TYPE"] = unknown_df["REJECTION_REASON"].apply(
+#         lambda r: "BLOCKED" if r else "LOW_CONFIDENCE"
+#     )
+#     unknown_df["ASSIGNED_SECTION"] = ""
+#     unknown_df["ASSIGNED_CLUSTER"] = ""
 
-    return {"status": "ok", "saved": entry}
+#     cols = ["DEVICE_ID", "CUSTOMER"]
+#     if "PROJECT" in unknown_df.columns:
+#         cols.append("PROJECT")
+#     cols += [
+#         "UNKNOWN_TYPE",
+#         "REJECTION_REASON",
+#         "FORMAT_WARNING",
+#         "SECTION_CONFIDENCE",
+#         "CLUSTER_CONFIDENCE",
+#         "ASSIGNED_SECTION",
+#         "ASSIGNED_CLUSTER",
+#     ]
+#     unknown_df = unknown_df[cols]
+
+#     timestamp = datetime.now().strftime("%Y%m%d_%H%M%S")
+#     out_path  = os.path.join(output_dir, f"pending_manual_{timestamp}.xlsx")
+#     unknown_df.to_excel(out_path, index=False)
+
+#     logger.info(
+#         "%d UNKNOWN row(s) exported — LOW_CONFIDENCE: %d | BLOCKED: %d | Path: %s",
+#         len(unknown_df),
+#         (unknown_df["UNKNOWN_TYPE"] == "LOW_CONFIDENCE").sum(),
+#         (unknown_df["UNKNOWN_TYPE"] == "BLOCKED").sum(),
+#         out_path,
+#     )
+#     return out_path
 
 
 # ============================================================
-# CLEAN NAN HELPER
+# MAIN — Entry point called by C#
 # ============================================================
 
 def _clean_nan(obj):
+    """Recursively replace NaN/inf floats with None for JSON serialization."""
     if isinstance(obj, float) and (obj != obj or obj == float("inf") or obj == float("-inf")):
         return None
     if isinstance(obj, dict):
@@ -496,76 +579,30 @@ def _clean_nan(obj):
     return obj
 
 
-# ============================================================
-# RUN CLI — replaces main(), mirrors predict_equipment.py  ◄── MODIFIED
-# ============================================================
-
-def run_cli():
+def main():
     """
-    Command line / C# entry point.
-    Expects JSON from stdin:
+    Batch entry point for C# subprocess calls.
 
-    Predict:
-    {
-        "action"  : "predict",
-        "records" : [{"device_id": "V160", "customer": "UGS", "project": "A1825"}, ...]
-    }
+    C# sends JSON to stdin:
+        {"records": [{"device_id": "LL001", "customer": "OILTEK", "project": "A1706"}, ...]}
 
-    Save Correction:
-    {
-        "action"          : "save_manual_assign_sectioncluster",
-        "device_id"       : "V160",
-        "customer"        : "UGS",
-        "project"         : "A1825",
-        "correct_section" : "SECTION 3",
-        "correct_cluster" : "CLUSTER A"
-    }
+    Python prints a JSON array to stdout — C# reads and parses this.
     """
     try:
         payload = json.load(sys.stdin)
-        action  = payload.get("action", "predict")
+        records = payload.get("records", [])
 
-        # (1) Save Correction
-        if action == "save_manual_assign_sectioncluster":
-            device_id = payload.get("device_id")
-            customer  = payload.get("customer")
-            project   = payload.get("project")
+        pipeline = get_pipeline()
+        result_df = predict(records, pipeline, threshold=UNKNOWN_THRESHOLD)
 
-            if not device_id:
-                raise ValueError("device_id is required for save_manual_assign_sectioncluster.")
-            if not customer:
-                raise ValueError("customer is required for save_manual_assign_sectioncluster.")
-            if not project:
-                raise ValueError("project is required for save_manual_assign_sectioncluster.")
-
-            result = save_manual_assign_sectioncluster(
-                device_id       = device_id,
-                customer        = customer,
-                project         = project,
-                correct_section = payload.get("correct_section", None),
-                correct_cluster = payload.get("correct_cluster", None),
-            )
-            print(json.dumps(result, ensure_ascii=False))
-            return
-
-        # (2) Predict (default)
-        else:
-            records = payload.get("records", [])
-
-            if not isinstance(records, list) or not records:
-                raise ValueError("records must be a non-empty list.")
-
-            pipeline  = get_pipeline()
-            result_df = predict(records, pipeline, threshold=UNKNOWN_THRESHOLD)
-
-            out = _clean_nan(result_df.to_dict(orient="records"))
-            print(json.dumps(out, ensure_ascii=False))
+        out = _clean_nan(result_df.to_dict(orient="records"))
+        print(json.dumps(out))
 
     except Exception as e:
-        logger.error("run_cli failed: %s", str(e))
-        print(json.dumps({"status": "error", "message": str(e)}), file=sys.stdout)
+        logger.error("Prediction failed: %s", str(e))
+        print(json.dumps({"status": "error", "message": str(e)}))
         sys.exit(1)
 
 
 if __name__ == "__main__":
-    run_cli()   # ◄── MODIFIED: was main()
+    main()
