@@ -66,8 +66,15 @@ public class Program
 		{
 			client = new PythonClient(PYTHON_EXE); // ← PythonClient comes from DLL
 
-			if (!File.Exists(PROJECT_JSON))
-				throw new FileNotFoundException($"Project JSON not found: {PROJECT_JSON}");
+
+			// ------------DELETE SOON for JSON FILE THAT IS SWITCH TO SQL
+			//if (!File.Exists(PROJECT_JSON)) 
+			//	throw new FileNotFoundException($"Project JSON not found: {PROJECT_JSON}");
+
+			// Read request directly from SQL
+			string requestJson = await sqlReader.QueryToJsonAsync("SELECT ProjectCode, CustomerCode, DataIds FROM YourTable WHERE project_code = 'A1825'");
+			request = JsonSerializer.Deserialize<DevicePredictRequest>(requestJson, _jsonOpts);
+
 
 			// ── PREPARATION 1/3: Load device list from SQL Server → save as JSON ───────
 			Console.WriteLine("[Preparation 1/3] Loading reference data from SQL Server...");
@@ -106,9 +113,11 @@ public class Program
 			Console.WriteLine("[Preparation 2/3] Skipped — equipment table not available yet.\n");
 			// ─────────────────────────────────────────────────────────────────
 
-			request = JsonSerializer.Deserialize<DevicePredictRequest>(
-				File.ReadAllText(PROJECT_JSON, Encoding.UTF8)
-			);
+
+			// ------------DELETE SOON for JSON FILE THAT IS SWITCH TO SQL
+			//request = JsonSerializer.Deserialize<DevicePredictRequest>(
+			//	File.ReadAllText(PROJECT_JSON, Encoding.UTF8)
+			//);
 
 			request!.data_ids = request.data_ids
 				.Select(id => id.Replace("\uFEFF", "").Trim())
