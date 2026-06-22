@@ -22,7 +22,7 @@ public class Program
 	private static readonly string PYTHON_EXE = Environment.GetEnvironmentVariable("PYTHON_EXE") ?? "python";
 	private static readonly string SCRIPT_TYPE = Path.Combine(_projectDir, "predict_equipment.py");
 	private static readonly string SCRIPT_PIPELINE = Path.Combine(_projectDir, "predict_sectioncluster.py");
-	private static readonly string PROJECT_JSON = Path.Combine(_serviceDir, "TestDevice", "A1825.json");
+	private static readonly string PROJECT_JSON = Path.Combine(_serviceDir, "TestDevice", "A1825.json"); //ATTENTION HERE. WHY NEED THIS WHILE DATA IS COME FROM SQL
 	private static readonly string SQL_OUTPUT_JSON = Path.Combine(_serviceDir, "data", "devices.json");
 	private static readonly JsonSerializerOptions _jsonOpts = new() { PropertyNameCaseInsensitive = true };
 
@@ -166,77 +166,86 @@ public class Program
 			Console.Write("\n[OUTPUT RESULT] Correct any prediction? (y/n): ");
 			string? userInput = Console.ReadLine();
 
-			if (userInput?.Trim().ToLower() == "y")
+			while (userInput?.Trim().ToLower() == "y")
 			{
 				Console.Write("Device ID to correct: ");
-				string? deviceId = Console.ReadLine()?.Trim();
+				string? deviceId = Console.ReadLine()?.Trim().ToUpper();
 
 				if (!string.IsNullOrEmpty(deviceId))
 				{
-					// ◄── MODIFIED: look up device in results to detect UNKNOWN fields
 					var matchedType = typeResults?.FirstOrDefault(r => r.data_id == deviceId);
 					var matchedPipeline = pipelineResults?.FirstOrDefault(r => r.DEVICE_ID == deviceId);
 
-					// ◄── MODIFIED: check which fields are UNKNOWN
-					bool typeIsUnknown = matchedType?.data_type?.ToUpper() == "UNKNOWN" || matchedType == null;
-					bool sectionIsUnknown = matchedPipeline?.PREDICTED_SECTION?.ToUpper() == "UNKNOWN" || matchedPipeline == null;
-					bool clusterIsUnknown = matchedPipeline?.PREDICTED_CLUSTER?.ToUpper() == "UNKNOWN" || matchedPipeline == null;
-
-					if (!typeIsUnknown && !sectionIsUnknown && !clusterIsUnknown)
+					if (matchedType == null && matchedPipeline == null)
 					{
-						// ◄── MODIFIED: skip if nothing is UNKNOWN
-						Console.WriteLine($"[OUTPUT RESULT] '{deviceId}' has no UNKNOWN fields. No correction needed.");
+						Console.WriteLine($"[OUTPUT RESULT] Device ID '{deviceId}' not found in results.");
 					}
 					else
 					{
-						// ◄── MODIFIED: only ask for UNKNOWN fields, keep existing values otherwise
-						string? correctType = matchedType?.data_type;
-						string? correctSection = matchedPipeline?.PREDICTED_SECTION;
-						string? correctCluster = matchedPipeline?.PREDICTED_CLUSTER;
+						bool typeIsUnknown = matchedType?.data_type?.ToUpper() == "UNKNOWN" || matchedType == null;
+						bool sectionIsUnknown = matchedPipeline?.PREDICTED_SECTION?.ToUpper() == "UNKNOWN" || matchedPipeline == null;
+						bool clusterIsUnknown = matchedPipeline?.PREDICTED_CLUSTER?.ToUpper() == "UNKNOWN" || matchedPipeline == null;
 
-						if (typeIsUnknown)
+						if (!typeIsUnknown && !sectionIsUnknown && !clusterIsUnknown)
 						{
-							Console.Write("Correct equipment type    : ");
-							correctType = Console.ReadLine()?.Trim();
+							Console.WriteLine($"[OUTPUT RESULT] '{deviceId}' has no UNKNOWN fields. No correction needed.");
 						}
-						if (sectionIsUnknown)
+						else
 						{
-							Console.Write("Correct equipment section : ");
-							correctSection = Console.ReadLine()?.Trim();
-						}
-						if (clusterIsUnknown)
-						{
-							Console.Write("Correct equipment cluster : ");
-							correctCluster = Console.ReadLine()?.Trim();
-						}
+							string? correctType = null;
+							string? correctSection = null;
+							string? correctCluster = null;
 
-						// ◄── MODIFIED: send type correction to Python (only type goes to predict_equipment.py)
-						if (!string.IsNullOrEmpty(correctType))
-						{
-							var assignPayload = new
+							if (typeIsUnknown)
 							{
-								action = "user_manual_assign",
-								project_code = request!.project_code,
-								customer = request!.customer_code,
-								assignments = new[]
+								Console.Write("Correct equipment type    : ");
+								correctType = Console.ReadLine()?.Trim().ToUpper();
+							}
+							if (sectionIsUnknown)
+							{
+								Console.Write("Correct equipment section : ");
+								correctSection = Console.ReadLine()?.Trim().ToUpper();
+							}
+							if (clusterIsUnknown)
+							{
+								Console.Write("Correct equipment cluster : ");
+								correctCluster = Console.ReadLine()?.Trim().ToUpper();
+							}
+
+							if (!string.IsNullOrEmpty(correctType))
+							{
+								var assignPayload = new
 								{
-									new { data_id = deviceId, equipment = correctType }
-								}
-							};
-
-							Console.WriteLine($"[OUTPUT RESULT] Sending correction for '{deviceId}'...");
-							string assignResult = await client!.RunAsync(SCRIPT_TYPE, assignPayload);
-							Console.WriteLine($"[OUTPUT RESULT] Done: {assignResult}\n");
+									action = "user_manual_assign",
+									project_code = request!.project_code,
+									customer = request!.customer_code,
+									assignments = new[]
+									{
+							new { data_id = deviceId, equipment = correctType }
 						}
+								};
 
-						// ◄── MODIFIED: summary of what was corrected
-						Console.WriteLine($"[OUTPUT RESULT] Correction summary for '{deviceId}':");
-						if (typeIsUnknown) Console.WriteLine($"  Type    : {correctType}");
-						if (sectionIsUnknown) Console.WriteLine($"  Section : {correctSection}  ← logged only, pending section model support");
-						if (clusterIsUnknown) Console.WriteLine($"  Cluster : {correctCluster}  ← logged only, pending cluster model support");
+								Console.WriteLine($"[OUTPUT RESULT] Sending type correction for '{deviceId}'...");
+								string assignResult = await client!.RunAsync(SCRIPT_TYPE, assignPayload);
+								Console.WriteLine($"[OUTPUT RESULT] Done: {assignResult}\n");
+							}
+
+							Console.WriteLine($"[OUTPUT RESULT] Correction summary for '{deviceId}':");
+							if (typeIsUnknown) Console.WriteLine($"  Type    : {correctType ?? "(skipped)"}");
+							if (sectionIsUnknown) Console.WriteLine($"  Section : {correctSection ?? "(skipped)"}  ← logged only, pending section model support");
+							if (clusterIsUnknown) Console.WriteLine($"  Cluster : {correctCluster ?? "(skipped)"}  ← logged only, pending cluster model support");
+						}
 					}
 				}
+
+				// ← ask again after each correction
+				Console.Write("\n[OUTPUT RESULT] Correct any prediction? (y/n): ");
+				userInput = Console.ReadLine();
 			}
+
+
+
+
 			// ─────────────────────────────────────────────────────────────────
 		}
 		catch (Exception ex)

@@ -17,7 +17,7 @@
 | C# service integration                              | ✅ Complete |
 | Incremental learning                                | ✅ Completed |
 | Development DLL library                             | ✅ Completed |
-| Logic Script                                        | ❌ Not Started Yet |
+| Logic Script                                        | ❌ In development draft |
 | Testing DLL Library                                 | ❌ Pending |
 
 
@@ -73,7 +73,7 @@ Hybrid classifier combining four sources, resolved in strict priority order:
 ## 📍 Configuration Thresholds
 
 | Constant | Value | Purpose |
-|---|---|---|
+|---                      |---      |---|
 | `SGD_STRONG_THRESHOLD`  | `0.60` | Minimum SGD confidence to accept SGD label |
 | `COSINE_THRESHOLD`      | `0.60` | Minimum composite score to accept NN/cosine label |
 | `INITIAL_DICT_CONF`     | `0.75` | Fixed confidence assigned for dictionary-only match |
