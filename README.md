@@ -17,7 +17,7 @@
 | C# service integration                              | ✅ Complete |
 | Incremental learning                                | ✅ Completed |
 | Development DLL library                             | ✅ Completed |
-| Logic Script                                        | ❌ In development draft |
+| Logic Script                                        | ❗ In development draft |
 | Testing DLL Library                                 | ❌ Pending |
 
 
