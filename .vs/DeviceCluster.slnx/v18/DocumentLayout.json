@@ -26,7 +26,7 @@
       "DocumentGroups": [
         {
           "DockedWidth": 200,
-          "SelectedChildIndex": 5,
+          "SelectedChildIndex": 3,
           "Children": [
             {
               "$type": "Bookmark",
@@ -35,30 +35,6 @@
             {
               "$type": "Bookmark",
               "Name": "ST:0:0:{1c4feeaa-4718-4aa9-859d-94ce25d182ba}"
-            },
-            {
-              "$type": "Document",
-              "DocumentIndex": 2,
-              "Title": "Program.cs",
-              "DocumentMoniker": "C:\\Users\\sitisyaziyah\\source\\repos\\DeviceCluster\\LogicSection\\Program.cs",
-              "RelativeDocumentMoniker": "LogicSection\\Program.cs",
-              "ToolTip": "C:\\Users\\sitisyaziyah\\source\\repos\\DeviceCluster\\LogicSection\\Program.cs",
-              "RelativeToolTip": "LogicSection\\Program.cs",
-              "ViewState": "AgIAAAAAAAAAAAAAAAAAABsAAABIAAAAAAAAAA==",
-              "Icon": "ae27a6b0-e345-4288-96df-5eaf394ee369.000738|",
-              "WhenOpened": "2026-06-18T02:10:30.894Z"
-            },
-            {
-              "$type": "Document",
-              "DocumentIndex": 3,
-              "Title": "LogicAssignment.cs",
-              "DocumentMoniker": "C:\\Users\\sitisyaziyah\\source\\repos\\DeviceCluster\\LogicSection\\LogicAssignment.cs",
-              "RelativeDocumentMoniker": "LogicSection\\LogicAssignment.cs",
-              "ToolTip": "C:\\Users\\sitisyaziyah\\source\\repos\\DeviceCluster\\LogicSection\\LogicAssignment.cs",
-              "RelativeToolTip": "LogicSection\\LogicAssignment.cs",
-              "ViewState": "AgIAAAAAAAAAAAAAAAAAAA8AAAAKAAAAAAAAAA==",
-              "Icon": "ae27a6b0-e345-4288-96df-5eaf394ee369.000738|",
-              "WhenOpened": "2026-06-18T02:10:19.429Z"
             },
             {
               "$type": "Document",
@@ -84,6 +60,30 @@
               "Icon": "ae27a6b0-e345-4288-96df-5eaf394ee369.000738|",
               "WhenOpened": "2026-06-12T02:18:22.636Z",
               "EditorCaption": ""
+            },
+            {
+              "$type": "Document",
+              "DocumentIndex": 3,
+              "Title": "LogicAssignment.cs",
+              "DocumentMoniker": "C:\\Users\\sitisyaziyah\\source\\repos\\DeviceCluster\\LogicSection\\LogicAssignment.cs",
+              "RelativeDocumentMoniker": "LogicSection\\LogicAssignment.cs",
+              "ToolTip": "C:\\Users\\sitisyaziyah\\source\\repos\\DeviceCluster\\LogicSection\\LogicAssignment.cs",
+              "RelativeToolTip": "LogicSection\\LogicAssignment.cs",
+              "ViewState": "AgIAAAAAAAAAAAAAAAAAAA8AAAAKAAAAAAAAAA==",
+              "Icon": "ae27a6b0-e345-4288-96df-5eaf394ee369.000738|",
+              "WhenOpened": "2026-06-18T02:10:19.429Z"
+            },
+            {
+              "$type": "Document",
+              "DocumentIndex": 2,
+              "Title": "Program.cs",
+              "DocumentMoniker": "C:\\Users\\sitisyaziyah\\source\\repos\\DeviceCluster\\LogicSection\\Program.cs",
+              "RelativeDocumentMoniker": "LogicSection\\Program.cs",
+              "ToolTip": "C:\\Users\\sitisyaziyah\\source\\repos\\DeviceCluster\\LogicSection\\Program.cs",
+              "RelativeToolTip": "LogicSection\\Program.cs",
+              "ViewState": "AgIAAAAAAAAAAAAAAAAAABsAAABIAAAAAAAAAA==",
+              "Icon": "ae27a6b0-e345-4288-96df-5eaf394ee369.000738|",
+              "WhenOpened": "2026-06-18T02:10:30.894Z"
             }
           ]
         }

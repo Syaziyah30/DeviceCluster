@@ -121,7 +121,7 @@ composite_score = (0.65 × prefix_score) + (0.35 × cosine_similarity)
 | `reason` | Trigger |
 |---|---|
 | `all_letters` | Input is purely alphabetic — hard blocked |
-| `exact_match` | Found verbatim in reference set |
+| `exact_match` | Found exactly similar in reference set |
 | `sgd_strong` | SGD confidence >= 0.60 |
 | `cosine_prefix_accepted` | Composite similarity >= 0.60 |
 | `initial_dict_only` | Dictionary match, no other confident source |
