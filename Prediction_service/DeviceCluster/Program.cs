@@ -18,15 +18,12 @@ public class Program
 	private static readonly string _projectDir = Path.GetFullPath(Path.Combine(_baseDir, @"..\..\..\"));
 	private static readonly string _serviceDir = Path.GetFullPath(Path.Combine(_baseDir, @"..\..\..\..\"));
 
-	// using relative path
 	private static readonly string PYTHON_EXE = Environment.GetEnvironmentVariable("PYTHON_EXE") ?? "python";
 	private static readonly string SCRIPT_TYPE = Path.Combine(_projectDir, "predict_equipment.py");
 	private static readonly string SCRIPT_PIPELINE = Path.Combine(_projectDir, "predict_sectioncluster.py");
-	private static readonly string PROJECT_JSON = Path.Combine(_serviceDir, "TestDevice", "A1825.json"); //ATTENTION HERE. WHY NEED THIS WHILE DATA IS COME FROM SQL
-	private static readonly string SQL_OUTPUT_JSON = Path.Combine(_serviceDir, "data", "devices.json");
+	private static readonly string SQL_OUTPUT_JSON = Path.Combine(_serviceDir, "data", "devices.json"); 
 	private static readonly JsonSerializerOptions _jsonOpts = new() { PropertyNameCaseInsensitive = true };
 
-	// Registry — SQL connection string
 	private const string PROJECT_NAME = "XenxibleIdentifier";
 	private const string PROJECT_FOLDER = "Software";
 
@@ -44,8 +41,7 @@ public class Program
 		string connectionString = value.ToString()!;
 
 		if (string.IsNullOrWhiteSpace(connectionString))
-			throw new InvalidOperationException(
-				"'connectionstring' in registry is empty.");
+			throw new InvalidOperationException("'connectionstring' in registry is empty.");
 
 		return connectionString;
 	}
@@ -57,80 +53,57 @@ public class Program
 		DevicePredictRequest? request = null;
 		PythonClient? client = null;
 
-		// ◄── MODIFIED: moved typeResults and pipelineResults outside try{}
-		//               so they are accessible in the OUTPUT RESULT block
 		List<DeviceTypeResult>? typeResults = null;
 		List<PipelineResult>? pipelineResults = null;
 
 		try
 		{
-			client = new PythonClient(PYTHON_EXE); // ← PythonClient comes from DLL
+			client = new PythonClient(PYTHON_EXE);
 
-
-			// ------------DELETE SOON for JSON FILE THAT IS SWITCH TO SQL
-			//if (!File.Exists(PROJECT_JSON)) 
-			//	throw new FileNotFoundException($"Project JSON not found: {PROJECT_JSON}");
-
-			// Read request directly from SQL
-			string requestJson = await sqlReader.QueryToJsonAsync("SELECT ProjectCode, CustomerCode, DataIds FROM YourTable WHERE project_code = 'A1825'");
-			request = JsonSerializer.Deserialize<DevicePredictRequest>(requestJson, _jsonOpts);
-
-
-			// ── PREPARATION 1/3: Load device list from SQL Server → save as JSON ───────
+			// ── PREPARATION 1/3: Load full reference data from SQL → save as JSON ────
 			Console.WriteLine("[Preparation 1/3] Loading reference data from SQL Server...");
 			string SQL_CONN = GetConnectionString();
-			var sqlReader = new PythonSQL(SQL_CONN); // ← PythonSQL comes from DLL
-			await sqlReader.QueryToJsonFileAsync(
-				"SELECT * FROM DummyInput",  // TODO (Deployment): Replace with actual table
-				SQL_OUTPUT_JSON
+			var sqlReader = new PythonSQL(SQL_CONN);
+			await sqlReader.QueryToJsonFileAsync("SELECT * FROM DummyInput", SQL_OUTPUT_JSON);
+			Console.WriteLine($"[Preparation 1/3] Reference data saved → {SQL_OUTPUT_JSON}\n");
+
+
+			// ── PREPARATION 2/3: Auto-detect project + load DataIds from SQL ─────────
+			Console.WriteLine("[Preparation 2/3] Detecting project from SQL Server...");
+
+			// QueryToJsonAsync already returns { project_code, customer_code, data_ids[] }
+			// so deserialize directly into DevicePredictRequest
+			string requestJson = await sqlReader.QueryToJsonAsync(
+				"SELECT ProjectCode, CustomerCode, DataIds FROM DummyInput" 
 			);
-			Console.WriteLine($"[Preparation 1/3] Reference data saved → {SQL_OUTPUT_JSON} \n");
-			//─────────────────────────────────────────────────────────────────
 
+			request = JsonSerializer.Deserialize<DevicePredictRequest>(requestJson, _jsonOpts); // ◄── MODIFIED: direct deserialization, no List<> wrapper
 
+			if (request == null || request.data_ids == null || request.data_ids.Count == 0)
+				throw new InvalidOperationException("No project data found in DummyInput table.");
 
-			// ── PREPARATION 2/3: Import Equipment List from SQL Server ───────────────
-			// TODO (Deployment): Uncomment when EquipmentList table is ready in DB
-			// TODO (Deployment): Ensure DB table has columns: data_id, equipment, customer, project_code
-
-			Console.WriteLine("[Preparation 2/3] Importing equipment list from SQL Server...");
-
-			//string equipmentJson = await sqlReader.QueryToEquipmentJsonAsync(
-			//	"SELECT data_id, equipment, customer, project_code FROM EquipmentList WHERE project_code = 'A1825'"
-			//);
-
-			//var importPayload = new
-			//{
-			//	action         = "import_equipment",
-			//	project_code   = request.project_code,
-			//	customer       = request.customer_code,
-			//	equipment_list = JsonSerializer.Deserialize<List<object>>(equipmentJson)
-			//};
-
-			//await client.RunAsync(SCRIPT_TYPE, importPayload);
-			//Console.WriteLine("[Preparation 2/3] Equipment list imported ✓\n");
-
-			Console.WriteLine("[Preparation 2/3] Skipped — equipment table not available yet.\n");
-			// ─────────────────────────────────────────────────────────────────
-
-
-			// ------------DELETE SOON for JSON FILE THAT IS SWITCH TO SQL
-			//request = JsonSerializer.Deserialize<DevicePredictRequest>(
-			//	File.ReadAllText(PROJECT_JSON, Encoding.UTF8)
-			//);
-
-			request!.data_ids = request.data_ids
+			// BOM cleanup
+			request.data_ids = request.data_ids
 				.Select(id => id.Replace("\uFEFF", "").Trim())
 				.Where(id => !string.IsNullOrEmpty(id))
 				.ToList();
 
-			// ── STEP 1: Device Type ───────────────────────────────────────────
+			Console.WriteLine($"[Preparation 2/3] Project detected : {request.project_code} ({request.customer_code})");
+			Console.WriteLine($"[Preparation 2/3] Loaded {request.data_ids.Count} device IDs\n");
+
+
+			// ── PREPARATION 3/3: Equipment list ──────────────────────────────────────
+			Console.WriteLine("[Preparation 3/3] Importing equipment list from SQL Server...");
+			Console.WriteLine("[Preparation 3/3] Skipped — equipment table not available yet.\n");
+
+
+			// ── STEP 1: Device Type ───────────────────────────────────────────────────
 			Console.WriteLine("[Model Prediction Step 1/3] Predicting device types...");
 			var sw = Stopwatch.StartNew();
 			string typeJson = await client.RunAsync(SCRIPT_TYPE, request);
 			sw.Stop();
 
-			typeResults = JsonSerializer.Deserialize<List<DeviceTypeResult>>(typeJson, _jsonOpts); // ◄── MODIFIED: removed "var" (declared above)
+			typeResults = JsonSerializer.Deserialize<List<DeviceTypeResult>>(typeJson, _jsonOpts);
 			PrintDeviceTypeTable(typeResults);
 			Console.WriteLine($"Time taken: {sw.Elapsed.TotalSeconds:F1} secs");
 
@@ -141,11 +114,12 @@ public class Program
 			Console.Write("\nPress Enter to predict Section...");
 			Console.ReadLine();
 
-			// ── STEP 2: Section ───────────────────────────────────────────────
+
+			// ── STEP 2: Section ───────────────────────────────────────────────────────
 			Console.WriteLine("[Model Prediction Step 2/3] Predicting sections...");
-			var pipelineRequest = new PipelinePredictRequest           // ← PipelinePredictRequest from DLL
+			var pipelineRequest = new PipelinePredictRequest
 			{
-				records = typeResults.Select(r => new PipelineRecord   // ← PipelineRecord from DLL
+				records = typeResults.Select(r => new PipelineRecord
 				{
 					device_id = r.data_id,
 					customer = r.customer ?? request.customer_code,
@@ -158,20 +132,21 @@ public class Program
 			sw.Stop();
 			double step2Secs = sw.Elapsed.TotalSeconds;
 
-			pipelineResults = JsonSerializer.Deserialize<List<PipelineResult>>(pipelineJson, _jsonOpts); // ◄── MODIFIED: removed "var" (declared above)
+			pipelineResults = JsonSerializer.Deserialize<List<PipelineResult>>(pipelineJson, _jsonOpts);
 			PrintSectionTable(pipelineResults, deviceTypeLookup);
 			Console.WriteLine($"Time taken: {step2Secs:F1} secs");
 
 			Console.Write("\nPress Enter to predict Cluster...");
 			Console.ReadLine();
 
-			// ── STEP 3: Cluster ───────────────────────────────────────────────
+
+			// ── STEP 3: Cluster ───────────────────────────────────────────────────────
 			Console.WriteLine("[Model Prediction Step 3/3] Predicting clusters...");
 			PrintClusterTable(pipelineResults, deviceTypeLookup);
 			Console.WriteLine($"Time taken: {step2Secs:F1} secs");
 
-			// ── OUTPUT RESULT: Manual Correction (user-triggered) ────────────
-			// TODO (Deployment): Replace Console prompts with actual UI input
+
+			// ── OUTPUT RESULT: Manual Correction ─────────────────────────────────────
 			Console.Write("\n[OUTPUT RESULT] Correct any prediction? (y/n): ");
 			string? userInput = Console.ReadLine();
 
@@ -230,8 +205,8 @@ public class Program
 									customer = request!.customer_code,
 									assignments = new[]
 									{
-							new { data_id = deviceId, equipment = correctType }
-						}
+										new { data_id = deviceId, equipment = correctType }
+									}
 								};
 
 								Console.WriteLine($"[OUTPUT RESULT] Sending type correction for '{deviceId}'...");
@@ -247,15 +222,9 @@ public class Program
 					}
 				}
 
-				// ← ask again after each correction
 				Console.Write("\n[OUTPUT RESULT] Correct any prediction? (y/n): ");
 				userInput = Console.ReadLine();
 			}
-
-
-
-
-			// ─────────────────────────────────────────────────────────────────
 		}
 		catch (Exception ex)
 		{
@@ -268,7 +237,7 @@ public class Program
 		}
 	}
 
-	private static void PrintDeviceTypeTable(List<DeviceTypeResult> results) // ← DeviceTypeResult from DLL
+	private static void PrintDeviceTypeTable(List<DeviceTypeResult> results)
 	{
 		Console.WriteLine("\n===== STEP 1: DEVICE TYPE =====\n");
 		Console.WriteLine($"{"Customer",-12} | {"Device ID",-25} | {"Device Type",-25} | {"Confidence",10}");
@@ -280,7 +249,7 @@ public class Program
 		}
 	}
 
-	private static void PrintSectionTable(List<PipelineResult> results, Dictionary<string, string> lookup) // ← PipelineResult from DLL
+	private static void PrintSectionTable(List<PipelineResult> results, Dictionary<string, string> lookup)
 	{
 		Console.WriteLine("\n===== STEP 2: SECTION =====\n");
 		Console.WriteLine($"{"Customer",-12} | {"Device ID",-25} | {"Device Type",-25} | {"Section",-20} | {"Confidence %",12}");
@@ -293,7 +262,7 @@ public class Program
 		}
 	}
 
-	private static void PrintClusterTable(List<PipelineResult> results, Dictionary<string, string> lookup) // ← PipelineResult from DLL
+	private static void PrintClusterTable(List<PipelineResult> results, Dictionary<string, string> lookup)
 	{
 		Console.WriteLine("\n===== STEP 3: CLUSTER =====\n");
 		Console.WriteLine($"{"Customer",-12} | {"Device ID",-25} | {"Device Type",-25} | {"Section",-20} | {"Cluster",-20} | {"Confidence %",12}");
