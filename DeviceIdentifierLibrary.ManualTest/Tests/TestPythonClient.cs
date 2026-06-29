@@ -12,10 +12,12 @@ namespace DeviceIdentifierLibrary.ManualTest.Tests
 			@"C:\Users\sitisyaziyah\AppData\Local\Programs\Python\Python313\python.exe";
 
 		private static readonly string EquipmentScript =
-			@"C:\Users\sitisyaziyah\source\repos\DeviceIdentifier2\Prediction_service\0.Equipment_Prediction\DeviceIdentifier.py";
+			//@"C:\Users\sitisyaziyah\source\repos\DeviceIdentifier2\Prediction_service\DeviceCluster\predict_equipment.py";
+			@"C:\Users\sitisyaziyah\source\repos\DeviceCluster\Prediction_service\DeviceCluster\predict_equipment.py";
 
 		private static readonly string SampleJsonPath =
-			@"C:\Users\sitisyaziyah\source\repos\DeviceIdentifier2\Prediction_service\0.Equipment_Prediction\project_application\A1825.json";
+			//@"C:\Users\sitisyaziyah\source\repos\DeviceIdentifier2\Prediction_service\0.Equipment_Prediction\project_application\A1825.json";
+			@"C:\Users\sitisyaziyah\source\repos\DeviceCluster\Prediction_service\TestDevice\A1825.json";
 
 		public static async Task RunAsync()
 		{

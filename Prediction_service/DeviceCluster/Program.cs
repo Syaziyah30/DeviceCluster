@@ -183,7 +183,10 @@ public class Program
 							if (typeIsUnknown)
 							{
 								Console.Write("Correct equipment type    : ");
-								correctType = Console.ReadLine()?.Trim().ToUpper();
+								string? rawType = Console.ReadLine()?.Trim();                                                    
+								correctType = string.IsNullOrEmpty(rawType) ? rawType
+											: char.ToUpper(rawType[0]) + rawType.Substring(1).ToLower();                        
+
 							}
 							if (sectionIsUnknown)
 							{
