@@ -78,13 +78,14 @@ composite_config        = load_file(config["composite_config"])
 master_df               = load_file(config["master_df"])
 reference_df            = load_file(config["reference_df"])
 
+logger.info("initial_map.pkl loaded") 
+
 # Composite config parameters
 ALPHA_PREFIX_WEIGHT = composite_config.get("alpha", 0.65)
 top_k_default = composite_config.get("top_k_default", 10)
 
-logger.info("All features loaded successfully.")
-logger.info(f"master_df loaded: {len(master_df)} rows.")
-logger.info(f"reference_df loaded: {len(reference_df)} rows.")
+logger.info("master_df loaded")      
+logger.info("reference_df loaded")
 
 # ===========================================================================
 # CLASS INDEX MAP HANDLING
@@ -160,8 +161,10 @@ else:
 
 int2label_map = {int(v): str(k) for k, v in class_index_map.items()}
 
-print(f"[INFO] Loaded {len(class_index_map)} classes.", file=sys.stderr)
-print(f"[INFO] Example classes: {list(class_index_map.items())[:5]}", file=sys.stderr)
+
+logger.debug(f"Loaded {len(class_index_map)} classes.")          # ◄── MODIFIED
+logger.debug(f"Example classes: {list(class_index_map.items())[:5]}")  # ◄── MODIFIED
+
 
 # Build reference_index for fast lookups
 reference_index = reference_df.set_index('data_id', drop=False)
@@ -369,6 +372,7 @@ def _flush_pending_new_rows(reference_df, X_reference, ref_id_set):
 
     return reference_df, X_reference, ref_id_set
 
+# update initial_map with new prefix-equipment is coming (the user assign manually)
 def update_initial_map(code, equipment):
     """Update initial_map and persist to disk"""
     code = code.strip().upper()
@@ -378,6 +382,69 @@ def update_initial_map(code, equipment):
     joblib.dump(initial_map, save_path)
     
     print(f"[INFO] Updated initial_map: {code} → {equipment}", file=sys.stderr)
+
+def manual_correction_lightweight(data_id, equipment, customer, freq_json_path):
+    """
+    Lightweight manual correction path.
+    - Updates initial_map only (no SGD partial_fit, no tfidf/model retraining).
+    - Updates frequency_equipment.json with the corrected prefix/equipment.
+    - Does NOT touch sgd_model, tfidf_sgd, tfidf_similarity, label_encoder, nn, etc.
+    """
+    global reference_df, master_df
+
+    prefix = extract_initial(data_id)
+    if not prefix:
+        return None
+
+    # 1. Update initial_map (persists initial_map.pkl)
+    update_initial_map(prefix, equipment)
+
+    # 2. Update frequency_equipment.json
+    update_frequency_json(prefix, equipment, freq_json_path)
+
+    # 3. Append to reference_df/master_df in memory only (record-keeping, no retrain)
+    new_row = pd.DataFrame([[data_id, equipment, customer]],
+                            columns=['data_id', 'data_type', 'customer'])
+    if 'data_id' in reference_df.columns:
+        reference_df = pd.concat([reference_df, new_row], ignore_index=True)
+    if 'data_id' in master_df.columns:
+        master_df = pd.concat([master_df, new_row], ignore_index=True)
+
+    return {"prefix": prefix, "equipment": equipment}
+
+
+def update_frequency_json(prefix, equipment, freq_json_path: Path):
+    """
+    Maintain frequency_equipment.json:
+    { "CR": { "equipment": "Agitator", "count": 18, "last_updated": "2026-06-30", "source": "manual" } }
+    """
+    freq_json_path = Path(freq_json_path)
+
+    if freq_json_path.exists():
+        with open(freq_json_path, "r", encoding="utf-8") as f:
+            freq_data = json.load(f)
+    else:
+        freq_data = {}
+
+    entry = freq_data.get(prefix, {"equipment": equipment, "count": 0, "last_updated": None, "source": "manual"})
+    entry["equipment"] = equipment
+    entry["count"] = entry.get("count", 0) + 1
+    entry["last_updated"] = datetime.now().strftime("%Y-%m-%d")
+    entry["source"] = "manual"
+
+    freq_data[prefix] = entry
+
+    atomic_write_json(freq_data, freq_json_path)
+    print(f"[INFO] frequency_equipment.json updated: {prefix} -> count={entry['count']}", file=sys.stderr)
+
+FREQ_EQUIPMENT_JSON = JSON_MODEL_FOLDER / "frequency_equipment.json"  
+
+def persist_light_model_state(model_folder: Path):
+    """Persist only master_df, reference_df, initial_map. Leaves sgd_model/tfidf/nn untouched."""
+    joblib.dump(master_df, model_folder / config["master_df"])
+    joblib.dump(reference_df, model_folder / config["reference_df"])
+    # initial_map already saved inside update_initial_map()
+    print("[INFO] Lightweight state persisted (master_df, reference_df, initial_map).", file=sys.stderr)
 
 def incremental_learning(
     id_str, true_label, customer,
@@ -502,9 +569,9 @@ def persist_all_model_state(config, model_folder: Path):
 # USER ACTIONS
 # =============================================================================
 
+
 def user_manual_assign(assignments, customer, project_code):
-    """Batch manual assignment of equipment types"""
-    global reference_df, X_reference, ref_id_set, label_encoder, nn 
+    """Batch manual assignment of equipment types — lightweight, no model retraining."""
     applied = []
 
     for item in assignments:
@@ -514,31 +581,16 @@ def user_manual_assign(assignments, customer, project_code):
         if not data_id or not equipment:
             continue
 
-        prefix = extract_initial(data_id)
-        if prefix:
-            update_initial_map(prefix, equipment)
-
-        incremental_learning(
-            id_str=data_id,
-            true_label=equipment,
-            customer=customer,
-            sgd_model=sgd_model,
-            label_encoder=label_encoder,
-            tfidf_sgd=tfidf_sgd,
-            reference_df=reference_df,
-            X_reference=X_reference,
-            ref_id_set=ref_id_set,
-            nn=nn,
-            persist_folder=JSON_MODEL_FOLDER
-        )
-
-        applied.append({
-            "data_id": data_id,
-            "equipment": equipment,
-            "prefix": prefix
-        })
+        result = manual_correction_lightweight(data_id, equipment, customer, FREQ_EQUIPMENT_JSON)  # ◄── MODIFIED
+        if result:
+            applied.append({
+                "data_id": data_id,
+                "equipment": equipment,
+                "prefix": result["prefix"]
+            })
 
     return applied
+
 
 def import_equipment_helper(equipment_list, customer, project_code):
     """Import authoritative equipment list"""
@@ -581,6 +633,7 @@ def import_equipment_helper(equipment_list, customer, project_code):
 
 # =============================================================================
 # MAIN PREDICTION FUNCTION
+# =============================================================================
 
 def predict_from_list(data_ids, project_code, customer_code=None):
     """
@@ -877,7 +930,7 @@ def run_cli():
                 raise ValueError("assignments list is empty or invalid.")
 
             applied = user_manual_assign(assignments, customer, project_code)
-            persist_all_model_state(config, JSON_MODEL_FOLDER)
+            persist_light_model_state(JSON_MODEL_FOLDER)   # ◄── MODIFIED: was persist_all_model_state(JSON_MODEL_FOLDER)
 
             print(json.dumps({
                 "status": "ok",
