@@ -209,13 +209,16 @@ public class Program
 									assignments = new[]
 									{
 										new { data_id = deviceId, equipment = correctType }
-									}
+									},
+									batch_results = typeResults!.Select(r => new { data_id = r.data_id, data_type = r.data_type }).ToList()   // ◄── MODIFIED
 								};
 
 								Console.WriteLine($"[OUTPUT RESULT] Sending type correction for '{deviceId}'...");
 								string assignResult = await client!.RunAsync(SCRIPT_TYPE, assignPayload);
 								Console.WriteLine($"[OUTPUT RESULT] Done: {assignResult}\n");
 							}
+
+
 
 							Console.WriteLine($"[OUTPUT RESULT] Correction summary for '{deviceId}':");
 							if (typeIsUnknown) Console.WriteLine($"  Type    : {correctType ?? "(skipped)"}");

@@ -162,8 +162,8 @@ else:
 int2label_map = {int(v): str(k) for k, v in class_index_map.items()}
 
 
-logger.debug(f"Loaded {len(class_index_map)} classes.")          # ◄── MODIFIED
-logger.debug(f"Example classes: {list(class_index_map.items())[:5]}")  # ◄── MODIFIED
+logger.debug(f"Loaded {len(class_index_map)} classes.")         
+logger.debug(f"Example classes: {list(class_index_map.items())[:5]}")  
 
 
 # Build reference_index for fast lookups
@@ -195,6 +195,18 @@ def extract_initial(s):
     joined = "".join(parts)
     m = re.match(r'^([A-Z]+)', joined)
     return m.group(1) if m else ""
+
+def matches_prefix_strict(data_id, prefix):
+    """
+    Strict prefix match: data_id must start with `prefix` followed by
+    digits only (or nothing else). Rejects suffixes like 'SPD' after digits.
+    Mirrors the dictionary-matching rule used in predict_from_list().
+    """
+    candidate = normalize_probe(data_id)
+    if not candidate.startswith(prefix):
+        return False
+    remainder = candidate[len(prefix):]
+    return len(remainder) == 0 or remainder.isdigit()
 
 def normalize_probe(s):
     """Uppercase and remove non-alphanumeric for prefix checks"""
@@ -383,11 +395,12 @@ def update_initial_map(code, equipment):
     
     print(f"[INFO] Updated initial_map: {code} → {equipment}", file=sys.stderr)
 
-def manual_correction_lightweight(data_id, equipment, customer, freq_json_path):
+def manual_correction_lightweight(data_id, equipment, customer, freq_json_path, batch_results=None):
     """
     Lightweight manual correction path.
     - Updates initial_map only (no SGD partial_fit, no tfidf/model retraining).
-    - Updates frequency_equipment.json with the corrected prefix/equipment.
+    - Counts devices in the batch sharing this prefix using the STRICT rule
+      (prefix + digits only) — excludes suffix variants like 'CR1201SPD'.
     - Does NOT touch sgd_model, tfidf_sgd, tfidf_similarity, label_encoder, nn, etc.
     """
     global reference_df, master_df
@@ -396,13 +409,8 @@ def manual_correction_lightweight(data_id, equipment, customer, freq_json_path):
     if not prefix:
         return None
 
-    # 1. Update initial_map (persists initial_map.pkl)
     update_initial_map(prefix, equipment)
 
-    # 2. Update frequency_equipment.json
-    update_frequency_json(prefix, equipment, freq_json_path)
-
-    # 3. Append to reference_df/master_df in memory only (record-keeping, no retrain)
     new_row = pd.DataFrame([[data_id, equipment, customer]],
                             columns=['data_id', 'data_type', 'customer'])
     if 'data_id' in reference_df.columns:
@@ -410,13 +418,27 @@ def manual_correction_lightweight(data_id, equipment, customer, freq_json_path):
     if 'data_id' in master_df.columns:
         master_df = pd.concat([master_df, new_row], ignore_index=True)
 
-    return {"prefix": prefix, "equipment": equipment}
+    # Strict prefix match: digits-only after prefix, excludes 'SPD' suffix variants   # ◄── MODIFIED
+    if batch_results:
+        count = sum(
+            1 for row in batch_results
+            if row.get("data_id") and matches_prefix_strict(row.get("data_id"), prefix)
+        )
+    else:
+        count = int(reference_df['data_id'].astype(str).apply(
+            lambda x: matches_prefix_strict(x, prefix)
+        ).sum())
+
+    update_frequency_json(prefix, equipment, count, freq_json_path)
+
+    return {"prefix": prefix, "equipment": equipment, "count": count}
 
 
-def update_frequency_json(prefix, equipment, freq_json_path: Path):
+def update_frequency_json(prefix, equipment, count, freq_json_path: Path):    # ◄── MODIFIED: added count param
     """
     Maintain frequency_equipment.json:
-    { "CR": { "equipment": "Agitator", "count": 18, "last_updated": "2026-06-30", "source": "manual" } }
+    { "CR": { "equipment": "Agitator", "count": 12, "last_updated": "2026-06-30", "source": "manual" } }
+    count = number of data_ids in reference_df currently matching this prefix.
     """
     freq_json_path = Path(freq_json_path)
 
@@ -426,16 +448,16 @@ def update_frequency_json(prefix, equipment, freq_json_path: Path):
     else:
         freq_data = {}
 
-    entry = freq_data.get(prefix, {"equipment": equipment, "count": 0, "last_updated": None, "source": "manual"})
-    entry["equipment"] = equipment
-    entry["count"] = entry.get("count", 0) + 1
-    entry["last_updated"] = datetime.now().strftime("%Y-%m-%d")
-    entry["source"] = "manual"
-
-    freq_data[prefix] = entry
+    freq_data[prefix] = {
+        "equipment": equipment,
+        "count": count,                                                       # ◄── MODIFIED: snapshot, not increment
+        "last_updated": datetime.now().strftime("%Y-%m-%d"),
+        "source": "manual"
+    }
 
     atomic_write_json(freq_data, freq_json_path)
-    print(f"[INFO] frequency_equipment.json updated: {prefix} -> count={entry['count']}", file=sys.stderr)
+    print(f"[INFO] frequency_equipment.json updated: {prefix} -> count={count}", file=sys.stderr)
+
 
 FREQ_EQUIPMENT_JSON = JSON_MODEL_FOLDER / "frequency_equipment.json"  
 
@@ -443,6 +465,7 @@ def persist_light_model_state(model_folder: Path):
     """Persist only master_df, reference_df, initial_map. Leaves sgd_model/tfidf/nn untouched."""
     joblib.dump(master_df, model_folder / config["master_df"])
     joblib.dump(reference_df, model_folder / config["reference_df"])
+
     # initial_map already saved inside update_initial_map()
     print("[INFO] Lightweight state persisted (master_df, reference_df, initial_map).", file=sys.stderr)
 
@@ -570,7 +593,7 @@ def persist_all_model_state(config, model_folder: Path):
 # =============================================================================
 
 
-def user_manual_assign(assignments, customer, project_code):
+def user_manual_assign(assignments, customer, project_code, batch_results=None):  # ◄── MODIFIED
     """Batch manual assignment of equipment types — lightweight, no model retraining."""
     applied = []
 
@@ -581,12 +604,13 @@ def user_manual_assign(assignments, customer, project_code):
         if not data_id or not equipment:
             continue
 
-        result = manual_correction_lightweight(data_id, equipment, customer, FREQ_EQUIPMENT_JSON)  # ◄── MODIFIED
+        result = manual_correction_lightweight(data_id, equipment, customer, FREQ_EQUIPMENT_JSON, batch_results)  # ◄── MODIFIED
         if result:
             applied.append({
                 "data_id": data_id,
                 "equipment": equipment,
-                "prefix": result["prefix"]
+                "prefix": result["prefix"],
+                "count": result["count"]
             })
 
     return applied
@@ -921,6 +945,7 @@ def run_cli():
             assignments = payload.get("assignments", [])
             customer = payload.get("customer")
             project_code = payload.get("project_code")
+            batch_results = payload.get("batch_results", [])   # ◄── MODIFIED
 
             if not project_code:
                 raise ValueError("project_code is required for user_manual_assign.")
@@ -929,8 +954,8 @@ def run_cli():
             if not isinstance(assignments, list) or not assignments:
                 raise ValueError("assignments list is empty or invalid.")
 
-            applied = user_manual_assign(assignments, customer, project_code)
-            persist_light_model_state(JSON_MODEL_FOLDER)   # ◄── MODIFIED: was persist_all_model_state(JSON_MODEL_FOLDER)
+            applied = user_manual_assign(assignments, customer, project_code, batch_results)  # ◄── MODIFIED
+            persist_light_model_state(JSON_MODEL_FOLDER)
 
             print(json.dumps({
                 "status": "ok",
@@ -938,6 +963,7 @@ def run_cli():
                 "applied": applied
             }, ensure_ascii=False))
             return
+
 
         # (2) Import Equipment
         elif action == "import_equipment":
