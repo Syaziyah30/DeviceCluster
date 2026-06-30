@@ -210,7 +210,7 @@ public class Program
 									{
 										new { data_id = deviceId, equipment = correctType }
 									},
-									batch_results = typeResults!.Select(r => new { data_id = r.data_id, data_type = r.data_type }).ToList()   // ◄── MODIFIED
+									batch_results = typeResults!.Select(r => new { data_id = r.data_id, data_type = r.data_type }).ToList()  
 								};
 
 								Console.WriteLine($"[OUTPUT RESULT] Sending type correction for '{deviceId}'...");
