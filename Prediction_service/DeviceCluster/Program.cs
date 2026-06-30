@@ -77,7 +77,7 @@ public class Program
 				"SELECT ProjectCode, CustomerCode, DataIds FROM DummyInput" 
 			);
 
-			request = JsonSerializer.Deserialize<DevicePredictRequest>(requestJson, _jsonOpts); // ◄── MODIFIED: direct deserialization, no List<> wrapper
+			request = JsonSerializer.Deserialize<DevicePredictRequest>(requestJson, _jsonOpts); 
 
 			if (request == null || request.data_ids == null || request.data_ids.Count == 0)
 				throw new InvalidOperationException("No project data found in DummyInput table.");
