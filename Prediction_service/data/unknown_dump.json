@@ -1,0 +1,1462 @@
+[
+  {
+    "DumpedAt": "2026-07-01 14:35:01",
+    "Customer": "UGS",
+    "ProjectCode": "A1825",
+    "DeviceId": "CR1201",
+    "DeviceType": "UNKNOWN",
+    "PredictedSection": "SECTION 1",
+    "PredictedCluster": "CLUSTER 9",
+    "Status": "pending"
+  },
+  {
+    "DumpedAt": "2026-07-01 14:35:01",
+    "Customer": "UGS",
+    "ProjectCode": "A1825",
+    "DeviceId": "CR1202",
+    "DeviceType": "UNKNOWN",
+    "PredictedSection": "SECTION 1",
+    "PredictedCluster": "CLUSTER 9",
+    "Status": "pending"
+  },
+  {
+    "DumpedAt": "2026-07-01 14:35:01",
+    "Customer": "UGS",
+    "ProjectCode": "A1825",
+    "DeviceId": "CR1203",
+    "DeviceType": "UNKNOWN",
+    "PredictedSection": "SECTION 1",
+    "PredictedCluster": "CLUSTER 9",
+    "Status": "pending"
+  },
+  {
+    "DumpedAt": "2026-07-01 14:35:01",
+    "Customer": "UGS",
+    "ProjectCode": "A1825",
+    "DeviceId": "CR1204",
+    "DeviceType": "UNKNOWN",
+    "PredictedSection": "SECTION 1",
+    "PredictedCluster": "CLUSTER 9",
+    "Status": "pending"
+  },
+  {
+    "DumpedAt": "2026-07-01 14:35:01",
+    "Customer": "UGS",
+    "ProjectCode": "A1825",
+    "DeviceId": "CR1205",
+    "DeviceType": "UNKNOWN",
+    "PredictedSection": "SECTION 1",
+    "PredictedCluster": "CLUSTER 9",
+    "Status": "pending"
+  },
+  {
+    "DumpedAt": "2026-07-01 14:35:01",
+    "Customer": "UGS",
+    "ProjectCode": "A1825",
+    "DeviceId": "CR1206",
+    "DeviceType": "UNKNOWN",
+    "PredictedSection": "SECTION 1",
+    "PredictedCluster": "CLUSTER 9",
+    "Status": "pending"
+  },
+  {
+    "DumpedAt": "2026-07-01 14:35:01",
+    "Customer": "UGS",
+    "ProjectCode": "A1825",
+    "DeviceId": "CR1207",
+    "DeviceType": "UNKNOWN",
+    "PredictedSection": "SECTION 1",
+    "PredictedCluster": "CLUSTER 9",
+    "Status": "pending"
+  },
+  {
+    "DumpedAt": "2026-07-01 14:35:01",
+    "Customer": "UGS",
+    "ProjectCode": "A1825",
+    "DeviceId": "CR1208",
+    "DeviceType": "UNKNOWN",
+    "PredictedSection": "SECTION 1",
+    "PredictedCluster": "CLUSTER 9",
+    "Status": "pending"
+  },
+  {
+    "DumpedAt": "2026-07-01 14:35:01",
+    "Customer": "UGS",
+    "ProjectCode": "A1825",
+    "DeviceId": "CR1209",
+    "DeviceType": "UNKNOWN",
+    "PredictedSection": "SECTION 1",
+    "PredictedCluster": "CLUSTER 9",
+    "Status": "pending"
+  },
+  {
+    "DumpedAt": "2026-07-01 14:35:01",
+    "Customer": "UGS",
+    "ProjectCode": "A1825",
+    "DeviceId": "CR1210",
+    "DeviceType": "UNKNOWN",
+    "PredictedSection": "SECTION 1",
+    "PredictedCluster": "CLUSTER 9",
+    "Status": "pending"
+  },
+  {
+    "DumpedAt": "2026-07-01 14:35:01",
+    "Customer": "UGS",
+    "ProjectCode": "A1825",
+    "DeviceId": "CR1211",
+    "DeviceType": "UNKNOWN",
+    "PredictedSection": "SECTION 1",
+    "PredictedCluster": "CLUSTER 9",
+    "Status": "pending"
+  },
+  {
+    "DumpedAt": "2026-07-01 14:35:01",
+    "Customer": "UGS",
+    "ProjectCode": "A1825",
+    "DeviceId": "CR1212",
+    "DeviceType": "UNKNOWN",
+    "PredictedSection": "SECTION 1",
+    "PredictedCluster": "CLUSTER 9",
+    "Status": "pending"
+  },
+  {
+    "DumpedAt": "2026-07-01 14:35:01",
+    "Customer": "UGS",
+    "ProjectCode": "A1825",
+    "DeviceId": "PU231",
+    "DeviceType": "Pump",
+    "PredictedSection": "SECTION 3",
+    "PredictedCluster": "UNKNOWN",
+    "Status": "pending"
+  },
+  {
+    "DumpedAt": "2026-07-01 14:35:01",
+    "Customer": "UGS",
+    "ProjectCode": "A1825",
+    "DeviceId": "PU251",
+    "DeviceType": "Pump",
+    "PredictedSection": "SECTION 3",
+    "PredictedCluster": "UNKNOWN",
+    "Status": "pending"
+  },
+  {
+    "DumpedAt": "2026-07-01 14:35:01",
+    "Customer": "UGS",
+    "ProjectCode": "A1825",
+    "DeviceId": "CT151F1",
+    "DeviceType": "Fan",
+    "PredictedSection": "UNKNOWN",
+    "PredictedCluster": "UNKNOWN",
+    "Status": "pending"
+  },
+  {
+    "DumpedAt": "2026-07-01 14:35:01",
+    "Customer": "UGS",
+    "ProjectCode": "A1825",
+    "DeviceId": "CT151F2",
+    "DeviceType": "Fan",
+    "PredictedSection": "UNKNOWN",
+    "PredictedCluster": "UNKNOWN",
+    "Status": "pending"
+  },
+  {
+    "DumpedAt": "2026-07-01 14:35:01",
+    "Customer": "UGS",
+    "ProjectCode": "A1825",
+    "DeviceId": "CT141CF1SP",
+    "DeviceType": "Fan",
+    "PredictedSection": "SECTION 2",
+    "PredictedCluster": "UNKNOWN",
+    "Status": "pending"
+  },
+  {
+    "DumpedAt": "2026-07-01 14:35:01",
+    "Customer": "UGS",
+    "ProjectCode": "A1825",
+    "DeviceId": "CT141CF2SP",
+    "DeviceType": "Fan",
+    "PredictedSection": "SECTION 2",
+    "PredictedCluster": "UNKNOWN",
+    "Status": "pending"
+  },
+  {
+    "DumpedAt": "2026-07-01 14:35:01",
+    "Customer": "UGS",
+    "ProjectCode": "A1825",
+    "DeviceId": "PU211",
+    "DeviceType": "Pump",
+    "PredictedSection": "SECTION 3",
+    "PredictedCluster": "UNKNOWN",
+    "Status": "pending"
+  },
+  {
+    "DumpedAt": "2026-07-01 14:35:01",
+    "Customer": "UGS",
+    "ProjectCode": "A1825",
+    "DeviceId": "PU261",
+    "DeviceType": "Pump",
+    "PredictedSection": "SECTION 3",
+    "PredictedCluster": "UNKNOWN",
+    "Status": "pending"
+  },
+  {
+    "DumpedAt": "2026-07-01 14:35:01",
+    "Customer": "UGS",
+    "ProjectCode": "A1825",
+    "DeviceId": "FN261",
+    "DeviceType": "Fan",
+    "PredictedSection": "SECTION 3",
+    "PredictedCluster": "UNKNOWN",
+    "Status": "pending"
+  },
+  {
+    "DumpedAt": "2026-07-01 14:35:01",
+    "Customer": "UGS",
+    "ProjectCode": "A1825",
+    "DeviceId": "FT221",
+    "DeviceType": "Flow Transmitter",
+    "PredictedSection": "SECTION 3",
+    "PredictedCluster": "UNKNOWN",
+    "Status": "pending"
+  },
+  {
+    "DumpedAt": "2026-07-01 14:35:01",
+    "Customer": "UGS",
+    "ProjectCode": "A1825",
+    "DeviceId": "FT223",
+    "DeviceType": "Flow Transmitter",
+    "PredictedSection": "SECTION 3",
+    "PredictedCluster": "UNKNOWN",
+    "Status": "pending"
+  },
+  {
+    "DumpedAt": "2026-07-01 14:35:01",
+    "Customer": "UGS",
+    "ProjectCode": "A1825",
+    "DeviceId": "CR1201SPD",
+    "DeviceType": "UNKNOWN",
+    "PredictedSection": "UNKNOWN",
+    "PredictedCluster": "UNKNOWN",
+    "Status": "pending"
+  },
+  {
+    "DumpedAt": "2026-07-01 14:35:01",
+    "Customer": "UGS",
+    "ProjectCode": "A1825",
+    "DeviceId": "CR1202SPD",
+    "DeviceType": "UNKNOWN",
+    "PredictedSection": "UNKNOWN",
+    "PredictedCluster": "UNKNOWN",
+    "Status": "pending"
+  },
+  {
+    "DumpedAt": "2026-07-01 14:35:01",
+    "Customer": "UGS",
+    "ProjectCode": "A1825",
+    "DeviceId": "CR1203SPD",
+    "DeviceType": "UNKNOWN",
+    "PredictedSection": "UNKNOWN",
+    "PredictedCluster": "UNKNOWN",
+    "Status": "pending"
+  },
+  {
+    "DumpedAt": "2026-07-01 14:35:01",
+    "Customer": "UGS",
+    "ProjectCode": "A1825",
+    "DeviceId": "CR1204SPD",
+    "DeviceType": "UNKNOWN",
+    "PredictedSection": "UNKNOWN",
+    "PredictedCluster": "UNKNOWN",
+    "Status": "pending"
+  },
+  {
+    "DumpedAt": "2026-07-01 14:35:01",
+    "Customer": "UGS",
+    "ProjectCode": "A1825",
+    "DeviceId": "CR1205SPD",
+    "DeviceType": "UNKNOWN",
+    "PredictedSection": "UNKNOWN",
+    "PredictedCluster": "UNKNOWN",
+    "Status": "pending"
+  },
+  {
+    "DumpedAt": "2026-07-01 14:35:01",
+    "Customer": "UGS",
+    "ProjectCode": "A1825",
+    "DeviceId": "CR1206SPD",
+    "DeviceType": "UNKNOWN",
+    "PredictedSection": "UNKNOWN",
+    "PredictedCluster": "UNKNOWN",
+    "Status": "pending"
+  },
+  {
+    "DumpedAt": "2026-07-01 14:35:01",
+    "Customer": "UGS",
+    "ProjectCode": "A1825",
+    "DeviceId": "CR1207SPD",
+    "DeviceType": "UNKNOWN",
+    "PredictedSection": "UNKNOWN",
+    "PredictedCluster": "UNKNOWN",
+    "Status": "pending"
+  },
+  {
+    "DumpedAt": "2026-07-01 14:35:01",
+    "Customer": "UGS",
+    "ProjectCode": "A1825",
+    "DeviceId": "CR1208SPD",
+    "DeviceType": "UNKNOWN",
+    "PredictedSection": "UNKNOWN",
+    "PredictedCluster": "UNKNOWN",
+    "Status": "pending"
+  },
+  {
+    "DumpedAt": "2026-07-01 14:35:01",
+    "Customer": "UGS",
+    "ProjectCode": "A1825",
+    "DeviceId": "CR1209SPD",
+    "DeviceType": "UNKNOWN",
+    "PredictedSection": "UNKNOWN",
+    "PredictedCluster": "UNKNOWN",
+    "Status": "pending"
+  },
+  {
+    "DumpedAt": "2026-07-01 14:35:01",
+    "Customer": "UGS",
+    "ProjectCode": "A1825",
+    "DeviceId": "CR1210SPD",
+    "DeviceType": "UNKNOWN",
+    "PredictedSection": "UNKNOWN",
+    "PredictedCluster": "UNKNOWN",
+    "Status": "pending"
+  },
+  {
+    "DumpedAt": "2026-07-01 14:35:01",
+    "Customer": "UGS",
+    "ProjectCode": "A1825",
+    "DeviceId": "CR1211SPD",
+    "DeviceType": "UNKNOWN",
+    "PredictedSection": "UNKNOWN",
+    "PredictedCluster": "UNKNOWN",
+    "Status": "pending"
+  },
+  {
+    "DumpedAt": "2026-07-01 14:35:01",
+    "Customer": "UGS",
+    "ProjectCode": "A1825",
+    "DeviceId": "CR1212SPD",
+    "DeviceType": "UNKNOWN",
+    "PredictedSection": "UNKNOWN",
+    "PredictedCluster": "UNKNOWN",
+    "Status": "pending"
+  },
+  {
+    "DumpedAt": "2026-07-01 14:35:01",
+    "Customer": "UGS",
+    "ProjectCode": "A1825",
+    "DeviceId": "PT200",
+    "DeviceType": "Pressure Transmitter",
+    "PredictedSection": "SECTION 3",
+    "PredictedCluster": "UNKNOWN",
+    "Status": "pending"
+  },
+  {
+    "DumpedAt": "2026-07-01 14:35:01",
+    "Customer": "UGS",
+    "ProjectCode": "A1825",
+    "DeviceId": "PT201",
+    "DeviceType": "Pressure Transmitter",
+    "PredictedSection": "SECTION 3",
+    "PredictedCluster": "UNKNOWN",
+    "Status": "pending"
+  },
+  {
+    "DumpedAt": "2026-07-01 14:35:01",
+    "Customer": "UGS",
+    "ProjectCode": "A1825",
+    "DeviceId": "LT261",
+    "DeviceType": "Level Transmitter",
+    "PredictedSection": "SECTION 3",
+    "PredictedCluster": "UNKNOWN",
+    "Status": "pending"
+  },
+  {
+    "DumpedAt": "2026-07-01 14:35:01",
+    "Customer": "UGS",
+    "ProjectCode": "A1825",
+    "DeviceId": "LT231",
+    "DeviceType": "Level Transmitter",
+    "PredictedSection": "SECTION 3",
+    "PredictedCluster": "UNKNOWN",
+    "Status": "pending"
+  },
+  {
+    "DumpedAt": "2026-07-01 14:35:01",
+    "Customer": "UGS",
+    "ProjectCode": "A1825",
+    "DeviceId": "LT251",
+    "DeviceType": "Level Transmitter",
+    "PredictedSection": "SECTION 3",
+    "PredictedCluster": "UNKNOWN",
+    "Status": "pending"
+  },
+  {
+    "DumpedAt": "2026-07-01 14:35:01",
+    "Customer": "UGS",
+    "ProjectCode": "A1825",
+    "DeviceId": "TE251",
+    "DeviceType": "Temperature Transmitter",
+    "PredictedSection": "SECTION 3",
+    "PredictedCluster": "UNKNOWN",
+    "Status": "pending"
+  },
+  {
+    "DumpedAt": "2026-07-01 14:35:01",
+    "Customer": "UGS",
+    "ProjectCode": "A1825",
+    "DeviceId": "TE132AA",
+    "DeviceType": "Temperature Transmitter",
+    "PredictedSection": "UNKNOWN",
+    "PredictedCluster": "UNKNOWN",
+    "Status": "pending"
+  },
+  {
+    "DumpedAt": "2026-07-01 14:35:01",
+    "Customer": "UGS",
+    "ProjectCode": "A1825",
+    "DeviceId": "TE132AB",
+    "DeviceType": "Temperature Transmitter",
+    "PredictedSection": "UNKNOWN",
+    "PredictedCluster": "UNKNOWN",
+    "Status": "pending"
+  },
+  {
+    "DumpedAt": "2026-07-01 14:35:01",
+    "Customer": "UGS",
+    "ProjectCode": "A1825",
+    "DeviceId": "TE132BA",
+    "DeviceType": "Temperature Transmitter",
+    "PredictedSection": "UNKNOWN",
+    "PredictedCluster": "UNKNOWN",
+    "Status": "pending"
+  },
+  {
+    "DumpedAt": "2026-07-01 14:35:01",
+    "Customer": "UGS",
+    "ProjectCode": "A1825",
+    "DeviceId": "TE132BB",
+    "DeviceType": "Temperature Transmitter",
+    "PredictedSection": "UNKNOWN",
+    "PredictedCluster": "UNKNOWN",
+    "Status": "pending"
+  },
+  {
+    "DumpedAt": "2026-07-01 14:35:01",
+    "Customer": "UGS",
+    "ProjectCode": "A1825",
+    "DeviceId": "PT212",
+    "DeviceType": "Pressure Transmitter",
+    "PredictedSection": "SECTION 3",
+    "PredictedCluster": "UNKNOWN",
+    "Status": "pending"
+  },
+  {
+    "DumpedAt": "2026-07-01 14:35:01",
+    "Customer": "UGS",
+    "ProjectCode": "A1825",
+    "DeviceId": "PT213",
+    "DeviceType": "Pressure Transmitter",
+    "PredictedSection": "SECTION 3",
+    "PredictedCluster": "UNKNOWN",
+    "Status": "pending"
+  },
+  {
+    "DumpedAt": "2026-07-01 14:35:01",
+    "Customer": "UGS",
+    "ProjectCode": "A1825",
+    "DeviceId": "PT211",
+    "DeviceType": "Pressure Transmitter",
+    "PredictedSection": "SECTION 3",
+    "PredictedCluster": "UNKNOWN",
+    "Status": "pending"
+  },
+  {
+    "DumpedAt": "2026-07-01 14:35:01",
+    "Customer": "UGS",
+    "ProjectCode": "A1825",
+    "DeviceId": "PT261",
+    "DeviceType": "Pressure Transmitter",
+    "PredictedSection": "SECTION 3",
+    "PredictedCluster": "UNKNOWN",
+    "Status": "pending"
+  },
+  {
+    "DumpedAt": "2026-07-01 14:35:01",
+    "Customer": "UGS",
+    "ProjectCode": "A1825",
+    "DeviceId": "TE261",
+    "DeviceType": "Temperature Transmitter",
+    "PredictedSection": "SECTION 3",
+    "PredictedCluster": "UNKNOWN",
+    "Status": "pending"
+  },
+  {
+    "DumpedAt": "2026-07-01 14:35:01",
+    "Customer": "UGS",
+    "ProjectCode": "A1825",
+    "DeviceId": "SIC211",
+    "DeviceType": "Variable Frequency Drive",
+    "PredictedSection": "SECTION 3",
+    "PredictedCluster": "UNKNOWN",
+    "Status": "pending"
+  },
+  {
+    "DumpedAt": "2026-07-01 14:35:01",
+    "Customer": "UGS",
+    "ProjectCode": "A1825",
+    "DeviceId": "SIC261",
+    "DeviceType": "Variable Frequency Drive",
+    "PredictedSection": "SECTION 3",
+    "PredictedCluster": "UNKNOWN",
+    "Status": "pending"
+  },
+  {
+    "DumpedAt": "2026-07-01 14:35:01",
+    "Customer": "UGS",
+    "ProjectCode": "A1825",
+    "DeviceId": "FM221",
+    "DeviceType": "Fan",
+    "PredictedSection": "SECTION 3",
+    "PredictedCluster": "UNKNOWN",
+    "Status": "pending"
+  },
+  {
+    "DumpedAt": "2026-07-01 14:35:01",
+    "Customer": "UGS",
+    "ProjectCode": "A1825",
+    "DeviceId": "FM223",
+    "DeviceType": "Fan",
+    "PredictedSection": "SECTION 3",
+    "PredictedCluster": "UNKNOWN",
+    "Status": "pending"
+  },
+  {
+    "DumpedAt": "2026-07-01 14:35:01",
+    "Customer": "UGS",
+    "ProjectCode": "A1825",
+    "DeviceId": "LAHH221A",
+    "DeviceType": "High Level Switch",
+    "PredictedSection": "SECTION 3",
+    "PredictedCluster": "UNKNOWN",
+    "Status": "pending"
+  },
+  {
+    "DumpedAt": "2026-07-01 14:35:01",
+    "Customer": "UGS",
+    "ProjectCode": "A1825",
+    "DeviceId": "LAHH221B",
+    "DeviceType": "High Level Switch",
+    "PredictedSection": "SECTION 3",
+    "PredictedCluster": "UNKNOWN",
+    "Status": "pending"
+  },
+  {
+    "DumpedAt": "2026-07-01 14:35:01",
+    "Customer": "UGS",
+    "ProjectCode": "A1825",
+    "DeviceId": "LAL231",
+    "DeviceType": "Low Level Switch",
+    "PredictedSection": "SECTION 3",
+    "PredictedCluster": "UNKNOWN",
+    "Status": "pending"
+  },
+  {
+    "DumpedAt": "2026-07-01 14:35:01",
+    "Customer": "UGS",
+    "ProjectCode": "A1825",
+    "DeviceId": "LAH231",
+    "DeviceType": "High Level Switch",
+    "PredictedSection": "SECTION 3",
+    "PredictedCluster": "UNKNOWN",
+    "Status": "pending"
+  },
+  {
+    "DumpedAt": "2026-07-01 14:35:01",
+    "Customer": "UGS",
+    "ProjectCode": "A1825",
+    "DeviceId": "LAL251",
+    "DeviceType": "Low Level Switch",
+    "PredictedSection": "SECTION 3",
+    "PredictedCluster": "UNKNOWN",
+    "Status": "pending"
+  },
+  {
+    "DumpedAt": "2026-07-01 14:35:01",
+    "Customer": "UGS",
+    "ProjectCode": "A1825",
+    "DeviceId": "LAH251",
+    "DeviceType": "High Level Switch",
+    "PredictedSection": "SECTION 3",
+    "PredictedCluster": "UNKNOWN",
+    "Status": "pending"
+  },
+  {
+    "DumpedAt": "2026-07-01 14:35:01",
+    "Customer": "UGS",
+    "ProjectCode": "A1825",
+    "DeviceId": "LAHH261",
+    "DeviceType": "High Level Switch",
+    "PredictedSection": "SECTION 3",
+    "PredictedCluster": "UNKNOWN",
+    "Status": "pending"
+  },
+  {
+    "DumpedAt": "2026-07-01 14:35:01",
+    "Customer": "UGS",
+    "ProjectCode": "A1825",
+    "DeviceId": "FILTERHORN",
+    "DeviceType": "UNKNOWN",
+    "PredictedSection": "UNKNOWN",
+    "PredictedCluster": "UNKNOWN",
+    "Status": "pending"
+  },
+  {
+    "DumpedAt": "2026-07-01 14:35:01",
+    "Customer": "UGS",
+    "ProjectCode": "A1825",
+    "DeviceId": "STANDARDPOSITIONSIGNAL",
+    "DeviceType": "UNKNOWN",
+    "PredictedSection": "UNKNOWN",
+    "PredictedCluster": "UNKNOWN",
+    "Status": "pending"
+  },
+  {
+    "DumpedAt": "2026-07-01 14:35:01",
+    "Customer": "UGS",
+    "ProjectCode": "A1825",
+    "DeviceId": "PLFILTERCLOSE",
+    "DeviceType": "UNKNOWN",
+    "PredictedSection": "UNKNOWN",
+    "PredictedCluster": "UNKNOWN",
+    "Status": "pending"
+  },
+  {
+    "DumpedAt": "2026-07-01 14:35:01",
+    "Customer": "UGS",
+    "ProjectCode": "A1825",
+    "DeviceId": "PLFILTEROPEN",
+    "DeviceType": "UNKNOWN",
+    "PredictedSection": "UNKNOWN",
+    "PredictedCluster": "UNKNOWN",
+    "Status": "pending"
+  },
+  {
+    "DumpedAt": "2026-07-01 14:35:01",
+    "Customer": "UGS",
+    "ProjectCode": "A1825",
+    "DeviceId": "PBEMERGENCYSTOPA",
+    "DeviceType": "UNKNOWN",
+    "PredictedSection": "UNKNOWN",
+    "PredictedCluster": "UNKNOWN",
+    "Status": "pending"
+  },
+  {
+    "DumpedAt": "2026-07-01 14:35:01",
+    "Customer": "UGS",
+    "ProjectCode": "A1825",
+    "DeviceId": "PBOPENFILTERA",
+    "DeviceType": "UNKNOWN",
+    "PredictedSection": "UNKNOWN",
+    "PredictedCluster": "UNKNOWN",
+    "Status": "pending"
+  },
+  {
+    "DumpedAt": "2026-07-01 14:35:01",
+    "Customer": "UGS",
+    "ProjectCode": "A1825",
+    "DeviceId": "PBCLOSEFILTERA",
+    "DeviceType": "UNKNOWN",
+    "PredictedSection": "UNKNOWN",
+    "PredictedCluster": "UNKNOWN",
+    "Status": "pending"
+  },
+  {
+    "DumpedAt": "2026-07-01 14:35:01",
+    "Customer": "UGS",
+    "ProjectCode": "A1825",
+    "DeviceId": "PBSEMISTEPFILTERA",
+    "DeviceType": "UNKNOWN",
+    "PredictedSection": "UNKNOWN",
+    "PredictedCluster": "UNKNOWN",
+    "Status": "pending"
+  },
+  {
+    "DumpedAt": "2026-07-01 14:35:01",
+    "Customer": "UGS",
+    "ProjectCode": "A1825",
+    "DeviceId": "TLALARMFILTER",
+    "DeviceType": "UNKNOWN",
+    "PredictedSection": "UNKNOWN",
+    "PredictedCluster": "UNKNOWN",
+    "Status": "pending"
+  },
+  {
+    "DumpedAt": "2026-07-01 14:35:01",
+    "Customer": "UGS",
+    "ProjectCode": "A1825",
+    "DeviceId": "TLPROCESSRUNNINGFILTER",
+    "DeviceType": "UNKNOWN",
+    "PredictedSection": "UNKNOWN",
+    "PredictedCluster": "UNKNOWN",
+    "Status": "pending"
+  },
+  {
+    "DumpedAt": "2026-07-01 14:35:01",
+    "Customer": "UGS",
+    "ProjectCode": "A1825",
+    "DeviceId": "TLFILTERMOVING",
+    "DeviceType": "UNKNOWN",
+    "PredictedSection": "UNKNOWN",
+    "PredictedCluster": "UNKNOWN",
+    "Status": "pending"
+  },
+  {
+    "DumpedAt": "2026-07-01 14:35:01",
+    "Customer": "UGS",
+    "ProjectCode": "A1825",
+    "DeviceId": "V101",
+    "DeviceType": "On/Off Valve",
+    "PredictedSection": "SECTION 3",
+    "PredictedCluster": "UNKNOWN",
+    "Status": "pending"
+  },
+  {
+    "DumpedAt": "2026-07-01 14:35:01",
+    "Customer": "UGS",
+    "ProjectCode": "A1825",
+    "DeviceId": "V111",
+    "DeviceType": "On/Off Valve",
+    "PredictedSection": "SECTION 3",
+    "PredictedCluster": "UNKNOWN",
+    "Status": "pending"
+  },
+  {
+    "DumpedAt": "2026-07-01 14:35:01",
+    "Customer": "UGS",
+    "ProjectCode": "A1825",
+    "DeviceId": "V112",
+    "DeviceType": "On/Off Valve",
+    "PredictedSection": "SECTION 3",
+    "PredictedCluster": "UNKNOWN",
+    "Status": "pending"
+  },
+  {
+    "DumpedAt": "2026-07-01 14:35:01",
+    "Customer": "UGS",
+    "ProjectCode": "A1825",
+    "DeviceId": "V113",
+    "DeviceType": "On/Off Valve",
+    "PredictedSection": "SECTION 3",
+    "PredictedCluster": "UNKNOWN",
+    "Status": "pending"
+  },
+  {
+    "DumpedAt": "2026-07-01 14:35:01",
+    "Customer": "UGS",
+    "ProjectCode": "A1825",
+    "DeviceId": "V114",
+    "DeviceType": "On/Off Valve",
+    "PredictedSection": "SECTION 3",
+    "PredictedCluster": "UNKNOWN",
+    "Status": "pending"
+  },
+  {
+    "DumpedAt": "2026-07-01 14:35:01",
+    "Customer": "UGS",
+    "ProjectCode": "A1825",
+    "DeviceId": "V115",
+    "DeviceType": "On/Off Valve",
+    "PredictedSection": "SECTION 3",
+    "PredictedCluster": "UNKNOWN",
+    "Status": "pending"
+  },
+  {
+    "DumpedAt": "2026-07-01 14:35:01",
+    "Customer": "UGS",
+    "ProjectCode": "A1825",
+    "DeviceId": "V1203C",
+    "DeviceType": "On/Off Valve",
+    "PredictedSection": "SECTION 1",
+    "PredictedCluster": "UNKNOWN",
+    "Status": "pending"
+  },
+  {
+    "DumpedAt": "2026-07-01 14:35:01",
+    "Customer": "UGS",
+    "ProjectCode": "A1825",
+    "DeviceId": "V1203E",
+    "DeviceType": "On/Off Valve",
+    "PredictedSection": "SECTION 1",
+    "PredictedCluster": "UNKNOWN",
+    "Status": "pending"
+  },
+  {
+    "DumpedAt": "2026-07-01 14:35:01",
+    "Customer": "UGS",
+    "ProjectCode": "A1825",
+    "DeviceId": "V1203F",
+    "DeviceType": "On/Off Valve",
+    "PredictedSection": "SECTION 1",
+    "PredictedCluster": "UNKNOWN",
+    "Status": "pending"
+  },
+  {
+    "DumpedAt": "2026-07-01 14:35:01",
+    "Customer": "UGS",
+    "ProjectCode": "A1825",
+    "DeviceId": "V1203G",
+    "DeviceType": "On/Off Valve",
+    "PredictedSection": "SECTION 1",
+    "PredictedCluster": "UNKNOWN",
+    "Status": "pending"
+  },
+  {
+    "DumpedAt": "2026-07-01 14:35:01",
+    "Customer": "UGS",
+    "ProjectCode": "A1825",
+    "DeviceId": "V1203H",
+    "DeviceType": "On/Off Valve",
+    "PredictedSection": "SECTION 1",
+    "PredictedCluster": "UNKNOWN",
+    "Status": "pending"
+  },
+  {
+    "DumpedAt": "2026-07-01 14:35:01",
+    "Customer": "UGS",
+    "ProjectCode": "A1825",
+    "DeviceId": "V1203I",
+    "DeviceType": "On/Off Valve",
+    "PredictedSection": "SECTION 1",
+    "PredictedCluster": "UNKNOWN",
+    "Status": "pending"
+  },
+  {
+    "DumpedAt": "2026-07-01 14:35:01",
+    "Customer": "UGS",
+    "ProjectCode": "A1825",
+    "DeviceId": "V1204C",
+    "DeviceType": "On/Off Valve",
+    "PredictedSection": "SECTION 1",
+    "PredictedCluster": "UNKNOWN",
+    "Status": "pending"
+  },
+  {
+    "DumpedAt": "2026-07-01 14:35:01",
+    "Customer": "UGS",
+    "ProjectCode": "A1825",
+    "DeviceId": "V1204E",
+    "DeviceType": "On/Off Valve",
+    "PredictedSection": "SECTION 1",
+    "PredictedCluster": "UNKNOWN",
+    "Status": "pending"
+  },
+  {
+    "DumpedAt": "2026-07-01 14:35:01",
+    "Customer": "UGS",
+    "ProjectCode": "A1825",
+    "DeviceId": "V1204F",
+    "DeviceType": "On/Off Valve",
+    "PredictedSection": "SECTION 1",
+    "PredictedCluster": "UNKNOWN",
+    "Status": "pending"
+  },
+  {
+    "DumpedAt": "2026-07-01 14:35:01",
+    "Customer": "UGS",
+    "ProjectCode": "A1825",
+    "DeviceId": "V1204G",
+    "DeviceType": "On/Off Valve",
+    "PredictedSection": "SECTION 1",
+    "PredictedCluster": "UNKNOWN",
+    "Status": "pending"
+  },
+  {
+    "DumpedAt": "2026-07-01 14:35:01",
+    "Customer": "UGS",
+    "ProjectCode": "A1825",
+    "DeviceId": "V1204H",
+    "DeviceType": "On/Off Valve",
+    "PredictedSection": "SECTION 1",
+    "PredictedCluster": "UNKNOWN",
+    "Status": "pending"
+  },
+  {
+    "DumpedAt": "2026-07-01 14:35:01",
+    "Customer": "UGS",
+    "ProjectCode": "A1825",
+    "DeviceId": "V1204I",
+    "DeviceType": "On/Off Valve",
+    "PredictedSection": "SECTION 1",
+    "PredictedCluster": "UNKNOWN",
+    "Status": "pending"
+  },
+  {
+    "DumpedAt": "2026-07-01 14:35:01",
+    "Customer": "UGS",
+    "ProjectCode": "A1825",
+    "DeviceId": "V1205C",
+    "DeviceType": "On/Off Valve",
+    "PredictedSection": "SECTION 1",
+    "PredictedCluster": "UNKNOWN",
+    "Status": "pending"
+  },
+  {
+    "DumpedAt": "2026-07-01 14:35:01",
+    "Customer": "UGS",
+    "ProjectCode": "A1825",
+    "DeviceId": "V1205E",
+    "DeviceType": "On/Off Valve",
+    "PredictedSection": "SECTION 1",
+    "PredictedCluster": "UNKNOWN",
+    "Status": "pending"
+  },
+  {
+    "DumpedAt": "2026-07-01 14:35:01",
+    "Customer": "UGS",
+    "ProjectCode": "A1825",
+    "DeviceId": "V1205F",
+    "DeviceType": "On/Off Valve",
+    "PredictedSection": "SECTION 1",
+    "PredictedCluster": "UNKNOWN",
+    "Status": "pending"
+  },
+  {
+    "DumpedAt": "2026-07-01 14:35:01",
+    "Customer": "UGS",
+    "ProjectCode": "A1825",
+    "DeviceId": "V1205G",
+    "DeviceType": "On/Off Valve",
+    "PredictedSection": "SECTION 1",
+    "PredictedCluster": "UNKNOWN",
+    "Status": "pending"
+  },
+  {
+    "DumpedAt": "2026-07-01 14:35:01",
+    "Customer": "UGS",
+    "ProjectCode": "A1825",
+    "DeviceId": "V1205H",
+    "DeviceType": "On/Off Valve",
+    "PredictedSection": "SECTION 1",
+    "PredictedCluster": "UNKNOWN",
+    "Status": "pending"
+  },
+  {
+    "DumpedAt": "2026-07-01 14:35:01",
+    "Customer": "UGS",
+    "ProjectCode": "A1825",
+    "DeviceId": "V1205I",
+    "DeviceType": "On/Off Valve",
+    "PredictedSection": "SECTION 1",
+    "PredictedCluster": "UNKNOWN",
+    "Status": "pending"
+  },
+  {
+    "DumpedAt": "2026-07-01 14:35:01",
+    "Customer": "UGS",
+    "ProjectCode": "A1825",
+    "DeviceId": "V1206C",
+    "DeviceType": "On/Off Valve",
+    "PredictedSection": "SECTION 1",
+    "PredictedCluster": "UNKNOWN",
+    "Status": "pending"
+  },
+  {
+    "DumpedAt": "2026-07-01 14:35:01",
+    "Customer": "UGS",
+    "ProjectCode": "A1825",
+    "DeviceId": "V1206E",
+    "DeviceType": "On/Off Valve",
+    "PredictedSection": "SECTION 1",
+    "PredictedCluster": "UNKNOWN",
+    "Status": "pending"
+  },
+  {
+    "DumpedAt": "2026-07-01 14:35:01",
+    "Customer": "UGS",
+    "ProjectCode": "A1825",
+    "DeviceId": "V1206F",
+    "DeviceType": "On/Off Valve",
+    "PredictedSection": "SECTION 1",
+    "PredictedCluster": "UNKNOWN",
+    "Status": "pending"
+  },
+  {
+    "DumpedAt": "2026-07-01 14:35:01",
+    "Customer": "UGS",
+    "ProjectCode": "A1825",
+    "DeviceId": "V1206G",
+    "DeviceType": "On/Off Valve",
+    "PredictedSection": "SECTION 1",
+    "PredictedCluster": "UNKNOWN",
+    "Status": "pending"
+  },
+  {
+    "DumpedAt": "2026-07-01 14:35:01",
+    "Customer": "UGS",
+    "ProjectCode": "A1825",
+    "DeviceId": "V1206H",
+    "DeviceType": "On/Off Valve",
+    "PredictedSection": "SECTION 1",
+    "PredictedCluster": "UNKNOWN",
+    "Status": "pending"
+  },
+  {
+    "DumpedAt": "2026-07-01 14:35:01",
+    "Customer": "UGS",
+    "ProjectCode": "A1825",
+    "DeviceId": "V1206I",
+    "DeviceType": "On/Off Valve",
+    "PredictedSection": "SECTION 1",
+    "PredictedCluster": "UNKNOWN",
+    "Status": "pending"
+  },
+  {
+    "DumpedAt": "2026-07-01 14:35:01",
+    "Customer": "UGS",
+    "ProjectCode": "A1825",
+    "DeviceId": "V1207C",
+    "DeviceType": "On/Off Valve",
+    "PredictedSection": "SECTION 1",
+    "PredictedCluster": "UNKNOWN",
+    "Status": "pending"
+  },
+  {
+    "DumpedAt": "2026-07-01 14:35:01",
+    "Customer": "UGS",
+    "ProjectCode": "A1825",
+    "DeviceId": "V1207E",
+    "DeviceType": "On/Off Valve",
+    "PredictedSection": "SECTION 1",
+    "PredictedCluster": "UNKNOWN",
+    "Status": "pending"
+  },
+  {
+    "DumpedAt": "2026-07-01 14:35:01",
+    "Customer": "UGS",
+    "ProjectCode": "A1825",
+    "DeviceId": "V1207F",
+    "DeviceType": "On/Off Valve",
+    "PredictedSection": "SECTION 1",
+    "PredictedCluster": "UNKNOWN",
+    "Status": "pending"
+  },
+  {
+    "DumpedAt": "2026-07-01 14:35:01",
+    "Customer": "UGS",
+    "ProjectCode": "A1825",
+    "DeviceId": "V1207G",
+    "DeviceType": "On/Off Valve",
+    "PredictedSection": "SECTION 1",
+    "PredictedCluster": "UNKNOWN",
+    "Status": "pending"
+  },
+  {
+    "DumpedAt": "2026-07-01 14:35:01",
+    "Customer": "UGS",
+    "ProjectCode": "A1825",
+    "DeviceId": "V1207H",
+    "DeviceType": "On/Off Valve",
+    "PredictedSection": "SECTION 1",
+    "PredictedCluster": "UNKNOWN",
+    "Status": "pending"
+  },
+  {
+    "DumpedAt": "2026-07-01 14:35:01",
+    "Customer": "UGS",
+    "ProjectCode": "A1825",
+    "DeviceId": "V1207I",
+    "DeviceType": "On/Off Valve",
+    "PredictedSection": "SECTION 1",
+    "PredictedCluster": "UNKNOWN",
+    "Status": "pending"
+  },
+  {
+    "DumpedAt": "2026-07-01 14:35:01",
+    "Customer": "UGS",
+    "ProjectCode": "A1825",
+    "DeviceId": "V1208C",
+    "DeviceType": "On/Off Valve",
+    "PredictedSection": "SECTION 1",
+    "PredictedCluster": "UNKNOWN",
+    "Status": "pending"
+  },
+  {
+    "DumpedAt": "2026-07-01 14:35:01",
+    "Customer": "UGS",
+    "ProjectCode": "A1825",
+    "DeviceId": "V1208E",
+    "DeviceType": "On/Off Valve",
+    "PredictedSection": "SECTION 1",
+    "PredictedCluster": "UNKNOWN",
+    "Status": "pending"
+  },
+  {
+    "DumpedAt": "2026-07-01 14:35:01",
+    "Customer": "UGS",
+    "ProjectCode": "A1825",
+    "DeviceId": "V1208F",
+    "DeviceType": "On/Off Valve",
+    "PredictedSection": "SECTION 1",
+    "PredictedCluster": "UNKNOWN",
+    "Status": "pending"
+  },
+  {
+    "DumpedAt": "2026-07-01 14:35:01",
+    "Customer": "UGS",
+    "ProjectCode": "A1825",
+    "DeviceId": "V1208G",
+    "DeviceType": "On/Off Valve",
+    "PredictedSection": "SECTION 1",
+    "PredictedCluster": "UNKNOWN",
+    "Status": "pending"
+  },
+  {
+    "DumpedAt": "2026-07-01 14:35:01",
+    "Customer": "UGS",
+    "ProjectCode": "A1825",
+    "DeviceId": "V1208H",
+    "DeviceType": "On/Off Valve",
+    "PredictedSection": "SECTION 1",
+    "PredictedCluster": "UNKNOWN",
+    "Status": "pending"
+  },
+  {
+    "DumpedAt": "2026-07-01 14:35:01",
+    "Customer": "UGS",
+    "ProjectCode": "A1825",
+    "DeviceId": "V1208I",
+    "DeviceType": "On/Off Valve",
+    "PredictedSection": "SECTION 1",
+    "PredictedCluster": "UNKNOWN",
+    "Status": "pending"
+  },
+  {
+    "DumpedAt": "2026-07-01 14:35:01",
+    "Customer": "UGS",
+    "ProjectCode": "A1825",
+    "DeviceId": "V1209C",
+    "DeviceType": "On/Off Valve",
+    "PredictedSection": "SECTION 1",
+    "PredictedCluster": "UNKNOWN",
+    "Status": "pending"
+  },
+  {
+    "DumpedAt": "2026-07-01 14:35:01",
+    "Customer": "UGS",
+    "ProjectCode": "A1825",
+    "DeviceId": "V1209E",
+    "DeviceType": "On/Off Valve",
+    "PredictedSection": "SECTION 1",
+    "PredictedCluster": "UNKNOWN",
+    "Status": "pending"
+  },
+  {
+    "DumpedAt": "2026-07-01 14:35:01",
+    "Customer": "UGS",
+    "ProjectCode": "A1825",
+    "DeviceId": "V1209F",
+    "DeviceType": "On/Off Valve",
+    "PredictedSection": "SECTION 1",
+    "PredictedCluster": "UNKNOWN",
+    "Status": "pending"
+  },
+  {
+    "DumpedAt": "2026-07-01 14:35:01",
+    "Customer": "UGS",
+    "ProjectCode": "A1825",
+    "DeviceId": "V1209G",
+    "DeviceType": "On/Off Valve",
+    "PredictedSection": "SECTION 1",
+    "PredictedCluster": "UNKNOWN",
+    "Status": "pending"
+  },
+  {
+    "DumpedAt": "2026-07-01 14:35:01",
+    "Customer": "UGS",
+    "ProjectCode": "A1825",
+    "DeviceId": "V1209H",
+    "DeviceType": "On/Off Valve",
+    "PredictedSection": "SECTION 1",
+    "PredictedCluster": "UNKNOWN",
+    "Status": "pending"
+  },
+  {
+    "DumpedAt": "2026-07-01 14:35:01",
+    "Customer": "UGS",
+    "ProjectCode": "A1825",
+    "DeviceId": "V1209I",
+    "DeviceType": "On/Off Valve",
+    "PredictedSection": "SECTION 1",
+    "PredictedCluster": "UNKNOWN",
+    "Status": "pending"
+  },
+  {
+    "DumpedAt": "2026-07-01 14:35:01",
+    "Customer": "UGS",
+    "ProjectCode": "A1825",
+    "DeviceId": "V1210C",
+    "DeviceType": "On/Off Valve",
+    "PredictedSection": "SECTION 1",
+    "PredictedCluster": "UNKNOWN",
+    "Status": "pending"
+  },
+  {
+    "DumpedAt": "2026-07-01 14:35:01",
+    "Customer": "UGS",
+    "ProjectCode": "A1825",
+    "DeviceId": "V1210E",
+    "DeviceType": "On/Off Valve",
+    "PredictedSection": "SECTION 1",
+    "PredictedCluster": "UNKNOWN",
+    "Status": "pending"
+  },
+  {
+    "DumpedAt": "2026-07-01 14:35:01",
+    "Customer": "UGS",
+    "ProjectCode": "A1825",
+    "DeviceId": "V1210F",
+    "DeviceType": "On/Off Valve",
+    "PredictedSection": "SECTION 1",
+    "PredictedCluster": "UNKNOWN",
+    "Status": "pending"
+  },
+  {
+    "DumpedAt": "2026-07-01 14:35:01",
+    "Customer": "UGS",
+    "ProjectCode": "A1825",
+    "DeviceId": "V1210G",
+    "DeviceType": "On/Off Valve",
+    "PredictedSection": "SECTION 1",
+    "PredictedCluster": "UNKNOWN",
+    "Status": "pending"
+  },
+  {
+    "DumpedAt": "2026-07-01 14:35:01",
+    "Customer": "UGS",
+    "ProjectCode": "A1825",
+    "DeviceId": "V1210H",
+    "DeviceType": "On/Off Valve",
+    "PredictedSection": "SECTION 1",
+    "PredictedCluster": "UNKNOWN",
+    "Status": "pending"
+  },
+  {
+    "DumpedAt": "2026-07-01 14:35:01",
+    "Customer": "UGS",
+    "ProjectCode": "A1825",
+    "DeviceId": "V1210I",
+    "DeviceType": "On/Off Valve",
+    "PredictedSection": "SECTION 1",
+    "PredictedCluster": "UNKNOWN",
+    "Status": "pending"
+  },
+  {
+    "DumpedAt": "2026-07-01 14:35:01",
+    "Customer": "UGS",
+    "ProjectCode": "A1825",
+    "DeviceId": "V1211C",
+    "DeviceType": "On/Off Valve",
+    "PredictedSection": "SECTION 1",
+    "PredictedCluster": "UNKNOWN",
+    "Status": "pending"
+  },
+  {
+    "DumpedAt": "2026-07-01 14:35:01",
+    "Customer": "UGS",
+    "ProjectCode": "A1825",
+    "DeviceId": "V1211E",
+    "DeviceType": "On/Off Valve",
+    "PredictedSection": "SECTION 1",
+    "PredictedCluster": "UNKNOWN",
+    "Status": "pending"
+  },
+  {
+    "DumpedAt": "2026-07-01 14:35:01",
+    "Customer": "UGS",
+    "ProjectCode": "A1825",
+    "DeviceId": "V1211F",
+    "DeviceType": "On/Off Valve",
+    "PredictedSection": "SECTION 1",
+    "PredictedCluster": "UNKNOWN",
+    "Status": "pending"
+  },
+  {
+    "DumpedAt": "2026-07-01 14:35:01",
+    "Customer": "UGS",
+    "ProjectCode": "A1825",
+    "DeviceId": "V1211G",
+    "DeviceType": "On/Off Valve",
+    "PredictedSection": "SECTION 1",
+    "PredictedCluster": "UNKNOWN",
+    "Status": "pending"
+  },
+  {
+    "DumpedAt": "2026-07-01 14:35:01",
+    "Customer": "UGS",
+    "ProjectCode": "A1825",
+    "DeviceId": "V1211H",
+    "DeviceType": "On/Off Valve",
+    "PredictedSection": "SECTION 1",
+    "PredictedCluster": "UNKNOWN",
+    "Status": "pending"
+  },
+  {
+    "DumpedAt": "2026-07-01 14:35:01",
+    "Customer": "UGS",
+    "ProjectCode": "A1825",
+    "DeviceId": "V1211I",
+    "DeviceType": "On/Off Valve",
+    "PredictedSection": "SECTION 1",
+    "PredictedCluster": "UNKNOWN",
+    "Status": "pending"
+  },
+  {
+    "DumpedAt": "2026-07-01 14:35:01",
+    "Customer": "UGS",
+    "ProjectCode": "A1825",
+    "DeviceId": "V1212C",
+    "DeviceType": "On/Off Valve",
+    "PredictedSection": "SECTION 1",
+    "PredictedCluster": "UNKNOWN",
+    "Status": "pending"
+  },
+  {
+    "DumpedAt": "2026-07-01 14:35:01",
+    "Customer": "UGS",
+    "ProjectCode": "A1825",
+    "DeviceId": "V1212E",
+    "DeviceType": "On/Off Valve",
+    "PredictedSection": "SECTION 1",
+    "PredictedCluster": "UNKNOWN",
+    "Status": "pending"
+  },
+  {
+    "DumpedAt": "2026-07-01 14:35:01",
+    "Customer": "UGS",
+    "ProjectCode": "A1825",
+    "DeviceId": "V1212F",
+    "DeviceType": "On/Off Valve",
+    "PredictedSection": "SECTION 1",
+    "PredictedCluster": "UNKNOWN",
+    "Status": "pending"
+  },
+  {
+    "DumpedAt": "2026-07-01 14:35:01",
+    "Customer": "UGS",
+    "ProjectCode": "A1825",
+    "DeviceId": "V1212G",
+    "DeviceType": "On/Off Valve",
+    "PredictedSection": "SECTION 1",
+    "PredictedCluster": "UNKNOWN",
+    "Status": "pending"
+  },
+  {
+    "DumpedAt": "2026-07-01 14:35:01",
+    "Customer": "UGS",
+    "ProjectCode": "A1825",
+    "DeviceId": "V1212H",
+    "DeviceType": "On/Off Valve",
+    "PredictedSection": "SECTION 1",
+    "PredictedCluster": "UNKNOWN",
+    "Status": "pending"
+  },
+  {
+    "DumpedAt": "2026-07-01 14:35:01",
+    "Customer": "UGS",
+    "ProjectCode": "A1825",
+    "DeviceId": "V1212I",
+    "DeviceType": "On/Off Valve",
+    "PredictedSection": "SECTION 1",
+    "PredictedCluster": "UNKNOWN",
+    "Status": "pending"
+  },
+  {
+    "DumpedAt": "2026-07-01 14:35:01",
+    "Customer": "UGS",
+    "ProjectCode": "A1825",
+    "DeviceId": "V160",
+    "DeviceType": "On/Off Valve",
+    "PredictedSection": "SECTION 3",
+    "PredictedCluster": "UNKNOWN",
+    "Status": "pending"
+  },
+  {
+    "DumpedAt": "2026-07-01 14:35:01",
+    "Customer": "UGS",
+    "ProjectCode": "A1825",
+    "DeviceId": "V162",
+    "DeviceType": "On/Off Valve",
+    "PredictedSection": "SECTION 3",
+    "PredictedCluster": "UNKNOWN",
+    "Status": "pending"
+  },
+  {
+    "DumpedAt": "2026-07-01 14:35:01",
+    "Customer": "UGS",
+    "ProjectCode": "A1825",
+    "DeviceId": "V243",
+    "DeviceType": "On/Off Valve",
+    "PredictedSection": "SECTION 3",
+    "PredictedCluster": "UNKNOWN",
+    "Status": "pending"
+  },
+  {
+    "DumpedAt": "2026-07-01 14:35:01",
+    "Customer": "UGS",
+    "ProjectCode": "A1825",
+    "DeviceId": "V251",
+    "DeviceType": "On/Off Valve",
+    "PredictedSection": "SECTION 3",
+    "PredictedCluster": "UNKNOWN",
+    "Status": "pending"
+  },
+  {
+    "DumpedAt": "2026-07-01 14:35:01",
+    "Customer": "UGS",
+    "ProjectCode": "A1825",
+    "DeviceId": "V261",
+    "DeviceType": "On/Off Valve",
+    "PredictedSection": "SECTION 3",
+    "PredictedCluster": "UNKNOWN",
+    "Status": "pending"
+  },
+  {
+    "DumpedAt": "2026-07-01 14:35:01",
+    "Customer": "UGS",
+    "ProjectCode": "A1825",
+    "DeviceId": "V262",
+    "DeviceType": "On/Off Valve",
+    "PredictedSection": "SECTION 3",
+    "PredictedCluster": "UNKNOWN",
+    "Status": "pending"
+  },
+  {
+    "DumpedAt": "2026-07-01 14:35:01",
+    "Customer": "UGS",
+    "ProjectCode": "A1825",
+    "DeviceId": "V263",
+    "DeviceType": "On/Off Valve",
+    "PredictedSection": "SECTION 3",
+    "PredictedCluster": "UNKNOWN",
+    "Status": "pending"
+  },
+  {
+    "DumpedAt": "2026-07-01 14:35:01",
+    "Customer": "UGS",
+    "ProjectCode": "A1825",
+    "DeviceId": "V264",
+    "DeviceType": "On/Off Valve",
+    "PredictedSection": "SECTION 3",
+    "PredictedCluster": "UNKNOWN",
+    "Status": "pending"
+  }
+]

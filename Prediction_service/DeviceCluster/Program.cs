@@ -12,6 +12,11 @@ using DeviceIdentifierLibrary.ModelRequest;
 using DeviceIdentifierLibrary.ModelResult;
 using DeviceIdentifierLibrary.Services;
 
+// ◄── NEW: Logic.dll
+using Logic;
+using Logic.Models;
+using Logic.LogicAssignUser;
+
 public class Program
 {
 	private static readonly string _baseDir = AppContext.BaseDirectory;
@@ -21,7 +26,8 @@ public class Program
 	private static readonly string PYTHON_EXE = Environment.GetEnvironmentVariable("PYTHON_EXE") ?? "python";
 	private static readonly string SCRIPT_TYPE = Path.Combine(_projectDir, "predict_equipment.py");
 	private static readonly string SCRIPT_PIPELINE = Path.Combine(_projectDir, "predict_sectioncluster.py");
-	private static readonly string SQL_OUTPUT_JSON = Path.Combine(_serviceDir, "data", "devices.json"); 
+	private static readonly string SQL_OUTPUT_JSON = Path.Combine(_serviceDir, "data", "devices.json");
+	private static readonly string UNKNOWN_DUMP = Path.Combine(_serviceDir, "data", "unknown_dump.json"); // ◄── NEW: dump file path
 	private static readonly JsonSerializerOptions _jsonOpts = new() { PropertyNameCaseInsensitive = true };
 
 	private const string PROJECT_NAME = "XenxibleIdentifier";
@@ -60,45 +66,33 @@ public class Program
 		{
 			client = new PythonClient(PYTHON_EXE);
 
-			// ── PREPARATION 1/3: Load full reference data from SQL → save as JSON ────
-			Console.WriteLine("[Preparation 1/3] Loading reference data from SQL Server...");
+			// ── STEP 1: SQL reads device IDs ──────────────────────────────────────────
+			Console.WriteLine("[Step 1/8] Loading reference data from SQL Server...");
 			string SQL_CONN = GetConnectionString();
 			var sqlReader = new PythonSQL(SQL_CONN);
 			await sqlReader.QueryToJsonFileAsync("SELECT * FROM DummyInput", SQL_OUTPUT_JSON);
-			Console.WriteLine($"[Preparation 1/3] Reference data saved → {SQL_OUTPUT_JSON}\n");
+			Console.WriteLine($"[Step 1/8] Reference data saved → {SQL_OUTPUT_JSON}\n");
 
-
-			// ── PREPARATION 2/3: Auto-detect project + load DataIds from SQL ─────────
-			Console.WriteLine("[Preparation 2/3] Detecting project from SQL Server...");
-
-			// QueryToJsonAsync already returns { project_code, customer_code, data_ids[] }
-			// so deserialize directly into DevicePredictRequest
 			string requestJson = await sqlReader.QueryToJsonAsync(
-				"SELECT ProjectCode, CustomerCode, DataIds FROM DummyInput" 
+				"SELECT ProjectCode, CustomerCode, DataIds FROM DummyInput"
 			);
 
-			request = JsonSerializer.Deserialize<DevicePredictRequest>(requestJson, _jsonOpts); 
+			request = JsonSerializer.Deserialize<DevicePredictRequest>(requestJson, _jsonOpts);
 
 			if (request == null || request.data_ids == null || request.data_ids.Count == 0)
 				throw new InvalidOperationException("No project data found in DummyInput table.");
 
-			// BOM cleanup
 			request.data_ids = request.data_ids
 				.Select(id => id.Replace("\uFEFF", "").Trim())
 				.Where(id => !string.IsNullOrEmpty(id))
 				.ToList();
 
-			Console.WriteLine($"[Preparation 2/3] Project detected : {request.project_code} ({request.customer_code})");
-			Console.WriteLine($"[Preparation 2/3] Loaded {request.data_ids.Count} device IDs\n");
+			Console.WriteLine($"[Step 1/8] Project detected : {request.project_code} ({request.customer_code})");
+			Console.WriteLine($"[Step 1/8] Loaded {request.data_ids.Count} device IDs\n");
 
 
-			// ── PREPARATION 3/3: Equipment list ──────────────────────────────────────
-			Console.WriteLine("[Preparation 3/3] Importing equipment list from SQL Server...");
-			Console.WriteLine("[Preparation 3/3] Skipped — equipment table not available yet.\n");
-
-
-			// ── STEP 1: Device Type ───────────────────────────────────────────────────
-			Console.WriteLine("[Model Prediction Step 1/3] Predicting device types...");
+			// ── STEP 2: Predict device type ───────────────────────────────────────────
+			Console.WriteLine("[Step 2/8] Predicting device types...");
 			var sw = Stopwatch.StartNew();
 			string typeJson = await client.RunAsync(SCRIPT_TYPE, request);
 			sw.Stop();
@@ -111,12 +105,12 @@ public class Program
 				.GroupBy(r => r.data_id)
 				.ToDictionary(g => g.Key, g => g.Last().data_type ?? "N/A");
 
-			Console.Write("\nPress Enter to predict Section...");
+			Console.Write("\nPress Enter to predict Section + Cluster...");
 			Console.ReadLine();
 
 
-			// ── STEP 2: Section ───────────────────────────────────────────────────────
-			Console.WriteLine("[Model Prediction Step 2/3] Predicting sections...");
+			// ── STEP 3: Predict section + cluster ─────────────────────────────────────
+			Console.WriteLine("[Step 3/8] Predicting sections...");
 			var pipelineRequest = new PipelinePredictRequest
 			{
 				records = typeResults.Select(r => new PipelineRecord
@@ -130,20 +124,63 @@ public class Program
 			sw.Restart();
 			string pipelineJson = await client.RunAsync(SCRIPT_PIPELINE, pipelineRequest);
 			sw.Stop();
-			double step2Secs = sw.Elapsed.TotalSeconds;
+			double step3Secs = sw.Elapsed.TotalSeconds;
 
 			pipelineResults = JsonSerializer.Deserialize<List<PipelineResult>>(pipelineJson, _jsonOpts);
 			PrintSectionTable(pipelineResults, deviceTypeLookup);
-			Console.WriteLine($"Time taken: {step2Secs:F1} secs");
+			Console.WriteLine($"Time taken: {step3Secs:F1} secs");
 
 			Console.Write("\nPress Enter to predict Cluster...");
 			Console.ReadLine();
 
-
-			// ── STEP 3: Cluster ───────────────────────────────────────────────────────
-			Console.WriteLine("[Model Prediction Step 3/3] Predicting clusters...");
+			Console.WriteLine("[Step 3/8] Predicting clusters...");
 			PrintClusterTable(pipelineResults, deviceTypeLookup);
-			Console.WriteLine($"Time taken: {step2Secs:F1} secs");
+			Console.WriteLine($"Time taken: {step3Secs:F1} secs");
+
+			Console.Write("\nPress Enter to run Logic...");
+			Console.ReadLine();
+
+
+			// ── STEP 4: Pass results into Logic.dll ───────────────────────────────────
+			Console.WriteLine("\n[Step 4/8] Passing results into Logic.dll...");    // ◄── NEW
+			var logic = new LogicAssignment(UNKNOWN_DUMP);                          // ◄── NEW
+
+			// Build DeviceResult list from model outputs                           // ◄── NEW
+			var allDeviceResults = pipelineResults.Select(r => new DeviceResult     // ◄── NEW
+			{
+				Customer = r.CUSTOMER,
+				ProjectCode = request.project_code,
+				DeviceId = r.DEVICE_ID,
+				DeviceType = deviceTypeLookup.TryGetValue(r.DEVICE_ID, out var dt) ? dt : "UNKNOWN",
+				Section = r.PREDICTED_SECTION ?? "UNKNOWN",
+				Cluster = r.PREDICTED_CLUSTER ?? "UNKNOWN",
+				Confidence = r.CLUSTER_CONFIDENCE ?? 0
+			}).ToList();
+
+			Console.WriteLine($"[Step 4/8] {allDeviceResults.Count} devices passed into Logic.dll\n");
+
+
+			// ── STEP 5: Logic splits KNOWN vs UNKNOWN ─────────────────────────────────
+			Console.WriteLine("[Step 5/8] Splitting KNOWN vs UNKNOWN devices...");  // ◄── NEW
+			var (knownDevices, unknownDevices) = logic.SplitKnownUnknown(allDeviceResults); // ◄── NEW
+			Console.WriteLine();
+
+
+			// ── STEP 6: UNKNOWN → dumped to JSON ──────────────────────────────────────
+			Console.WriteLine("[Step 6/8] Dumping UNKNOWN devices to JSON...");     // ◄── NEW
+			logic.DumpUnknown(unknownDevices);                                      // ◄── NEW
+			Console.WriteLine($"[Step 6/8] Dump file → {UNKNOWN_DUMP}\n");
+
+
+			// ── STEP 7: KNOWN → placed into cluster groups ────────────────────────────
+			Console.WriteLine("[Step 7/8] Building cluster groups from KNOWN devices..."); // ◄── NEW
+			var clusterGroups = logic.BuildClusterGroups(knownDevices);             // ◄── NEW
+			Console.WriteLine($"[Step 7/8] {clusterGroups.Count} cluster groups built\n");
+
+
+			// ── STEP 8: Print cluster grouping table ──────────────────────────────────
+			Console.WriteLine("[Step 8/8] Printing cluster grouping table...");     // ◄── NEW
+			logic.PrintClusterTable(clusterGroups);                                 // ◄── NEW
 
 
 			// ── OUTPUT RESULT: Manual Correction ─────────────────────────────────────
@@ -183,10 +220,9 @@ public class Program
 							if (typeIsUnknown)
 							{
 								Console.Write("Correct equipment type    : ");
-								string? rawType = Console.ReadLine()?.Trim();                                                    
+								string? rawType = Console.ReadLine()?.Trim();
 								correctType = string.IsNullOrEmpty(rawType) ? rawType
-											: char.ToUpper(rawType[0]) + rawType.Substring(1).ToLower();                        
-
+											: char.ToUpper(rawType[0]) + rawType.Substring(1).ToLower();
 							}
 							if (sectionIsUnknown)
 							{
@@ -210,15 +246,37 @@ public class Program
 									{
 										new { data_id = deviceId, equipment = correctType }
 									},
-									batch_results = typeResults!.Select(r => new { data_id = r.data_id, data_type = r.data_type }).ToList()  
+									batch_results = typeResults!.Select(r => new
+									{
+										data_id = r.data_id,
+										data_type = r.data_type
+									}).ToList()
 								};
 
 								Console.WriteLine($"[OUTPUT RESULT] Sending type correction for '{deviceId}'...");
 								string assignResult = await client!.RunAsync(SCRIPT_TYPE, assignPayload);
 								Console.WriteLine($"[OUTPUT RESULT] Done: {assignResult}\n");
+
+								// ◄── NEW: after correction, place device into logic cluster
+								var correctedEntry = new UnknownDumpEntry
+								{
+									Customer = request!.customer_code,
+									ProjectCode = request!.project_code,
+									DeviceId = deviceId,
+									DeviceType = correctType,
+									PredictedSection = correctSection ?? "UNKNOWN",
+									PredictedCluster = correctCluster ?? "UNKNOWN",
+									Status = "assigned"
+								};
+
+								var placed = logic.AssignByNumericSimilarity(correctedEntry, knownDevices);
+								if (placed != null)
+								{
+									logic.PlaceDevice(placed, clusterGroups);
+									Console.WriteLine("\n[Logic] Updated cluster grouping after correction:");
+									logic.PrintClusterTable(clusterGroups);
+								}
 							}
-
-
 
 							Console.WriteLine($"[OUTPUT RESULT] Correction summary for '{deviceId}':");
 							if (typeIsUnknown) Console.WriteLine($"  Type    : {correctType ?? "(skipped)"}");
@@ -245,7 +303,7 @@ public class Program
 
 	private static void PrintDeviceTypeTable(List<DeviceTypeResult> results)
 	{
-		Console.WriteLine("\n===== STEP 1: DEVICE TYPE =====\n");
+		Console.WriteLine("\n===== STEP 2: DEVICE TYPE =====\n");
 		Console.WriteLine($"{"Customer",-12} | {"Device ID",-25} | {"Device Type",-25} | {"Confidence",10}");
 		Console.WriteLine(new string('-', 80));
 		foreach (var r in results)
@@ -257,7 +315,7 @@ public class Program
 
 	private static void PrintSectionTable(List<PipelineResult> results, Dictionary<string, string> lookup)
 	{
-		Console.WriteLine("\n===== STEP 2: SECTION =====\n");
+		Console.WriteLine("\n===== STEP 3: SECTION =====\n");
 		Console.WriteLine($"{"Customer",-12} | {"Device ID",-25} | {"Device Type",-25} | {"Section",-20} | {"Confidence %",12}");
 		Console.WriteLine(new string('-', 110));
 		foreach (var r in results)
