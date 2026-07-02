@@ -211,7 +211,7 @@ public class Program
 
 
 
-			// ── OUTPUT RESULT: Manual Correction ─────────────────────────────────────
+			// ── OUTPUT RESULT: Manual Correction ─────────────────────────────────────_
 			Console.Write("\n[OUTPUT RESULT] Correct any prediction? (y/n): ");
 			string? userInput = Console.ReadLine();
 
