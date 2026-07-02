@@ -258,14 +258,7 @@ public class Program
 								correctSection = Console.ReadLine()?.Trim().ToUpper();
 							}
 
-							///MODIFY HERE -------- DELETE SOON THIS ONE IS OBSOLETE
-							//if (clusterIsUnknown)
-							//{
-							//	Console.Write("Correct equipment cluster : ");
-							//	correctCluster = Console.ReadLine()?.Trim().ToUpper();
-							//}
-							//// UNTIL DELETE HERE -------- DELETE SOON THIS ONE IS OBSOLETE
-							///
+
 
 							if (clusterIsUnknown)                                                    // ◄── MODIFIED
 							{
@@ -273,14 +266,16 @@ public class Program
 								var suggestions = logic.SuggestTopClusters(deviceId, knownDevices); // ◄── MODIFIED
 								if (suggestions.Count > 0)
 								{
-									Console.WriteLine("\n  Top 3 suggested clusters based on numeric similarity:");
+
+									Console.WriteLine("\n  Top 3 suggested clusters based on string similarity:");  // ◄── MODIFIED
 									for (int i = 0; i < suggestions.Count; i++)
 									{
 										var s = suggestions[i];
 										Console.WriteLine($"  [{i + 1}] {s.Section,-12} | {s.Cluster,-12} " +
 														  $"→ closest: {s.ClosestDeviceId,-15} " +
-														  $"(diff: {s.NumericDiff}, confidence: {s.Confidence:F2}%)");
+														  $"(similarity: {s.Similarity:F1}%)");                  // ◄── MODIFIED
 									}
+
 									Console.Write($"\n  Enter cluster number [1-{suggestions.Count}] or type manually: "); // ◄── MODIFIED
 									string? clusterInput = Console.ReadLine()?.Trim();
 
@@ -343,7 +338,7 @@ public class Program
 							{
 								logic.PlaceDevice(placed, clusterGroups);                            // ◄── MODIFIED
 								Console.WriteLine("\n[Logic] Updated cluster grouping after correction:");
-								logic.PrintClusterTable(clusterGroups);                              // ◄── MODIFIED
+								logic.PrintClusterTable(clusterGroups, placed.Section);                              // ◄── MODIFIED
 							}
 
 							Console.WriteLine($"[OUTPUT RESULT] Correction summary for '{deviceId}':");

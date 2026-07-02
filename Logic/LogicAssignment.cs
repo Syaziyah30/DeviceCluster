@@ -295,5 +295,28 @@ namespace Logic
 										  $"{sd.Score,9:F1}%");
 			}
 		}
+		// ── PRINT HELPERS: filtered by section ────────────────────────────── // ◄── ADD BELOW
+		public void PrintClusterTable(List<ClusterGroup> groups, string sectionFilter)
+		{
+			Console.WriteLine($"\n===== LOGIC: CLUSTER GROUPING — {sectionFilter} =====\n");
+
+			var filtered = groups
+				.Where(g => g.Section == sectionFilter)
+				.OrderBy(g => g.Cluster)
+				.GroupBy(g => g.Section);
+
+			foreach (var section in filtered)
+			{
+				Console.WriteLine($"\n{section.Key} {new string('-', 88)}");
+				Console.WriteLine($"{"Section",-12} | {"Cluster",-12} | {"Device ID",-25} | {"Device Type",-25} | {"Score %",10}");
+				Console.WriteLine(new string('-', 95));
+
+				foreach (var g in section)
+					foreach (var sd in g.Devices.OrderByDescending(sd => sd.Score))
+						Console.WriteLine($"{g.Section,-12} | {g.Cluster,-12} | " +
+										  $"{sd.Device.DeviceId,-25} | {sd.Device.DeviceType,-25} | " +
+										  $"{sd.Score,9:F1}%");
+			}
+		}
 	}
 }
