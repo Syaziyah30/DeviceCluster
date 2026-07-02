@@ -179,8 +179,36 @@ public class Program
 
 
 			// ── STEP 8: Print cluster grouping table ──────────────────────────────────
-			Console.WriteLine("[Step 8/8] Printing cluster grouping table...");     // ◄── NEW
-			logic.PrintClusterTable(clusterGroups);                                 // ◄── NEW
+			Console.WriteLine("[Step 8/8] Printing cluster grouping table...");
+			logic.PrintClusterTable(clusterGroups);
+
+
+			// ── STEP 9: Print UNKNOWN dump table ──────────────────────────────────────  // ◄── NEW
+			Console.WriteLine($"\n[Step 9] UNKNOWN devices pending manual assignment on [Date: {DateTime.Now:yyyy-MM-dd}]:\n");  // ◄── MODIFIED
+
+			if (unknownDevices.Count == 0)                                                  // ◄── NEW
+			{                                                                               // ◄── NEW
+				Console.WriteLine("[Step 9] No unknown devices found.\n");                 // ◄── NEW
+			}                                                                               // ◄── NEW
+			else                                                                            // ◄── NEW
+			{                                                                               // ◄── NEW
+				Console.WriteLine($"{"DumpedAt",-10} | {"Customer",-10} | {"ProjectCode",-12} | {"DeviceId",-25} | {"DeviceType",-25} | {"PredictedSection",-15} | {"PredictedCluster",-15}");  // ◄── NEW
+				Console.WriteLine(new string('-', 130));                                    // ◄── NEW
+
+				foreach (var u in unknownDevices)                                           // ◄── NEW
+				{                                                                           // ◄── NEW
+					Console.WriteLine(                                                      // ◄── NEW
+						$"{DateTime.Now.ToString("HH:mm:ss"),-10} | " +         // ◄── NEW
+						$"{u.Customer,-10} | " +                                            // ◄── NEW
+						$"{u.ProjectCode,-12} | " +                                         // ◄── NEW
+						$"{u.DeviceId,-25} | " +                                            // ◄── NEW
+						$"{u.DeviceType,-25} | " +                                          // ◄── NEW
+						$"{u.Section,-15} | " +                                             // ◄── NEW
+						$"{u.Cluster,-15} ");
+				}                                                                           // ◄── NEW
+				Console.WriteLine($"\n[Step 9] Total unknown: {unknownDevices.Count} devices → saved to {UNKNOWN_DUMP}\n");  // ◄── NEW
+			}                                                                               // ◄── NEW
+
 
 
 			// ── OUTPUT RESULT: Manual Correction ─────────────────────────────────────
@@ -235,7 +263,8 @@ public class Program
 								correctCluster = Console.ReadLine()?.Trim().ToUpper();
 							}
 
-							if (!string.IsNullOrEmpty(correctType))
+							// ── Send type correction to Python only if type was corrected ─────────
+							if (!string.IsNullOrEmpty(correctType))                                  // ◄── MODIFIED
 							{
 								var assignPayload = new
 								{
@@ -256,26 +285,30 @@ public class Program
 								Console.WriteLine($"[OUTPUT RESULT] Sending type correction for '{deviceId}'...");
 								string assignResult = await client!.RunAsync(SCRIPT_TYPE, assignPayload);
 								Console.WriteLine($"[OUTPUT RESULT] Done: {assignResult}\n");
+							}
 
-								// ◄── NEW: after correction, place device into logic cluster
-								var correctedEntry = new UnknownDumpEntry
-								{
-									Customer = request!.customer_code,
-									ProjectCode = request!.project_code,
-									DeviceId = deviceId,
-									DeviceType = correctType,
-									PredictedSection = correctSection ?? "UNKNOWN",
-									PredictedCluster = correctCluster ?? "UNKNOWN",
-									Status = "assigned"
-								};
+							// ── Run Logic placement for ANY correction ────────────────────────────  // ◄── MODIFIED
+							string resolvedType = correctType ?? deviceTypeLookup.GetValueOrDefault(deviceId, "UNKNOWN");  // ◄── MODIFIED
+							string resolvedSection = correctSection ?? matchedPipeline?.PREDICTED_SECTION ?? "UNKNOWN";          // ◄── MODIFIED
+							string resolvedCluster = correctCluster ?? matchedPipeline?.PREDICTED_CLUSTER ?? "UNKNOWN";          // ◄── MODIFIED
 
-								var placed = logic.AssignByNumericSimilarity(correctedEntry, knownDevices);
-								if (placed != null)
-								{
-									logic.PlaceDevice(placed, clusterGroups);
-									Console.WriteLine("\n[Logic] Updated cluster grouping after correction:");
-									logic.PrintClusterTable(clusterGroups);
-								}
+							var correctedEntry = new UnknownDumpEntry                                // ◄── MODIFIED
+							{
+								Customer = request!.customer_code,
+								ProjectCode = request!.project_code,
+								DeviceId = deviceId,
+								DeviceType = resolvedType,
+								PredictedSection = resolvedSection,
+								PredictedCluster = resolvedCluster,
+								Status = "assigned"
+							};
+
+							var placed = logic.AssignByNumericSimilarity(correctedEntry, knownDevices);  // ◄── MODIFIED
+							if (placed != null)
+							{
+								logic.PlaceDevice(placed, clusterGroups);                            // ◄── MODIFIED
+								Console.WriteLine("\n[Logic] Updated cluster grouping after correction:");
+								logic.PrintClusterTable(clusterGroups);                              // ◄── MODIFIED
 							}
 
 							Console.WriteLine($"[OUTPUT RESULT] Correction summary for '{deviceId}':");
