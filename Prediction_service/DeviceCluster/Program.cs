@@ -257,11 +257,46 @@ public class Program
 								Console.Write("Correct equipment section : ");
 								correctSection = Console.ReadLine()?.Trim().ToUpper();
 							}
-							if (clusterIsUnknown)
+
+							///MODIFY HERE -------- DELETE SOON THIS ONE IS OBSOLETE
+							//if (clusterIsUnknown)
+							//{
+							//	Console.Write("Correct equipment cluster : ");
+							//	correctCluster = Console.ReadLine()?.Trim().ToUpper();
+							//}
+							//// UNTIL DELETE HERE -------- DELETE SOON THIS ONE IS OBSOLETE
+							///
+
+							if (clusterIsUnknown)                                                    // ◄── MODIFIED
 							{
-								Console.Write("Correct equipment cluster : ");
-								correctCluster = Console.ReadLine()?.Trim().ToUpper();
+								// Show top 3 suggested clusters
+								var suggestions = logic.SuggestTopClusters(deviceId, knownDevices); // ◄── MODIFIED
+								if (suggestions.Count > 0)
+								{
+									Console.WriteLine("\n  Top 3 suggested clusters based on numeric similarity:");
+									for (int i = 0; i < suggestions.Count; i++)
+									{
+										var s = suggestions[i];
+										Console.WriteLine($"  [{i + 1}] {s.Section,-12} | {s.Cluster,-12} " +
+														  $"→ closest: {s.ClosestDeviceId,-15} " +
+														  $"(diff: {s.NumericDiff}, confidence: {s.Confidence:F2}%)");
+									}
+									Console.Write($"\n  Enter cluster number [1-{suggestions.Count}] or type manually: "); // ◄── MODIFIED
+									string? clusterInput = Console.ReadLine()?.Trim();
+
+									if (int.TryParse(clusterInput, out int pick) && pick >= 1 && pick <= suggestions.Count)
+										correctCluster = suggestions[pick - 1].Cluster;             // ◄── MODIFIED: user picks by number
+									else
+										correctCluster = clusterInput?.ToUpper();                   // ◄── MODIFIED: user types manually
+								}
+								else
+								{
+									Console.Write("Correct equipment cluster : ");
+									correctCluster = Console.ReadLine()?.Trim().ToUpper();
+								}
 							}
+
+
 
 							// ── Send type correction to Python only if type was corrected ─────────
 							if (!string.IsNullOrEmpty(correctType))                                  // ◄── MODIFIED

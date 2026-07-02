@@ -6,6 +6,7 @@ using System.Text.Json;
 using System.Text.RegularExpressions;
 using Logic.Models;
 using Logic.LogicAssignUser;
+using Logic.SimilarityScore;  // ◄── NEW
 
 namespace Logic
 {
@@ -37,6 +38,7 @@ namespace Logic
 			!string.IsNullOrEmpty(r.DeviceType) && r.DeviceType != "UNKNOWN" &&
 			!string.IsNullOrEmpty(r.Section) && r.Section != "UNKNOWN" &&
 			!string.IsNullOrEmpty(r.Cluster) && r.Cluster != "UNKNOWN";
+
 
 		// ── STEP 2: Dump UNKNOWN to JSON file ─────────────────────────────────
 		public void DumpUnknown(List<DeviceResult> unknownDevices)
@@ -77,22 +79,22 @@ namespace Logic
 			Console.WriteLine($"[Logic] Dumped {unknownDevices.Count} unknown devices → {_dumpFilePath}");
 		}
 
-		// ── STEP 3: Assign section/cluster by numeric similarity ──────────────
+
+		// ── STEP 3: Assign section/cluster by Levenshtein similarity ──────────  // ◄── MODIFIED
 		public DeviceResult AssignByNumericSimilarity(
 			UnknownDumpEntry entry,
 			List<DeviceResult> knownDevices)
 		{
-			int targetNumeric = ExtractNumeric(entry.DeviceId);
-
-			if (targetNumeric < 0)
+			if (string.IsNullOrEmpty(entry.DeviceId))
 			{
-				Console.WriteLine($"[Logic] Could not extract numeric from '{entry.DeviceId}'. Skipping.");
+				Console.WriteLine($"[Logic] Empty DeviceId. Skipping.");
 				return null!;
 			}
 
+			// ◄── MODIFIED: use Levenshtein instead of numeric extraction
 			var closest = knownDevices
-				.Where(d => ExtractNumeric(d.DeviceId) >= 0)
-				.OrderBy(d => Math.Abs(ExtractNumeric(d.DeviceId) - targetNumeric))
+				.Where(d => !string.IsNullOrEmpty(d.DeviceId))
+				.OrderByDescending(d => StringSimilarity.LevenshteinSimilarity(entry.DeviceId, d.DeviceId))
 				.FirstOrDefault();
 
 			if (closest == null)
@@ -101,8 +103,10 @@ namespace Logic
 				return null!;
 			}
 
-			Console.WriteLine($"[Logic] '{entry.DeviceId}' (numeric={targetNumeric}) " +
-							  $"→ closest to '{closest.DeviceId}' (numeric={ExtractNumeric(closest.DeviceId)}) " +
+			double sim = StringSimilarity.LevenshteinSimilarity(entry.DeviceId, closest.DeviceId);
+
+			Console.WriteLine($"[Logic] '{entry.DeviceId}' " +
+							  $"→ closest to '{closest.DeviceId}' (similarity={sim:F1}%) " +
 							  $"→ assigned {closest.Section}, {closest.Cluster}");
 
 			return new DeviceResult
@@ -113,9 +117,39 @@ namespace Logic
 				DeviceType = entry.DeviceType,
 				Section = closest.Section,
 				Cluster = closest.Cluster,
-				Confidence = 0
+				Confidence = closest.Confidence
 			};
 		}
+
+
+		// ── STEP 3B: Suggest top N clusters by Levenshtein similarity ─────────  // ◄── MODIFIED
+		public List<(string Section, string Cluster, string ClosestDeviceId, double Similarity)>
+			SuggestTopClusters(string deviceId, List<DeviceResult> knownDevices, int topN = 3)
+		{
+			return knownDevices
+				.Where(d => !string.IsNullOrEmpty(d.DeviceId))
+				.Select(d => new
+				{
+					Device = d,
+					Similarity = StringSimilarity.LevenshteinSimilarity(deviceId, d.DeviceId)  // ◄── MODIFIED
+				})
+				.OrderByDescending(x => x.Similarity)
+				.GroupBy(x => new { x.Device.Section, x.Device.Cluster })
+				.Select(g =>
+				{
+					var best = g.First();
+					return (
+						Section: best.Device.Section,
+						Cluster: best.Device.Cluster,
+						ClosestDeviceId: best.Device.DeviceId,
+						Similarity: best.Similarity
+					);
+				})
+				.OrderByDescending(x => x.Similarity)
+				.Take(topN)
+				.ToList();
+		}
+
 
 		// ── STEP 4: Build cluster groups with scores ───────────────────────────
 		public List<ClusterGroup> BuildClusterGroups(List<DeviceResult> devices)
@@ -132,12 +166,13 @@ namespace Logic
 						Devices = deviceList.Select(d => new ScoredDevice
 						{
 							Device = d,
-							Score = d.Confidence  // ◄── MODIFIED: score = confidence from model
+							Score = d.Confidence
 						}).ToList()
 					};
 				})
 				.ToList();
 		}
+
 
 		// ── STEP 5: Place new device + displacement check ─────────────────────
 		public void PlaceDevice(DeviceResult newDevice, List<ClusterGroup> groups)
@@ -153,7 +188,7 @@ namespace Logic
 					Cluster = newDevice.Cluster,
 					Devices = new List<ScoredDevice>
 					{
-						new ScoredDevice { Device = newDevice, Score = 100 }
+						new ScoredDevice { Device = newDevice, Score = newDevice.Confidence }
 					}
 				});
 				Console.WriteLine($"[Logic] Created new cluster {newDevice.Section}/{newDevice.Cluster} " +
@@ -161,7 +196,6 @@ namespace Logic
 				return;
 			}
 
-			var allDevicesInCluster = targetGroup.Devices.Select(sd => sd.Device).ToList();
 			double newScore = newDevice.Confidence;
 			var weakest = targetGroup.Devices.OrderBy(sd => sd.Score).First();
 
@@ -185,6 +219,7 @@ namespace Logic
 			RecalculateScores(targetGroup);
 		}
 
+
 		// ── STEP 6: Displacement to next best cluster ─────────────────────────
 		private void DisplaceToNextBestCluster(DeviceResult displaced, List<ClusterGroup> groups)
 		{
@@ -199,7 +234,6 @@ namespace Logic
 				return;
 			}
 
-			// ◄── MODIFIED: pick cluster where average confidence is highest
 			var bestCluster = sameSection
 				.OrderByDescending(g => g.Devices.Average(sd => sd.Score))
 				.First();
@@ -207,7 +241,7 @@ namespace Logic
 			bestCluster.Devices.Add(new ScoredDevice
 			{
 				Device = displaced,
-				Score = displaced.Confidence  // ◄── MODIFIED: use confidence directly
+				Score = displaced.Confidence
 			});
 
 			Console.WriteLine($"[Logic] Displaced '{displaced.DeviceId}' → " +
@@ -215,8 +249,8 @@ namespace Logic
 							  $"(confidence={displaced.Confidence:F2}%)");
 		}
 
-		
 
+		// ── HELPERS ───────────────────────────────────────────────────────────
 		private int ExtractNumeric(string deviceId)
 		{
 			var match = Regex.Match(deviceId, @"\d+");
@@ -225,7 +259,6 @@ namespace Logic
 
 		private void RecalculateScores(ClusterGroup group)
 		{
-			var allDevices = group.Devices.Select(sd => sd.Device).ToList();
 			foreach (var sd in group.Devices)
 				sd.Score = sd.Device.Confidence;
 		}
@@ -237,6 +270,7 @@ namespace Logic
 			return JsonSerializer.Deserialize<List<UnknownDumpEntry>>(json, _jsonOpts)
 				   ?? new List<UnknownDumpEntry>();
 		}
+
 
 		// ── PRINT HELPERS ─────────────────────────────────────────────────────
 		public void PrintClusterTable(List<ClusterGroup> groups)
@@ -262,4 +296,4 @@ namespace Logic
 			}
 		}
 	}
-} 
+}
