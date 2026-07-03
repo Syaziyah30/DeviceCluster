@@ -11,20 +11,18 @@
 
 | Component | Status |
 |---|---|
-| Device Type prediction | ✅ Completed |
-| Device Section prediction | ✅ Completed |
-| Device Cluster prediction | ✅ Completed |
-| C# service integration | ✅ Completed |
-| Incremental learning | ✅ Completed |
+| Device Type prediction        | ✅ Completed |
+| Device Section prediction     | ✅ Completed |
+| Device Cluster prediction     | ✅ Completed |
+| C# service integration        | ✅ Completed |
+| Incremental learning          | ✅ Completed |
 | Development DLL library (`DeviceIdentifierLibrary`) | ✅ Completed |
-| SQL integration (`PythonSQL.cs`) | ✅ Completed |
-| `Logic.dll` — cascading placement | ❗ In development |
-| `Logic.dll` — numeric similarity scoring & cluster grouping | ❗ In development |
-| Manual correction flow (C# ↔ Python) | ❗ In development |
-| Unknown device handling (`SuggestTopClusters`, JSON dump) | ❗ In development |
+| SQL integration (`PythonSQL.cs`)      | ✅ Completed |
+| `Logic.dll` — cascading placement     | ✅ Completed |
+| `Logic.dll` — similarity scoring & cluster grouping | ✅ Completed |
+| Update Model (Type, Section Cluster)  | ❗Partially Completed, Section DONE, Section Cluster PENDING |
+| Unknown device handling (`SuggestTopClusters`, JSON dump) | ✅ Completed |
 | Testing DLL library | ❌ Pending |
-
-> **TODO:** fill in exact completion state for the four "In development" rows once each is stable — split further if useful (e.g. cluster grouping vs. scoring vs. dump output).
 
 ---
 
