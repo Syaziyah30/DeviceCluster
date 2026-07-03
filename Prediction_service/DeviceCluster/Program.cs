@@ -52,6 +52,22 @@ public class Program
 		return connectionString;
 	}
 
+	// ◄── keeps asking until the user enters a valid y/n (case-insensitive, whitespace-tolerant)
+	private static string PromptYesNo(string prompt)
+	{
+		string? input;
+		while (true)
+		{
+			Console.Write(prompt);
+			input = Console.ReadLine()?.Trim().ToLower();
+
+			if (input == "y" || input == "n")
+				return input;
+
+			Console.WriteLine("[OUTPUT RESULT] Invalid input. Please enter 'y' or 'n'.\n");
+		}
+	}
+
 	public static async Task Main(string[] args)
 	{
 		Console.OutputEncoding = System.Text.Encoding.UTF8;
@@ -212,10 +228,9 @@ public class Program
 
 
 			// ── OUTPUT RESULT: Manual Correction ─────────────────────────────────────_
-			Console.Write("\n[OUTPUT RESULT] Correct any prediction? (y/n): ");
-			string? userInput = Console.ReadLine();
+			string userInput = PromptYesNo("\n[OUTPUT RESULT] Correct any prediction? (y/n): ");
 
-			while (userInput?.Trim().ToLower() == "y")
+			while (userInput == "y")
 			{
 				Console.Write("Device ID to correct: ");
 				string? deviceId = Console.ReadLine()?.Trim().ToUpper();
@@ -260,29 +275,29 @@ public class Program
 
 
 
-							if (clusterIsUnknown)                                                    // ◄── MODIFIED
+							if (clusterIsUnknown)
 							{
 								// Show top 3 suggested clusters
-								var suggestions = logic.SuggestTopClusters(deviceId, knownDevices); // ◄── MODIFIED
+								var suggestions = logic.SuggestTopClusters(deviceId, knownDevices);
 								if (suggestions.Count > 0)
 								{
 
-									Console.WriteLine("\n  Top 3 suggested clusters based on string similarity:");  // ◄── MODIFIED
+									Console.WriteLine("\n  Top 3 suggested clusters based on string similarity:");
 									for (int i = 0; i < suggestions.Count; i++)
 									{
 										var s = suggestions[i];
 										Console.WriteLine($"  [{i + 1}] {s.Section,-12} | {s.Cluster,-12} " +
 														  $"→ closest: {s.ClosestDeviceId,-15} " +
-														  $"(similarity: {s.Similarity:F1}%)");                  // ◄── MODIFIED
+														  $"(similarity: {s.Similarity:F1}%)");
 									}
 
-									Console.Write($"\n  Enter cluster number [1-{suggestions.Count}] or type manually: "); // ◄── MODIFIED
+									Console.Write($"\n  Enter cluster number [1-{suggestions.Count}] or type manually: ");
 									string? clusterInput = Console.ReadLine()?.Trim();
 
 									if (int.TryParse(clusterInput, out int pick) && pick >= 1 && pick <= suggestions.Count)
-										correctCluster = suggestions[pick - 1].Cluster;             // ◄── MODIFIED: user picks by number
+										correctCluster = suggestions[pick - 1].Cluster;
 									else
-										correctCluster = clusterInput?.ToUpper();                   // ◄── MODIFIED: user types manually
+										correctCluster = clusterInput?.ToUpper();
 								}
 								else
 								{
@@ -294,7 +309,7 @@ public class Program
 
 
 							// ── Send type correction to Python only if type was corrected ─────────
-							if (!string.IsNullOrEmpty(correctType))                                  // ◄── MODIFIED
+							if (!string.IsNullOrEmpty(correctType))
 							{
 								var assignPayload = new
 								{
@@ -317,12 +332,12 @@ public class Program
 								Console.WriteLine($"[OUTPUT RESULT] Done: {assignResult}\n");
 							}
 
-							// ── Run Logic placement for ANY correction ────────────────────────────  // ◄── MODIFIED
-							string resolvedType = correctType ?? deviceTypeLookup.GetValueOrDefault(deviceId, "UNKNOWN");  // ◄── MODIFIED
-							string resolvedSection = correctSection ?? matchedPipeline?.PREDICTED_SECTION ?? "UNKNOWN";          // ◄── MODIFIED
-							string resolvedCluster = correctCluster ?? matchedPipeline?.PREDICTED_CLUSTER ?? "UNKNOWN";          // ◄── MODIFIED
+							// ── Run Logic placement for ANY correction ────────────────────────────
+							string resolvedType = correctType ?? deviceTypeLookup.GetValueOrDefault(deviceId, "UNKNOWN");
+							string resolvedSection = correctSection ?? matchedPipeline?.PREDICTED_SECTION ?? "UNKNOWN";
+							string resolvedCluster = correctCluster ?? matchedPipeline?.PREDICTED_CLUSTER ?? "UNKNOWN";
 
-							var correctedEntry = new UnknownDumpEntry                                // ◄── MODIFIED
+							var correctedEntry = new UnknownDumpEntry
 							{
 								Customer = request!.customer_code,
 								ProjectCode = request!.project_code,
@@ -333,12 +348,12 @@ public class Program
 								Status = "assigned"
 							};
 
-							var placed = logic.AssignByNumericSimilarity(correctedEntry, knownDevices);  // ◄── MODIFIED
+							var placed = logic.AssignByNumericSimilarity(correctedEntry, knownDevices);
 							if (placed != null)
 							{
-								logic.PlaceDevice(placed, clusterGroups);                            // ◄── MODIFIED
+								logic.PlaceDevice(placed, clusterGroups);
 								Console.WriteLine("\n[Logic] Updated cluster grouping after correction:");
-								logic.PrintClusterTable(clusterGroups, placed.Section);                              // ◄── MODIFIED
+								logic.PrintClusterTable(clusterGroups, placed.Section);
 							}
 
 							Console.WriteLine($"[OUTPUT RESULT] Correction summary for '{deviceId}':");
@@ -349,8 +364,7 @@ public class Program
 					}
 				}
 
-				Console.Write("\n[OUTPUT RESULT] Correct any prediction? (y/n): ");
-				userInput = Console.ReadLine();
+				userInput = PromptYesNo("\n[OUTPUT RESULT] Correct any prediction? (y/n): ");
 			}
 		}
 		catch (Exception ex)
