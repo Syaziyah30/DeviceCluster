@@ -6,7 +6,7 @@ using System.Text.Json;
 using System.Text.RegularExpressions;
 using Logic.Models;
 using Logic.LogicAssignUser;
-using Logic.SimilarityScore;  // ◄── NEW
+using Logic.SimilarityScore;
 
 namespace Logic
 {
@@ -80,7 +80,7 @@ namespace Logic
 		}
 
 
-		// ── STEP 3: Assign section/cluster by Levenshtein similarity ──────────  // ◄── MODIFIED
+		// ── STEP 3: Assign section/cluster by numeric similarity ──────────────  // ◄── MODIFIED: switched to NumericalSimilarity
 		public DeviceResult AssignByNumericSimilarity(
 			UnknownDumpEntry entry,
 			List<DeviceResult> knownDevices)
@@ -91,11 +91,7 @@ namespace Logic
 				return null!;
 			}
 
-			// ◄── MODIFIED: use Levenshtein instead of numeric extraction
-			var closest = knownDevices
-				.Where(d => !string.IsNullOrEmpty(d.DeviceId))
-				.OrderByDescending(d => StringSimilarity.LevenshteinSimilarity(entry.DeviceId, d.DeviceId))
-				.FirstOrDefault();
+			var closest = NumericalSimilarity.FindClosest(entry.DeviceId, knownDevices);  // ◄── MODIFIED
 
 			if (closest == null)
 			{
@@ -103,10 +99,10 @@ namespace Logic
 				return null!;
 			}
 
-			double sim = StringSimilarity.LevenshteinSimilarity(entry.DeviceId, closest.DeviceId);
+			int diff = NumericalSimilarity.NumericDiff(entry.DeviceId, closest.DeviceId); // ◄── MODIFIED
 
 			Console.WriteLine($"[Logic] '{entry.DeviceId}' " +
-							  $"→ closest to '{closest.DeviceId}' (similarity={sim:F1}%) " +
+							  $"→ closest to '{closest.DeviceId}' (diff={diff}) " +
 							  $"→ assigned {closest.Section}, {closest.Cluster}");
 
 			return new DeviceResult
@@ -122,32 +118,11 @@ namespace Logic
 		}
 
 
-		// ── STEP 3B: Suggest top N clusters by Levenshtein similarity ─────────  // ◄── MODIFIED
-		public List<(string Section, string Cluster, string ClosestDeviceId, double Similarity)>
+		// ── STEP 3B: Suggest top N clusters by numeric similarity ─────────────  // ◄── MODIFIED: switched to NumericalSimilarity
+		public List<(string Section, string Cluster, string ClosestDeviceId, int Diff, double Similarity)>
 			SuggestTopClusters(string deviceId, List<DeviceResult> knownDevices, int topN = 3)
 		{
-			return knownDevices
-				.Where(d => !string.IsNullOrEmpty(d.DeviceId))
-				.Select(d => new
-				{
-					Device = d,
-					Similarity = StringSimilarity.LevenshteinSimilarity(deviceId, d.DeviceId)  // ◄── MODIFIED
-				})
-				.OrderByDescending(x => x.Similarity)
-				.GroupBy(x => new { x.Device.Section, x.Device.Cluster })
-				.Select(g =>
-				{
-					var best = g.First();
-					return (
-						Section: best.Device.Section,
-						Cluster: best.Device.Cluster,
-						ClosestDeviceId: best.Device.DeviceId,
-						Similarity: best.Similarity
-					);
-				})
-				.OrderByDescending(x => x.Similarity)
-				.Take(topN)
-				.ToList();
+			return NumericalSimilarity.SuggestTopClusters(deviceId, knownDevices, topN);  // ◄── MODIFIED
 		}
 
 
@@ -250,13 +225,28 @@ namespace Logic
 		}
 
 
-		// ── HELPERS ───────────────────────────────────────────────────────────
-		private int ExtractNumeric(string deviceId)
+		// ── UPDATE dump status after user assigns ─────────────────────────────  // ◄── NEW
+		public void MarkAsAssigned(string deviceId, string projectCode, string resolvedSection, string resolvedCluster)
 		{
-			var match = Regex.Match(deviceId, @"\d+");
-			return match.Success ? int.Parse(match.Value) : -1;
+			List<UnknownDumpEntry> existing = LoadDumpFile();
+
+			var entry = existing.FirstOrDefault(e =>
+				e.DeviceId == deviceId && e.ProjectCode == projectCode);
+
+			if (entry != null)
+			{
+				entry.Status = "assigned";
+				entry.PredictedSection = resolvedSection;
+				entry.PredictedCluster = resolvedCluster;
+			}
+
+			string json = JsonSerializer.Serialize(existing, _jsonOpts);
+			File.WriteAllText(_dumpFilePath, json);
+			Console.WriteLine($"[Logic] '{deviceId}' marked as assigned → {_dumpFilePath}");
 		}
 
+
+		// ── HELPERS ───────────────────────────────────────────────────────────
 		private void RecalculateScores(ClusterGroup group)
 		{
 			foreach (var sd in group.Devices)
@@ -295,7 +285,8 @@ namespace Logic
 										  $"{sd.Score,9:F1}%");
 			}
 		}
-		// ── PRINT HELPERS: filtered by section ────────────────────────────── // ◄── ADD BELOW
+
+		// ── PRINT HELPERS: filtered by section ────────────────────────────────
 		public void PrintClusterTable(List<ClusterGroup> groups, string sectionFilter)
 		{
 			Console.WriteLine($"\n===== LOGIC: CLUSTER GROUPING — {sectionFilter} =====\n");

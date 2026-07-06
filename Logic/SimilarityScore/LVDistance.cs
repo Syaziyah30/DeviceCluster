@@ -2,7 +2,7 @@
 
 namespace Logic.SimilarityScore
 {
-	public static class StringSimilarity
+	public static class LVDistance
 	{
 		// ── Strip prefix, keep numeric + suffix only ───────────────────────
 		// e.g. PU231 → "231", TE231A → "231A", CT141AF1 → "141AF1"
