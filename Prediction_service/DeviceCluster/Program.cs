@@ -288,7 +288,8 @@ public class Program
 										var s = suggestions[i];
 										Console.WriteLine($"  [{i + 1}] {s.Section,-12} | {s.Cluster,-12} " +
 														  $"→ closest: {s.ClosestDeviceId,-15} " +
-														  $"(similarity: {s.Similarity:F1}%)");
+														  //$"(similarity: {s.Similarity:F1}%)"); //Obsolete coding - LVDistance methode
+														  $"(diff: {s.Diff}, similarity: {s.Similarity:F1}%)");
 									}
 
 									Console.Write($"\n  Enter cluster number [1-{suggestions.Count}] or type manually: ");
@@ -352,6 +353,7 @@ public class Program
 							if (placed != null)
 							{
 								logic.PlaceDevice(placed, clusterGroups);
+								logic.MarkAsAssigned(deviceId, request!.project_code, placed.Section, placed.Cluster);
 								Console.WriteLine("\n[Logic] Updated cluster grouping after correction:");
 								logic.PrintClusterTable(clusterGroups, placed.Section);
 							}
