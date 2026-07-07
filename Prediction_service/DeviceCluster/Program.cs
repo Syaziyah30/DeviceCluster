@@ -27,7 +27,7 @@ public class Program
 	private static readonly string SCRIPT_TYPE = Path.Combine(_projectDir, "predict_equipment.py");
 	private static readonly string SCRIPT_PIPELINE = Path.Combine(_projectDir, "predict_sectioncluster.py");
 	private static readonly string SQL_OUTPUT_JSON = Path.Combine(_serviceDir, "data", "devices.json");
-	private static readonly string UNKNOWN_DUMP = Path.Combine(_serviceDir, "data", "unknown_dump.json"); // ◄── NEW: dump file path
+	private static readonly string UNKNOWN_DUMP = Path.Combine(_serviceDir, "data", "unknown_dump.json"); // dump file path
 	private static readonly JsonSerializerOptions _jsonOpts = new() { PropertyNameCaseInsensitive = true };
 
 	private const string PROJECT_NAME = "XenxibleIdentifier";
@@ -52,7 +52,7 @@ public class Program
 		return connectionString;
 	}
 
-	// ◄── keeps asking until the user enters a valid y/n (case-insensitive, whitespace-tolerant)
+	// keeps asking until the user enters a valid y/n (case-insensitive, whitespace-tolerant)
 	private static string PromptYesNo(string prompt)
 	{
 		string? input;
@@ -158,11 +158,11 @@ public class Program
 
 
 			// ── STEP 4: Pass results into Logic.dll ───────────────────────────────────
-			Console.WriteLine("\n[Step 4/8] Passing results into Logic.dll...");    // ◄── NEW
-			var logic = new LogicAssignment(UNKNOWN_DUMP);                          // ◄── NEW
+			Console.WriteLine("\n[Step 4/8] Passing results into Logic.dll...");   
+			var logic = new LogicAssignment(UNKNOWN_DUMP);                         
 
-			// Build DeviceResult list from model outputs                           // ◄── NEW
-			var allDeviceResults = pipelineResults.Select(r => new DeviceResult     // ◄── NEW
+			// Build DeviceResult list from model outputs                          
+			var allDeviceResults = pipelineResults.Select(r => new DeviceResult    
 			{
 				Customer = r.CUSTOMER,
 				ProjectCode = request.project_code,
@@ -177,20 +177,20 @@ public class Program
 
 
 			// ── STEP 5: Logic splits KNOWN vs UNKNOWN ─────────────────────────────────
-			Console.WriteLine("[Step 5/8] Splitting KNOWN vs UNKNOWN devices...");  // ◄── NEW
-			var (knownDevices, unknownDevices) = logic.SplitKnownUnknown(allDeviceResults); // ◄── NEW
+			Console.WriteLine("[Step 5/8] Splitting KNOWN vs UNKNOWN devices..."); 
+			var (knownDevices, unknownDevices) = logic.SplitKnownUnknown(allDeviceResults);
 			Console.WriteLine();
 
 
 			// ── STEP 6: UNKNOWN → dumped to JSON ──────────────────────────────────────
-			Console.WriteLine("[Step 6/8] Dumping UNKNOWN devices to JSON...");     // ◄── NEW
-			logic.DumpUnknown(unknownDevices);                                      // ◄── NEW
+			Console.WriteLine("[Step 6/8] Dumping UNKNOWN devices to JSON...");    
+			logic.DumpUnknown(unknownDevices);                                     
 			Console.WriteLine($"[Step 6/8] Dump file → {UNKNOWN_DUMP}\n");
 
 
 			// ── STEP 7: KNOWN → placed into cluster groups ────────────────────────────
-			Console.WriteLine("[Step 7/8] Building cluster groups from KNOWN devices..."); // ◄── NEW
-			var clusterGroups = logic.BuildClusterGroups(knownDevices);             // ◄── NEW
+			Console.WriteLine("[Step 7/8] Building cluster groups from KNOWN devices...");
+			var clusterGroups = logic.BuildClusterGroups(knownDevices);            
 			Console.WriteLine($"[Step 7/8] {clusterGroups.Count} cluster groups built\n");
 
 
@@ -199,31 +199,38 @@ public class Program
 			logic.PrintClusterTable(clusterGroups);
 
 
-			// ── STEP 9: Print UNKNOWN dump table ──────────────────────────────────────  // ◄── NEW
-			Console.WriteLine($"\n[Step 9] UNKNOWN devices pending manual assignment on [Date: {DateTime.Now:yyyy-MM-dd}]:\n");  // ◄── MODIFIED
+			// ── STEP 9: Print UNKNOWN dump table ────────────────────────────────────── 
+			Console.WriteLine($"\n[Step 9] UNKNOWN devices pending manual assignment on [Date: {DateTime.Now:yyyy-MM-dd}]:\n");
 
-			if (unknownDevices.Count == 0)                                                  // ◄── NEW
-			{                                                                               // ◄── NEW
-				Console.WriteLine("[Step 9] No unknown devices found.\n");                 // ◄── NEW
-			}                                                                               // ◄── NEW
-			else                                                                            // ◄── NEW
-			{                                                                               // ◄── NEW
-				Console.WriteLine($"{"DumpedAt",-10} | {"Customer",-10} | {"ProjectCode",-12} | {"DeviceId",-25} | {"DeviceType",-25} | {"PredictedSection",-15} | {"PredictedCluster",-15}");  // ◄── NEW
-				Console.WriteLine(new string('-', 130));                                    // ◄── NEW
+			if (unknownDevices.Count == 0)
+			{
+				Console.WriteLine("[Step 9] No unknown devices found.\n");
+			}
+			else
+			{
+				Console.WriteLine($"{"DumpedAt",-10} | {"Customer",-10} | {"ProjectCode",-12} | {"DeviceId",-25} | {"DeviceType",-25} | {"PredictedSection",-15} | {"PredictedCluster",-15}");
+				Console.WriteLine(new string('-', 130));
 
-				foreach (var u in unknownDevices)                                           // ◄── NEW
-				{                                                                           // ◄── NEW
-					Console.WriteLine(                                                      // ◄── NEW
-						$"{DateTime.Now.ToString("HH:mm:ss"),-10} | " +         // ◄── NEW
-						$"{u.Customer,-10} | " +                                            // ◄── NEW
-						$"{u.ProjectCode,-12} | " +                                         // ◄── NEW
-						$"{u.DeviceId,-25} | " +                                            // ◄── NEW
-						$"{u.DeviceType,-25} | " +                                          // ◄── NEW
-						$"{u.Section,-15} | " +                                             // ◄── NEW
+				// ◄── Sort by most UNKNOWN fields first
+				var sortedUnknown = unknownDevices
+					.OrderByDescending(u => u.DeviceType == "UNKNOWN" ? 1 : 0)
+					.ThenByDescending(u => u.Section == "UNKNOWN" ? 1 : 0)
+					.ThenByDescending(u => u.Cluster == "UNKNOWN" ? 1 : 0)
+					.ToList();
+
+				foreach (var u in sortedUnknown)                                           // ◄── MODIFIED: was unknownDevices
+				{
+					Console.WriteLine(
+						$"{DateTime.Now.ToString("HH:mm:ss"),-10} | " +
+						$"{u.Customer,-10} | " +
+						$"{u.ProjectCode,-12} | " +
+						$"{u.DeviceId,-25} | " +
+						$"{u.DeviceType,-25} | " +
+						$"{u.Section,-15} | " +
 						$"{u.Cluster,-15} ");
-				}                                                                           // ◄── NEW
-				Console.WriteLine($"\n[Step 9] Total unknown: {unknownDevices.Count} devices → saved to {UNKNOWN_DUMP}\n");  // ◄── NEW
-			}                                                                               // ◄── NEW
+				}
+				Console.WriteLine($"\n[Step 9] Total unknown: {unknownDevices.Count} devices → saved to {UNKNOWN_DUMP}\n");
+			}
 
 
 
@@ -282,14 +289,15 @@ public class Program
 								if (suggestions.Count > 0)
 								{
 
-									Console.WriteLine("\n  Top 3 suggested clusters based on string similarity:");
+
+
+									Console.WriteLine("\n  Top 3 suggested clusters by model confidence:");  // ◄── MODIFIED
 									for (int i = 0; i < suggestions.Count; i++)
 									{
 										var s = suggestions[i];
 										Console.WriteLine($"  [{i + 1}] {s.Section,-12} | {s.Cluster,-12} " +
-														  $"→ closest: {s.ClosestDeviceId,-15} " +
-														  //$"(similarity: {s.Similarity:F1}%)"); //Obsolete coding - LVDistance methode
-														  $"(diff: {s.Diff}, similarity: {s.Similarity:F1}%)");
+														  $"→ example: {s.ClosestDeviceId,-15} " +
+														  $"(confidence: {s.Confidence:F2}%)");             // ◄── MODIFIED
 									}
 
 									Console.Write($"\n  Enter cluster number [1-{suggestions.Count}] or type manually: ");

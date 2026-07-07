@@ -403,7 +403,7 @@ def manual_correction_lightweight(data_id, equipment, customer, freq_json_path, 
       (prefix + digits only) — excludes suffix variants like 'CR1201SPD'.
     - Does NOT touch sgd_model, tfidf_sgd, tfidf_similarity, label_encoder, nn, etc.
     """
-    global reference_df, master_df
+    global reference_df, master_df, ref_id_set   
 
     prefix = extract_initial(data_id)
     if not prefix:
@@ -417,6 +417,11 @@ def manual_correction_lightweight(data_id, equipment, customer, freq_json_path, 
         reference_df = pd.concat([reference_df, new_row], ignore_index=True)
     if 'data_id' in master_df.columns:
         master_df = pd.concat([master_df, new_row], ignore_index=True)
+
+
+    # ◄── NEW: keep ref_id_set consistent with reference_df
+    did_norm = preprocess_input_raw_series_vectorized(pd.Series([data_id]))[0]
+    ref_id_set.add(did_norm)
 
     # Strict prefix match: digits-only after prefix, excludes 'SPD' suffix variants   # ◄── MODIFIED
     if batch_results:
@@ -1008,8 +1013,113 @@ def run_cli():
 
             results_df = predict_from_list(data_ids, project_code, customer_code=customer_code)
 
+            # # --- Append newly-seen, confidently-classified devices to reference_df/master_df ---
+            # global reference_df, master_df, reference_index, ref_row_map, ref_id_set
+
+            # try:
+            #     if not isinstance(ref_id_set, set):
+            #         print(f"[WARN] ref_id_set was {type(ref_id_set)}, converting to mutable set.", file=sys.stderr)
+            #         ref_id_set = set(ref_id_set)
+
+            #     new_rows = []
+            #     for _, row in results_df.iterrows():
+            #         did = row["data_id"]
+            #         dtype = row["data_type"]
+            #         did_norm = preprocess_input_raw_series_vectorized(pd.Series([did]))[0]
+
+            #         if did_norm in ref_id_set:
+            #             continue
+            #         if dtype in (None, "", "UNKNOWN"):
+            #             continue
+
+            #         prefix = extract_initial(did)
+            #         new_rows.append([did, dtype, prefix, row["customer"]])
+            #         ref_id_set.add(did_norm)
+
+            #     if new_rows:
+            #         new_df = pd.DataFrame(new_rows, columns=['data_id', 'data_type', 'initial', 'customer'])
+            #         reference_df = pd.concat([reference_df, new_df], ignore_index=True)
+            #         master_df = pd.concat([master_df, new_df], ignore_index=True)
+                    
+            #         before = len(reference_df)
+            #         reference_df = reference_df.drop_duplicates(subset='data_id', keep='last').reset_index(drop=True)
+            #         dropped = before - len(reference_df)
+            #         if dropped:
+            #             print(f"[WARN] Dropped {dropped} duplicate data_id rows from reference_df.", file=sys.stderr)
+
+            #         reference_index = reference_df.set_index('data_id', drop=False)
+            #         ref_row_map = reference_index.to_dict(orient='index')
+
+            #         joblib.dump(reference_df, JSON_MODEL_FOLDER / config["reference_df"])
+            #         joblib.dump(master_df, JSON_MODEL_FOLDER / config["master_df"])
+            #         joblib.dump(ref_id_set, JSON_MODEL_FOLDER / config["ref_id_set"])
+
+            #         print(f"[INFO] Appended {len(new_rows)} newly-classified devices to reference_df/master_df.", file=sys.stderr)
+
+            # except Exception as append_err:
+            #     print(f"[ERROR] Failed to append new devices to reference/master_df: {append_err}", file=sys.stderr)
+            #     traceback.print_exc(file=sys.stderr)
+            #     raise
+            # # --- END NEW ---
+
+            # --- Upsert newly-seen, confidently-classified devices into reference_df/master_df ---
+            global reference_df, master_df, reference_index, ref_row_map, ref_id_set
+
+            try:
+                new_rows = []
+                update_count = 0
+
+                # Build a quick lookup of existing data_ids directly from reference_df (source of truth)
+                existing_ids = set(reference_df['data_id'].astype(str).str.upper())
+
+                for _, row in results_df.iterrows():
+                    did = row["data_id"]
+                    dtype = row["data_type"]
+
+                    if dtype in (None, "", "UNKNOWN"):
+                        continue
+
+                    did_upper = str(did).upper()
+
+                    if did_upper in existing_ids:
+                        continue   # already present as a row — skip, don't re-insert
+
+                    prefix = extract_initial(did)
+                    new_rows.append([did, dtype, prefix, row["customer"]])
+                    existing_ids.add(did_upper)   # prevent duplicates within this same batch too
+
+                if new_rows:
+                    new_df = pd.DataFrame(new_rows, columns=['data_id', 'data_type', 'initial', 'customer'])
+                    reference_df = pd.concat([reference_df, new_df], ignore_index=True)
+                    master_df = pd.concat([master_df, new_df], ignore_index=True)
+
+                    # Keep ref_id_set roughly in sync too (best-effort, not the source of truth anymore)
+                    if not isinstance(ref_id_set, set):
+                        ref_id_set = set(ref_id_set)
+                    for did in new_df['data_id']:
+                        ref_id_set.add(preprocess_input_raw_series_vectorized(pd.Series([did]))[0])
+
+                    reference_index = reference_df.set_index('data_id', drop=False)
+                    ref_row_map = reference_index.to_dict(orient='index')
+
+                    joblib.dump(reference_df, JSON_MODEL_FOLDER / config["reference_df"])
+                    joblib.dump(master_df, JSON_MODEL_FOLDER / config["master_df"])
+                    joblib.dump(ref_id_set, JSON_MODEL_FOLDER / config["ref_id_set"])
+
+                    print(f"[INFO] Inserted {len(new_rows)} newly-classified devices into reference_df/master_df.", file=sys.stderr)
+                else:
+                    print("[INFO] No new devices to insert — all already present.", file=sys.stderr)
+
+            except Exception as append_err:
+                print(f"[ERROR] Failed to insert new devices into reference/master_df: {append_err}", file=sys.stderr)
+                traceback.print_exc(file=sys.stderr)
+                raise
+            # --- END NEW ---
+
+
             # Filter columns for output
             columns_to_send = ["customer", "data_id", "manual_check", "data_type", "confidence", "sgd_conf", "reason"]
+
             filtered_df = results_df[columns_to_send].copy()
 
             # Handle numeric columns

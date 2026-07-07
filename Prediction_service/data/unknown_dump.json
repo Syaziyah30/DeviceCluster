@@ -7,7 +7,7 @@
     "DeviceType": "UNKNOWN",
     "PredictedSection": "SECTION 1",
     "PredictedCluster": "CLUSTER 9",
-    "Status": "pending"
+    "Status": "assigned"
   },
   {
     "DumpedAt": "2026-07-01 14:35:01",

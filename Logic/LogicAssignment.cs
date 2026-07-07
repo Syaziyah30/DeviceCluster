@@ -118,11 +118,32 @@ namespace Logic
 		}
 
 
-		// ── STEP 3B: Suggest top N clusters by numeric similarity ─────────────  // ◄── MODIFIED: switched to NumericalSimilarity
-		public List<(string Section, string Cluster, string ClosestDeviceId, int Diff, double Similarity)>
+		//// ── STEP 3B: Suggest top N clusters by numeric similarity ─────────────  // ◄── MODIFIED: switched to NumericalSimilarity
+		//public List<(string Section, string Cluster, string ClosestDeviceId, int Diff, double Similarity)>
+		//	SuggestTopClusters(string deviceId, List<DeviceResult> knownDevices, int topN = 3)
+		//{
+		//	return NumericalSimilarity.SuggestTopClusters(deviceId, knownDevices, topN);  // ◄── MODIFIED
+		//}
+
+		// ── STEP 3B: Suggest top N clusters by model confidence ───────────────── // ◄── MODIFIED
+		public List<(string Section, string Cluster, string ClosestDeviceId, double Confidence)>
 			SuggestTopClusters(string deviceId, List<DeviceResult> knownDevices, int topN = 3)
 		{
-			return NumericalSimilarity.SuggestTopClusters(deviceId, knownDevices, topN);  // ◄── MODIFIED
+			return knownDevices
+				.GroupBy(d => new { d.Section, d.Cluster })                          // group by cluster
+				.Select(g =>
+				{
+					var best = g.OrderByDescending(d => d.Confidence).First();       // highest confidence in cluster
+					return (
+						Section: best.Section,
+						Cluster: best.Cluster,
+						ClosestDeviceId: best.DeviceId,
+						Confidence: best.Confidence
+					);
+				})
+				.OrderByDescending(x => x.Confidence)                                // top confidence first
+				.Take(topN)
+				.ToList();
 		}
 
 
