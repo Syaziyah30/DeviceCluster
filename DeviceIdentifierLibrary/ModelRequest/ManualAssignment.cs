@@ -2,7 +2,7 @@
 using System.Collections.Generic;
 using System.Text;
 
-namespace DeviceIdentifierLibrary.ModelRequest
+namespace Model.ModelRequest
 {
 	public class ManualAssignment // no usage in Program.cs
 	{

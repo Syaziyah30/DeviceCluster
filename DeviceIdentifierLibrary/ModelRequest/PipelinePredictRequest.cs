@@ -1,9 +1,9 @@
 ﻿using System;
 using System.Collections.Generic;
 using System.Text;
-using DeviceIdentifierLibrary.ModelRequest;
+using Model.ModelRequest;
 
-namespace DeviceIdentifierLibrary.ModelRequest
+namespace Model.ModelRequest
 {
 	public class PipelinePredictRequest
 	{

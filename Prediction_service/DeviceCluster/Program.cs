@@ -8,11 +8,11 @@ using System.Text.Json;
 using System.Threading.Tasks;
 
 // derived from dll library
-using DeviceIdentifierLibrary.ModelRequest;
-using DeviceIdentifierLibrary.ModelResult;
-using DeviceIdentifierLibrary.Services;
+using Model.ModelRequest;
+using Model.ModelResult;
+using Model.Services;
 
-// ◄── NEW: Logic.dll
+// ◄── Logic.dll
 using Logic;
 using Logic.Models;
 using Logic.LogicAssignUser;

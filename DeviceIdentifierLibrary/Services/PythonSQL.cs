@@ -2,7 +2,7 @@
 using Microsoft.Data.SqlClient;
 using System.Text.Json;
 
-namespace DeviceIdentifierLibrary.Services
+namespace Model.Services
 {
 	/// <summary>
 	/// Reads data from SQL Server → JSON string.

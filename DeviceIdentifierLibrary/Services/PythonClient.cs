@@ -2,7 +2,7 @@
 using System.Text;
 using System.Text.Json;
 
-namespace DeviceIdentifierLibrary.Services
+namespace Model.Services
 {
 	public class PythonClient
 	{

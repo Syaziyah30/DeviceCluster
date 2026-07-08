@@ -2,7 +2,7 @@
 using System.Collections.Generic;
 using System.Text;
 
-namespace DeviceIdentifierLibrary.ModelResult
+namespace Model.ModelResult
 {
 	public class DeviceTypeResult
 	{
