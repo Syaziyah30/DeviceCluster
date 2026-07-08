@@ -8,15 +8,14 @@
   </PropertyGroup>
 
   <ItemGroup>
-    <ProjectReference Include="..\..\DeviceIdentifierLibrary\Model.csproj" />
-  </ItemGroup>
-
-  <ItemGroup>
     <Reference Include="AppRegistryEditor">
       <HintPath>..\..\..\..\..\Documents\AppRegistryEditor.dll</HintPath>
     </Reference>
     <Reference Include="Logic">
       <HintPath>..\..\Logic\bin\Debug\net10.0\Logic.dll</HintPath>
+    </Reference>
+    <Reference Include="Model">
+      <HintPath>bin\Debug\net10.0\Model.dll</HintPath>
     </Reference>
   </ItemGroup>
 
