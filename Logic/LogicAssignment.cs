@@ -79,65 +79,6 @@ namespace Logic
 			Console.WriteLine($"[Logic] Dumped {unknownDevices.Count} unknown devices → {_dumpFilePath}");
 		}
 
-		// DELETE SOON
-		//// ── STEP 3: Assign section/cluster. Methode : numeric similarity 
-		//public DeviceResult AssignByNumericSimilarity(
-		//	UnknownDumpEntry entry,
-		//	List<DeviceResult> knownDevices)
-		//{
-		//	if (string.IsNullOrEmpty(entry.DeviceId))
-		//	{
-		//		Console.WriteLine($"[Logic] Empty DeviceId. Skipping.");
-		//		return null!;
-		//	}
-
-		//	var closest = NumericalSimilarity.FindClosest(entry.DeviceId, knownDevices);  
-
-		//	if (closest == null)
-		//	{
-		//		Console.WriteLine($"[Logic] No known devices to compare against for '{entry.DeviceId}'.");
-		//		return null!;
-		//	}
-
-		//	int diff = NumericalSimilarity.NumericDiff(entry.DeviceId, closest.DeviceId); 
-
-		//	Console.WriteLine($"[Logic] '{entry.DeviceId}' " +
-		//					  $"→ closest to '{closest.DeviceId}' (diff={diff}) " +
-		//					  $"→ assigned {closest.Section}, {closest.Cluster}");
-
-		//	return new DeviceResult
-		//	{
-		//		Customer = entry.Customer,
-		//		ProjectCode = entry.ProjectCode,
-		//		DeviceId = entry.DeviceId,
-		//		DeviceType = entry.DeviceType,
-		//		Section = closest.Section,
-		//		Cluster = closest.Cluster,
-		//		Confidence = closest.Confidence
-		//	};
-		//}
-
-		//// ── STEP 3B: Suggest top N clusters by model confidence 
-		//public List<(string Section, string Cluster, string ClosestDeviceId, double Confidence)>
-		//	SuggestTopClusters(string deviceId, List<DeviceResult> knownDevices, int topN = 3)
-		//{
-		//	return knownDevices
-		//		.GroupBy(d => new { d.Section, d.Cluster })                          // group by cluster
-		//		.Select(g =>
-		//		{
-		//			var best = g.OrderByDescending(d => d.Confidence).First();       // highest confidence in cluster
-		//			return (
-		//				Section: best.Section,
-		//				Cluster: best.Cluster,
-		//				ClosestDeviceId: best.DeviceId,
-		//				Confidence: best.Confidence
-		//			);
-		//		})
-		//		.OrderByDescending(x => x.Confidence)                                // top confidence first
-		//		.Take(topN)
-		//		.ToList();
-		//}
-
 
 		// ── STEP 3: Show model's cluster suggestion + section context ─────────
 		public void ShowClusterSuggestion(DeviceResult device, List<DeviceResult> knownDevices)

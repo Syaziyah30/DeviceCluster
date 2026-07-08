@@ -4,10 +4,8 @@ using System.Text.Json;
 
 namespace Model.Services
 {
-	/// <summary>
-	/// Reads data from SQL Server → JSON string.
-	/// Used to supply reference data (e.g. device lists) to Python prediction scripts.
-	/// </summary>
+
+	// Reads data from SQL Server → JSON string.
 	public class PythonSQL
 	{
 		private readonly string _connectionString;
@@ -21,13 +19,9 @@ namespace Model.Services
 			_connectionString = connectionString;
 		}
 
-		/// <summary>
-		/// Runs a SQL query and returns result as a grouped JSON envelope.
-		/// Format: { "project_code": "...", "customer_code": "...", "data_ids": [...] }
-		/// Matches the input format expected by predict_equipment.py.
-		/// </summary>
-		/// <param name="sql">The SQL query to run (SELECT ...)</param>
-		/// <returns>JSON envelope string</returns>
+
+		// Runs a SQL query and returns result as a grouped JSON envelope.
+
 		public async Task<string> QueryToJsonAsync(string sql)
 		{
 			if (string.IsNullOrWhiteSpace(sql))
@@ -71,12 +65,9 @@ namespace Model.Services
 			});
 		}
 
-		/// <summary>
-		/// Same as QueryToJsonAsync but also saves the result to a .json file.
-		/// Useful when Python scripts need to read the data from disk.
-		/// </summary>
-		/// <param name="sql">The SQL query to run</param>
-		/// <param name="outputPath">Full file path to save JSON, e.g. "C:\data\devices.json"</param>
+
+		// Same as QueryToJsonAsync but also saves the result to a .json file.
+
 		public async Task<string> QueryToJsonFileAsync(string sql, string outputPath)
 		{
 			string json = await QueryToJsonAsync(sql);
