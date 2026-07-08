@@ -439,6 +439,69 @@ def predict(
 
 
 # ============================================================
+# TOP-N CLUSTER SUGGESTIONS (single device)              ◄── ADDED
+# ============================================================
+
+def get_top_clusters(device_id: str, customer: str, project: str,
+                      pipeline: dict, top_n: int = 3) -> list[dict]:
+    config        = pipeline["config"]
+    model_section = pipeline["model_section"]
+    model_cluster = pipeline["model_cluster"]
+    le_section    = config["le_section"]
+    le_cluster    = config["le_cluster"]
+
+    section_features = config["section_features"]
+    cluster_features = config["cluster_features"]
+
+    base_df = pd.DataFrame([{"DEVICE_ID": device_id, "CUSTOMER": customer, "PROJECT": project}])
+    base_df.columns = base_df.columns.str.upper()
+
+    rejection_reasons, _ = check_entities(base_df, pipeline)
+    if rejection_reasons.iloc[0]:
+        raise ValueError(f"Cannot compute top clusters: {rejection_reasons.iloc[0]}")
+
+    df_feat = build_features(base_df, config)
+
+    # ── Section prediction (single best, same as predict()) ────────────
+    X_sec = df_feat[section_features].apply(pd.to_numeric, errors="coerce").fillna(0)
+    sec_proba_raw = model_section.predict_proba(X_sec)
+    sec_pred_enc  = np.argmax(sec_proba_raw, axis=1)
+
+    sec_decoded = le_section.inverse_transform(sec_pred_enc)
+    predicted_section = str(sec_decoded[0])
+    if predicted_section in (SafeLabelEncoder.UNKNOWN_LABEL, "__OOD__"):
+        predicted_section = "UNKNOWN"
+
+    # ── Cluster probabilities, conditioned on predicted section ────────
+    X_clu = (
+        df_feat[[f for f in cluster_features if f != "predicted_section"]]
+        .apply(pd.to_numeric, errors="coerce")
+        .fillna(0)
+        .copy()
+    )
+    X_clu["predicted_section"] = sec_pred_enc
+    X_clu = X_clu[cluster_features]
+
+    clu_proba_raw = model_cluster.predict_proba(X_clu)[0]   # single row → 1D array
+
+    # ── Take top-N by probability (this is the part predict() throws away) ──
+    top_idx = np.argsort(clu_proba_raw)[::-1][:top_n]
+
+    results = []
+    for idx in top_idx:
+        cluster_label = le_cluster.inverse_transform([idx])[0]
+        if cluster_label in (SafeLabelEncoder.UNKNOWN_LABEL, "__OOD__"):
+            continue
+        results.append({
+            "section"    : predicted_section,
+            "cluster"    : str(cluster_label),
+            "probability": round(float(clu_proba_raw[idx]) * 100, 2),
+        })
+
+    return results
+
+
+# ============================================================
 # SAVE CORRECTION                                          ◄── ADDED
 # ============================================================
 
@@ -544,7 +607,23 @@ def run_cli():
             print(json.dumps(result, ensure_ascii=False))
             return
 
-        # (2) Predict (default)
+        # (2) Top-3 cluster suggestions for a single device      ◄── ADDED
+        elif action == "top_clusters":
+            device_id = payload.get("device_id")
+            customer  = payload.get("customer_code") or payload.get("customer")
+            project   = payload.get("project_code")  or payload.get("project")
+            top_n     = payload.get("top_n", 3)
+
+            if not device_id:
+                raise ValueError("device_id is required for top_clusters.")
+
+            pipeline = get_pipeline()
+            result   = get_top_clusters(device_id, customer, project, pipeline, top_n=top_n)
+
+            print(json.dumps(_clean_nan(result), ensure_ascii=False))
+            return
+
+        # (3) Predict (default)
         else:
             records = payload.get("records", [])
 

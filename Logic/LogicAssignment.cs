@@ -10,6 +10,15 @@ using Logic.SimilarityScore;
 
 namespace Logic
 {
+	// ◄── NEW: result shape for Program.cs's manual-correction cluster suggestions
+	public class ClusterSuggestion
+	{
+		public string Section { get; set; } = string.Empty;
+		public string Cluster { get; set; } = string.Empty;
+		public string ClosestDeviceId { get; set; } = string.Empty;
+		public double Confidence { get; set; }
+	}
+
 	public class LogicAssignment
 	{
 		private readonly string _dumpFilePath;
@@ -90,6 +99,52 @@ namespace Logic
 			var sectionDevices = knownDevices.Where(d => d.Section == device.Section).ToList();
 			var groups = BuildClusterGroups(sectionDevices);
 			PrintClusterTable(groups, device.Section);
+		}
+
+
+		// ── STEP 3b: Wrap NumericalSimilarity.SuggestTopClusters for Program.cs ────
+		public List<ClusterSuggestion> SuggestTopClusters(string deviceId, List<DeviceResult> knownDevices, int topN = 3)
+		{
+			return NumericalSimilarity.SuggestTopClusters(deviceId, knownDevices, topN)
+				.Select(x => new ClusterSuggestion
+				{
+					Section = x.Section,
+					Cluster = x.Cluster,
+					ClosestDeviceId = x.ClosestDeviceId,
+					Confidence = x.Similarity
+				})
+				.ToList();
+		}
+
+
+		// ── Resolve a manual correction into a placeable DeviceResult ──────────────
+		public DeviceResult? AssignByNumericSimilarity(UnknownDumpEntry entry, List<DeviceResult> knownDevices)
+		{
+			string resolvedSection = entry.PredictedSection;
+			string resolvedCluster = entry.PredictedCluster;
+
+			bool needsSection = string.IsNullOrEmpty(resolvedSection) || resolvedSection == "UNKNOWN";
+			bool needsCluster = string.IsNullOrEmpty(resolvedCluster) || resolvedCluster == "UNKNOWN";
+
+			if (needsSection || needsCluster)
+			{
+				var closest = NumericalSimilarity.FindClosest(entry.DeviceId, knownDevices);
+				if (closest == null) return null;
+
+				if (needsSection) resolvedSection = closest.Section;
+				if (needsCluster) resolvedCluster = closest.Cluster;
+			}
+
+			return new DeviceResult
+			{
+				Customer = entry.Customer,
+				ProjectCode = entry.ProjectCode,
+				DeviceId = entry.DeviceId,
+				DeviceType = entry.DeviceType,
+				Section = resolvedSection,
+				Cluster = resolvedCluster,
+				Confidence = 100.0   // manually confirmed by user, treated as full confidence
+			};
 		}
 
 
