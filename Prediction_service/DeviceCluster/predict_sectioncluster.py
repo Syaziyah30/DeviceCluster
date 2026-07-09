@@ -564,21 +564,6 @@ def run_cli():
     Command line / C# entry point.
     Expects JSON from stdin:
 
-    Predict:
-    {
-        "action"  : "predict",
-        "records" : [{"device_id": "V160", "customer": "UGS", "project": "A1825"}, ...]
-    }
-
-    Save Correction:
-    {
-        "action"          : "save_manual_assign_sectioncluster",
-        "device_id"       : "V160",
-        "customer"        : "UGS",
-        "project"         : "A1825",
-        "correct_section" : "SECTION 3",
-        "correct_cluster" : "CLUSTER A"
-    }
     """
     try:
         payload = json.load(sys.stdin)
