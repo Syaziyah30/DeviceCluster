@@ -78,10 +78,6 @@ public class Program
 		List<DeviceTypeResult>? typeResults = null;
 		List<PipelineResult>? pipelineResults = null;
 
-		//try  - DELETE SOON
-		//{
-		//	client = new PythonClient(PYTHON_EXE);
-
 		try
 		{
 			client = new PythonClient(PYTHON_EXE);
@@ -319,42 +315,7 @@ public class Program
 							}
 
 
-							// DELETE SOON
-							//if (clusterIsUnknown)
-							//{
-							//	// Show top 3 suggested clusters
-							//	var suggestions = logic.SuggestTopClusters(deviceId, knownDevices);
-							//	if (suggestions.Count > 0)
-							//	{
-
-
-
-							//		Console.WriteLine("\n  Top 3 suggested clusters by model confidence:");  // ◄── MODIFIED
-							//		for (int i = 0; i < suggestions.Count; i++)
-							//		{
-							//			var s = suggestions[i];
-							//			Console.WriteLine($"  [{i + 1}] {s.Section,-12} | {s.Cluster,-12} " +
-							//							  $"→ example: {s.ClosestDeviceId,-15} " +
-							//							  $"(confidence: {s.Confidence:F2}%)");             // ◄── MODIFIED
-							//		}
-
-							//		Console.Write($"\n  Enter cluster number [1-{suggestions.Count}] or type manually: ");
-							//		string? clusterInput = Console.ReadLine()?.Trim();
-
-							//		if (int.TryParse(clusterInput, out int pick) && pick >= 1 && pick <= suggestions.Count)
-							//			correctCluster = suggestions[pick - 1].Cluster;
-							//		else
-							//			correctCluster = clusterInput?.ToUpper();
-							//	}
-							//	else
-							//	{
-							//		Console.Write("Correct equipment cluster : ");
-							//		correctCluster = Console.ReadLine()?.Trim().ToUpper();
-							//	}
-							//}
-							// STOP HERE DELETE SOON
-
-
+							
 							// ── Send type correction to Python only if type was corrected ─────────
 							if (!string.IsNullOrEmpty(correctType))
 							{
