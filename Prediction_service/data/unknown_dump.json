@@ -1456,7 +1456,7 @@
     "DeviceId": "V264",
     "DeviceType": "On/Off Valve",
     "PredictedSection": "SECTION 3",
-    "PredictedCluster": "[OUTPUT RESULT] CORRECT ANY PREDICTION? (Y/N):[OUTPUT RESULT] CORRECT ANY PREDICTION? (Y/N):N",
+    "PredictedCluster": "Y",
     "Status": "assigned"
   }
 ]

@@ -345,7 +345,7 @@ public class Program
 							// clusterIsUnknown 
 							if (clusterIsUnknown)
 							{
-								// Show top 3 suggested clusters (model-driven, via predict_sectioncluster.py)   ◄── MODIFIED
+								// Show top 3 suggested clusters (model-driven, via predict_sectioncluster.py)
 								var suggestions = await clusterService.GetTopClustersAsync(deviceId, request!.customer_code, request!.project_code);
 								if (suggestions.Count > 0)
 								{
@@ -357,6 +357,9 @@ public class Program
 														  $"→ example: {s.ClosestDeviceId,-15} " +
 														  $"(confidence: {s.Confidence:F2}%)");
 									}
+
+									string deviceTypeForDisplay = correctType ?? matchedType?.data_type ?? "UNKNOWN";   // ◄── NEW
+									PrintSectionWithSuggestions(clusterGroups, suggestions, deviceId, deviceTypeForDisplay);   // ◄── MODIFIED
 
 									Console.Write($"\n  Enter cluster number [1-{suggestions.Count}] or type manually: ");
 									string? clusterInput = Console.ReadLine()?.Trim();
@@ -374,7 +377,7 @@ public class Program
 							}
 
 
-							
+
 							// ── Send type correction to Python only if type was corrected ─────────
 							if (!string.IsNullOrEmpty(correctType))
 							{
@@ -484,4 +487,61 @@ public class Program
 			Console.WriteLine($"{r.CUSTOMER,-12} | {r.DEVICE_ID,-25} | {devType,-25} | {r.PREDICTED_SECTION,-20} | {r.PREDICTED_CLUSTER,-20} | {conf,12}");
 		}
 	}
+
+
+	private static void PrintSectionWithSuggestions(
+		List<ClusterGroup> clusterGroups,
+		List<Model.ModelResult.ClusterSuggestionResult> suggestions,
+		string deviceId,
+		string deviceType)
+	{
+		string section = suggestions[0].Section;
+
+		Console.WriteLine($"\n  Existing devices already placed in {section}:");
+		Console.WriteLine($"===== LOGIC: CLUSTER GROUPING — {section} =====\n");
+		Console.WriteLine($"{section} {new string('-', 88)}");
+		Console.WriteLine($"{"Section",-12} | {"Cluster",-12} | {"Device ID",-25} | {"Device Type",-25} | {"Score %",10}");
+		Console.WriteLine(new string('-', 95));
+
+		var sectionGroups = clusterGroups
+			.Where(g => g.Section == section)
+			.OrderBy(g => g.Cluster)
+			.ToList();
+
+		foreach (var g in sectionGroups)
+		{
+			Console.WriteLine($"\n{section} {g.Cluster} (total Device ID = {g.Devices.Count})");   // ◄── MODIFIED
+
+			var matched = suggestions.FirstOrDefault(s => s.Cluster == g.Cluster);
+
+			var rows = g.Devices
+				.Select(sd => (Id: sd.Device.DeviceId, Type: sd.Device.DeviceType, Score: sd.Score, IsSuggestion: false))
+				.ToList();
+
+			if (matched != null)
+				rows.Add((deviceId, deviceType, matched.Confidence, true));
+
+			foreach (var row in rows.OrderByDescending(r => r.Score))
+			{
+				string tag = row.IsSuggestion ? "  -- CLUSTER SUGGESTION" : "";
+				Console.WriteLine($"{section,-12} | {g.Cluster,-12} | {row.Id,-25} | {row.Type,-25} | {row.Score,9:F1}%{tag}");
+			}
+		}
+
+		// ◄── Suggested clusters that don't have any existing devices yet
+		var newClusters = suggestions.Where(s => !sectionGroups.Any(g => g.Cluster == s.Cluster)).ToList();
+		foreach (var s in newClusters)
+		{
+			Console.WriteLine($"\n{section} {s.Cluster} (total Device ID = 0) (New cluster is generated)");   // ◄── MODIFIED
+			Console.WriteLine($"{section,-12} | {s.Cluster,-12} | {deviceId,-25} | {deviceType,-25} | {s.Confidence,9:F2}%  -- CLUSTER SUGGESTION");
+		}
+
+		Console.WriteLine("\n\nTop 3 suggested clusters by model confidence:");
+		for (int i = 0; i < suggestions.Count; i++)
+		{
+			var s = suggestions[i];
+			Console.WriteLine($"  [{i + 1}] {s.Section,-12} | {s.Cluster,-12} → example: {s.ClosestDeviceId,-15} (confidence: {s.Confidence:F2}%)");
+		}
+	}
 }
+
