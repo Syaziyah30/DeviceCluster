@@ -27,7 +27,7 @@ public class Program
 	private static readonly string SCRIPT_TYPE = Path.Combine(_projectDir, "predict_equipment.py");
 	private static readonly string SCRIPT_PIPELINE = Path.Combine(_projectDir, "predict_sectioncluster.py");
 	private static readonly string SQL_OUTPUT_JSON = Path.Combine(_serviceDir, "data", "devices.json");
-	private static readonly string UNKNOWN_DUMP = Path.Combine(_serviceDir, "data", "unknown_dump.json"); 
+	private static readonly string UNKNOWN_DUMP = Path.Combine(_serviceDir, "data", "unknown_dump.json");
 	private static readonly JsonSerializerOptions _jsonOpts = new() { PropertyNameCaseInsensitive = true };
 
 	private const string PROJECT_NAME = "XenxibleIdentifier";
@@ -89,6 +89,35 @@ public class Program
 		}
 	}
 
+	// PromptClusterChoice : keeps asking until a valid pick number or a "CLUSTER ..." string is entered, or "E" to exit
+	private static string? PromptClusterChoice(string prompt, List<Model.ModelResult.ClusterSuggestionResult> suggestions)
+	{
+		string? input;
+		while (true)
+		{
+			Console.Write(prompt);
+			input = Console.ReadLine()?.Trim();
+
+			if (string.IsNullOrWhiteSpace(input))
+			{
+				Console.WriteLine($"[OUTPUT RESULT] WRONG INFORMATION. Cluster cannot be blank. Enter [1-{suggestions.Count}], a cluster name (e.g. CLUSTER 1), or 'E' to exit.\n");
+				continue;
+			}
+
+			if (input.Equals("E", StringComparison.OrdinalIgnoreCase))
+				return null;
+
+			if (int.TryParse(input, out int pick) && pick >= 1 && pick <= suggestions.Count)
+				return suggestions[pick - 1].Cluster;
+
+			string upper = input.ToUpper();
+			if (upper.StartsWith("CLUSTER"))
+				return upper;
+
+			Console.WriteLine($"[OUTPUT RESULT] WRONG INFORMATION. Must be a number [1-{suggestions.Count}] or begin with 'CLUSTER'. Enter 'E' to exit.\n");
+		}
+	}
+
 	// PromptSection : keeps asking until valid "SECTION ..." input, or returns null if user types "E" to exit
 	private static string? PromptSection(string prompt)
 	{
@@ -107,6 +136,7 @@ public class Program
 			Console.WriteLine("[OUTPUT RESULT] WRONG INFORMATION. Section must begin with 'SECTION' (e.g. SECTION 1). Type 'E' to exit or try again to fill up\n");
 		}
 	}
+
 	public static async Task Main(string[] args)
 	{
 		Console.OutputEncoding = System.Text.Encoding.UTF8;
@@ -120,7 +150,7 @@ public class Program
 		try
 		{
 			client = new PythonClient(PYTHON_EXE);
-			var clusterService = new ModelClusterSuggestionService(client, SCRIPT_PIPELINE);   
+			var clusterService = new ModelClusterSuggestionService(client, SCRIPT_PIPELINE);
 
 			// ── STEP 1: SQL reads device IDs ──────────────────────────────────────────
 			Console.WriteLine("[Step 1/8] Loading reference data from SQL Server...");
@@ -198,11 +228,11 @@ public class Program
 
 
 			// ── STEP 4: Pass results into Logic.dll ───────────────────────────────────
-			Console.WriteLine("\n[Step 4/8] Passing results into Logic.dll...");   
-			var logic = new LogicAssignment(UNKNOWN_DUMP);                         
+			Console.WriteLine("\n[Step 4/8] Passing results into Logic.dll...");
+			var logic = new LogicAssignment(UNKNOWN_DUMP);
 
-			// Build DeviceResult list from model outputs                          
-			var allDeviceResults = pipelineResults.Select(r => new DeviceResult    
+			// Build DeviceResult list from model outputs
+			var allDeviceResults = pipelineResults.Select(r => new DeviceResult
 			{
 				Customer = r.CUSTOMER,
 				ProjectCode = request.project_code,
@@ -217,20 +247,20 @@ public class Program
 
 
 			// ── STEP 5: Logic splits KNOWN vs UNKNOWN ─────────────────────────────────
-			Console.WriteLine("[Step 5/8] Splitting KNOWN vs UNKNOWN devices..."); 
+			Console.WriteLine("[Step 5/8] Splitting KNOWN vs UNKNOWN devices...");
 			var (knownDevices, unknownDevices) = logic.SplitKnownUnknown(allDeviceResults);
 			Console.WriteLine();
 
 
 			// ── STEP 6: UNKNOWN → dumped to JSON ──────────────────────────────────────
-			Console.WriteLine("[Step 6/8] Dumping UNKNOWN devices to JSON...");    
-			logic.DumpUnknown(unknownDevices);                                     
+			Console.WriteLine("[Step 6/8] Dumping UNKNOWN devices to JSON...");
+			logic.DumpUnknown(unknownDevices);
 			Console.WriteLine($"[Step 6/8] Dump file → {UNKNOWN_DUMP}\n");
 
 
 			// ── STEP 7: KNOWN → placed into cluster groups ────────────────────────────
 			Console.WriteLine("[Step 7/8] Building cluster groups from KNOWN devices...");
-			var clusterGroups = logic.BuildClusterGroups(knownDevices);            
+			var clusterGroups = logic.BuildClusterGroups(knownDevices);
 			Console.WriteLine($"[Step 7/8] {clusterGroups.Count} cluster groups built\n");
 
 
@@ -239,7 +269,7 @@ public class Program
 			logic.PrintClusterTable(clusterGroups);
 
 
-			// ── STEP 9: Print UNKNOWN dump table ────────────────────────────────────── 
+			// ── STEP 9: Print UNKNOWN dump table ──────────────────────────────────────
 			Console.WriteLine($"\n[Step 9] UNKNOWN devices pending manual assignment on [Date: {DateTime.Now:yyyy-MM-dd}]:\n");
 
 			if (unknownDevices.Count == 0)
@@ -251,14 +281,13 @@ public class Program
 				Console.WriteLine($"{"DumpedAt",-10} | {"Customer",-10} | {"ProjectCode",-12} | {"DeviceId",-25} | {"DeviceType",-25} | {"PredictedSection",-15} | {"PredictedCluster",-15}");
 				Console.WriteLine(new string('-', 130));
 
-				// ◄── Sort by most UNKNOWN fields first
 				var sortedUnknown = unknownDevices
 					.OrderByDescending(u => u.DeviceType == "UNKNOWN" ? 1 : 0)
 					.ThenByDescending(u => u.Section == "UNKNOWN" ? 1 : 0)
 					.ThenByDescending(u => u.Cluster == "UNKNOWN" ? 1 : 0)
 					.ToList();
 
-				foreach (var u in sortedUnknown)                                           // ◄── MODIFIED: was unknownDevices
+				foreach (var u in sortedUnknown)
 				{
 					Console.WriteLine(
 						$"{DateTime.Now.ToString("HH:mm:ss"),-10} | " +
@@ -274,7 +303,7 @@ public class Program
 
 
 
-			// ── OUTPUT RESULT: Manual Correction ─────────────────────────────────────_
+			// ── OUTPUT RESULT: Manual Correction ─────────────────────────────────────
 			string userInput = PromptYesNo("\n[OUTPUT RESULT] Correct any prediction? (y/n): ");
 
 			while (userInput == "y")
@@ -307,7 +336,6 @@ public class Program
 							string? correctSection = null;
 							string? correctCluster = null;
 
-
 							// typeIsUnknown
 							if (typeIsUnknown)
 							{
@@ -329,8 +357,7 @@ public class Program
 								}
 							}
 
-
-							// clusterIsUnknown 
+							// clusterIsUnknown
 							if (clusterIsUnknown)
 							{
 								// Show top 3 suggested clusters (model-driven, via predict_sectioncluster.py)
@@ -346,25 +373,28 @@ public class Program
 														  $"(confidence: {s.Confidence:F2}%)");
 									}
 
-									string deviceTypeForDisplay = correctType ?? matchedType?.data_type ?? "UNKNOWN";   // ◄── NEW
-									PrintSectionWithSuggestions(clusterGroups, suggestions, deviceId, deviceTypeForDisplay);   // ◄── MODIFIED
+									string deviceTypeForDisplay = correctType ?? matchedType?.data_type ?? "UNKNOWN";
+									PrintSectionWithSuggestions(clusterGroups, suggestions, deviceId, deviceTypeForDisplay);
 
-									Console.Write($"\n  Enter cluster number [1-{suggestions.Count}] or type manually: ");
-									string? clusterInput = Console.ReadLine()?.Trim();
-
-									if (int.TryParse(clusterInput, out int pick) && pick >= 1 && pick <= suggestions.Count)
-										correctCluster = suggestions[pick - 1].Cluster;
-									else
-										correctCluster = clusterInput?.ToUpper();
+									// ◄── MODIFIED: validated cluster input, no more silent blank/spacebar acceptance
+									correctCluster = PromptClusterChoice($"\n  Enter cluster number [1-{suggestions.Count}] or type manually: ", suggestions);
+									if (correctCluster == null)
+									{
+										Console.WriteLine("[OUTPUT RESULT] Correction cancelled by user.\n");
+										goto NextCorrection;
+									}
 								}
 								else
 								{
-									Console.Write("Correct equipment cluster : ");
-									correctCluster = Console.ReadLine()?.Trim().ToUpper();
+									correctCluster = PromptRequiredText("Correct equipment cluster : ", "Equipment cluster");
+									if (correctCluster == null)
+									{
+										Console.WriteLine("[OUTPUT RESULT] Correction cancelled by user.\n");
+										goto NextCorrection;
+									}
+									correctCluster = correctCluster.ToUpper();
 								}
 							}
-
-
 
 							// ── Send type correction to Python only if type was corrected ─────────
 							if (!string.IsNullOrEmpty(correctType))
@@ -423,7 +453,7 @@ public class Program
 					}
 				}
 
-				NextCorrection:
+			NextCorrection:
 				userInput = PromptYesNo("\n[OUTPUT RESULT] Correct any prediction? (y/n): ");
 			}
 		}
@@ -476,7 +506,6 @@ public class Program
 		}
 	}
 
-
 	private static void PrintSectionWithSuggestions(
 		List<ClusterGroup> clusterGroups,
 		List<Model.ModelResult.ClusterSuggestionResult> suggestions,
@@ -498,7 +527,7 @@ public class Program
 
 		foreach (var g in sectionGroups)
 		{
-			Console.WriteLine($"\n{section} {g.Cluster} (total Device ID = {g.Devices.Count})");   // ◄── MODIFIED
+			Console.WriteLine($"\n{section} {g.Cluster} (total Device ID = {g.Devices.Count})");
 
 			var matched = suggestions.FirstOrDefault(s => s.Cluster == g.Cluster);
 
@@ -520,7 +549,7 @@ public class Program
 		var newClusters = suggestions.Where(s => !sectionGroups.Any(g => g.Cluster == s.Cluster)).ToList();
 		foreach (var s in newClusters)
 		{
-			Console.WriteLine($"\n{section} {s.Cluster} (total Device ID = 0) (New cluster is generated)");   // ◄── MODIFIED
+			Console.WriteLine($"\n{section} {s.Cluster} (total Device ID = 0) (New cluster is generated)");
 			Console.WriteLine($"{section,-12} | {s.Cluster,-12} | {deviceId,-25} | {deviceType,-25} | {s.Confidence,9:F2}%  -- CLUSTER SUGGESTION");
 		}
 
@@ -532,4 +561,3 @@ public class Program
 		}
 	}
 }
-

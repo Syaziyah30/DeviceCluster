@@ -166,8 +166,8 @@
     "DeviceId": "CT141CF1SP",
     "DeviceType": "Fan",
     "PredictedSection": "SECTION 2",
-    "PredictedCluster": "UNKNOWN",
-    "Status": "pending"
+    "PredictedCluster": "CLUSTER 1",
+    "Status": "assigned"
   },
   {
     "DumpedAt": "2026-07-01 14:35:01",
@@ -596,8 +596,8 @@
     "DeviceId": "LAH251",
     "DeviceType": "High Level Switch",
     "PredictedSection": "SECTION 3",
-    "PredictedCluster": "UNKNOWN",
-    "Status": "pending"
+    "PredictedCluster": "CLUSTER 1",
+    "Status": "assigned"
   },
   {
     "DumpedAt": "2026-07-01 14:35:01",
