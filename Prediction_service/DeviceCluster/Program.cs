@@ -120,7 +120,7 @@ public class Program
 		try
 		{
 			client = new PythonClient(PYTHON_EXE);
-			var clusterService = new ModelClusterSuggestionService(client, SCRIPT_PIPELINE);   // ◄── NEW
+			var clusterService = new ModelClusterSuggestionService(client, SCRIPT_PIPELINE);   
 
 			// ── STEP 1: SQL reads device IDs ──────────────────────────────────────────
 			Console.WriteLine("[Step 1/8] Loading reference data from SQL Server...");
@@ -306,18 +306,6 @@ public class Program
 							string? correctType = null;
 							string? correctSection = null;
 							string? correctCluster = null;
-
-							//// DELETE SOON
-							//if (typeIsUnknown)
-							//{
-							//	string rawType = PromptRequiredText("Correct equipment type    : ");
-							//	correctType = char.ToUpper(rawType[0]) + rawType.Substring(1).ToLower();
-							//}
-							//if (sectionIsUnknown)
-							//{
-							//	correctSection = PromptSection("Correct equipment section : ");
-							//}
-							////
 
 
 							// typeIsUnknown
