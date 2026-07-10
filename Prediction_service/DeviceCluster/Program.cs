@@ -52,7 +52,7 @@ public class Program
 		return connectionString;
 	}
 
-	// keeps asking until the user enters a valid y/n (case-insensitive, whitespace-tolerant)
+	// PromptYesNo : keeps asking until the user enters a valid y/n 
 	private static string PromptYesNo(string prompt)
 	{
 		string? input;
@@ -68,6 +68,45 @@ public class Program
 		}
 	}
 
+	// PromptRequiredText : keeps asking until non-blank input, or returns null if user types "E" to exit
+	private static string? PromptRequiredText(string prompt, string fieldLabel)
+	{
+		string? input;
+		while (true)
+		{
+			Console.Write(prompt);
+			input = Console.ReadLine()?.Trim();
+
+			if (!string.IsNullOrWhiteSpace(input))
+			{
+				if (input.Equals("E", StringComparison.OrdinalIgnoreCase))
+					return null;
+
+				return input;
+			}
+
+			Console.WriteLine($"[OUTPUT RESULT] WRONG INFORMATION. {fieldLabel} cannot be blank. Type 'E' to exit or try again to fill up\n");
+		}
+	}
+
+	// PromptSection : keeps asking until valid "SECTION ..." input, or returns null if user types "E" to exit
+	private static string? PromptSection(string prompt)
+	{
+		string? input;
+		while (true)
+		{
+			Console.Write(prompt);
+			input = Console.ReadLine()?.Trim().ToUpper();
+
+			if (input == "E")
+				return null;
+
+			if (!string.IsNullOrWhiteSpace(input) && input.StartsWith("SECTION"))
+				return input;
+
+			Console.WriteLine("[OUTPUT RESULT] WRONG INFORMATION. Section must begin with 'SECTION' (e.g. SECTION 1). Type 'E' to exit or try again to fill up\n");
+		}
+	}
 	public static async Task Main(string[] args)
 	{
 		Console.OutputEncoding = System.Text.Encoding.UTF8;
@@ -268,22 +307,42 @@ public class Program
 							string? correctSection = null;
 							string? correctCluster = null;
 
+							//// DELETE SOON
+							//if (typeIsUnknown)
+							//{
+							//	string rawType = PromptRequiredText("Correct equipment type    : ");
+							//	correctType = char.ToUpper(rawType[0]) + rawType.Substring(1).ToLower();
+							//}
+							//if (sectionIsUnknown)
+							//{
+							//	correctSection = PromptSection("Correct equipment section : ");
+							//}
+							////
+
+
+							// typeIsUnknown
 							if (typeIsUnknown)
 							{
-								Console.Write("Correct equipment type    : ");
-								string? rawType = Console.ReadLine()?.Trim();
-								correctType = string.IsNullOrEmpty(rawType) ? rawType
-											: char.ToUpper(rawType[0]) + rawType.Substring(1).ToLower();
+								string? rawType = PromptRequiredText("Correct equipment type    : ", "Equipment type");
+								if (rawType == null)
+								{
+									Console.WriteLine("[OUTPUT RESULT] Correction cancelled by user.\n");
+									goto NextCorrection;
+								}
+								correctType = char.ToUpper(rawType[0]) + rawType.Substring(1).ToLower();
 							}
 							if (sectionIsUnknown)
 							{
-								Console.Write("Correct equipment section : ");
-								correctSection = Console.ReadLine()?.Trim().ToUpper();
+								correctSection = PromptSection("Correct equipment section : ");
+								if (correctSection == null)
+								{
+									Console.WriteLine("[OUTPUT RESULT] Correction cancelled by user.\n");
+									goto NextCorrection;
+								}
 							}
 
 
-							//// START HERE
-							///
+							// clusterIsUnknown 
 							if (clusterIsUnknown)
 							{
 								// Show top 3 suggested clusters (model-driven, via predict_sectioncluster.py)   ◄── MODIFIED
@@ -373,6 +432,7 @@ public class Program
 					}
 				}
 
+				NextCorrection:
 				userInput = PromptYesNo("\n[OUTPUT RESULT] Correct any prediction? (y/n): ");
 			}
 		}

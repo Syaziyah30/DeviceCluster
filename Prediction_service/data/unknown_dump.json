@@ -235,9 +235,9 @@
     "ProjectCode": "A1825",
     "DeviceId": "CR1201SPD",
     "DeviceType": "UNKNOWN",
-    "PredictedSection": "UNKNOWN",
-    "PredictedCluster": "UNKNOWN",
-    "Status": "pending"
+    "PredictedSection": "SECTION 1",
+    "PredictedCluster": "CLUSTER 9",
+    "Status": "assigned"
   },
   {
     "DumpedAt": "2026-07-01 14:35:01",
