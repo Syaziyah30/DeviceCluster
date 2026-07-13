@@ -152,21 +152,21 @@ public class Program
 			client = new PythonClient(PYTHON_EXE);
 			var clusterService = new ModelClusterSuggestionService(client, SCRIPT_PIPELINE);
 
-			// ── STEP 1: SQL reads device IDs ──────────────────────────────────────────
+			// ── STEP 1: SQL reads device IDs ──────────────────────────────────────────SS
 			Console.WriteLine("[Step 1/8] Loading reference data from SQL Server...");
 			string SQL_CONN = GetConnectionString();
 			var sqlReader = new PythonSQL(SQL_CONN);
-			await sqlReader.QueryToJsonFileAsync("SELECT * FROM DummyInput", SQL_OUTPUT_JSON);
+			await sqlReader.QueryToJsonFileAsync("SELECT * FROM DummyInput2", SQL_OUTPUT_JSON);
 			Console.WriteLine($"[Step 1/8] Reference data saved → {SQL_OUTPUT_JSON}\n");
 
 			string requestJson = await sqlReader.QueryToJsonAsync(
-				"SELECT ProjectCode, CustomerCode, DataIds FROM DummyInput"
+				"SELECT ProjectCode, CustomerCode, DataIds FROM DummyInput2"
 			);
 
 			request = JsonSerializer.Deserialize<DevicePredictRequest>(requestJson, _jsonOpts);
 
 			if (request == null || request.data_ids == null || request.data_ids.Count == 0)
-				throw new InvalidOperationException("No project data found in DummyInput table.");
+				throw new InvalidOperationException("No project data found in DummyInput2 table.");
 
 			request.data_ids = request.data_ids
 				.Select(id => id.Replace("\uFEFF", "").Trim())
