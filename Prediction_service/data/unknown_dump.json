@@ -1458,5 +1458,255 @@
     "PredictedSection": "SECTION 3",
     "PredictedCluster": "Y",
     "Status": "assigned"
+  },
+  {
+    "DumpedAt": "2026-07-14 10:51:12",
+    "Customer": "Oiltek",
+    "ProjectCode": "A1706",
+    "DeviceId": "V00121",
+    "DeviceType": "On/Off Valve",
+    "PredictedSection": "UNKNOWN",
+    "PredictedCluster": "UNKNOWN",
+    "Status": "pending"
+  },
+  {
+    "DumpedAt": "2026-07-14 10:51:12",
+    "Customer": "Oiltek",
+    "ProjectCode": "A1706",
+    "DeviceId": "V00125",
+    "DeviceType": "On/Off Valve",
+    "PredictedSection": "UNKNOWN",
+    "PredictedCluster": "UNKNOWN",
+    "Status": "pending"
+  },
+  {
+    "DumpedAt": "2026-07-14 10:51:12",
+    "Customer": "Oiltek",
+    "ProjectCode": "A1706",
+    "DeviceId": "A0234",
+    "DeviceType": "On/Off Valve",
+    "PredictedSection": "UNKNOWN",
+    "PredictedCluster": "UNKNOWN",
+    "Status": "pending"
+  },
+  {
+    "DumpedAt": "2026-07-14 10:51:12",
+    "Customer": "Oiltek",
+    "ProjectCode": "A1706",
+    "DeviceId": "PSL1011",
+    "DeviceType": "Pressure Switch",
+    "PredictedSection": "UNKNOWN",
+    "PredictedCluster": "UNKNOWN",
+    "Status": "pending"
+  },
+  {
+    "DumpedAt": "2026-07-14 10:51:12",
+    "Customer": "Oiltek",
+    "ProjectCode": "A1706",
+    "DeviceId": "PSL1021",
+    "DeviceType": "Pressure Switch",
+    "PredictedSection": "UNKNOWN",
+    "PredictedCluster": "UNKNOWN",
+    "Status": "pending"
+  },
+  {
+    "DumpedAt": "2026-07-14 10:51:12",
+    "Customer": "Oiltek",
+    "ProjectCode": "A1706",
+    "DeviceId": "V21",
+    "DeviceType": "On/Off Valve",
+    "PredictedSection": "UNKNOWN",
+    "PredictedCluster": "UNKNOWN",
+    "Status": "pending"
+  },
+  {
+    "DumpedAt": "2026-07-14 10:51:12",
+    "Customer": "Oiltek",
+    "ProjectCode": "A1706",
+    "DeviceId": "V22",
+    "DeviceType": "On/Off Valve",
+    "PredictedSection": "UNKNOWN",
+    "PredictedCluster": "UNKNOWN",
+    "Status": "pending"
+  },
+  {
+    "DumpedAt": "2026-07-14 10:51:12",
+    "Customer": "Oiltek",
+    "ProjectCode": "A1706",
+    "DeviceId": "V23",
+    "DeviceType": "On/Off Valve",
+    "PredictedSection": "UNKNOWN",
+    "PredictedCluster": "UNKNOWN",
+    "Status": "pending"
+  },
+  {
+    "DumpedAt": "2026-07-14 10:51:12",
+    "Customer": "Oiltek",
+    "ProjectCode": "A1706",
+    "DeviceId": "V24",
+    "DeviceType": "On/Off Valve",
+    "PredictedSection": "UNKNOWN",
+    "PredictedCluster": "UNKNOWN",
+    "Status": "pending"
+  },
+  {
+    "DumpedAt": "2026-07-14 10:51:12",
+    "Customer": "Oiltek",
+    "ProjectCode": "A1706",
+    "DeviceId": "V26",
+    "DeviceType": "On/Off Valve",
+    "PredictedSection": "UNKNOWN",
+    "PredictedCluster": "UNKNOWN",
+    "Status": "pending"
+  },
+  {
+    "DumpedAt": "2026-07-14 10:51:12",
+    "Customer": "Oiltek",
+    "ProjectCode": "A1706",
+    "DeviceId": "V27",
+    "DeviceType": "On/Off Valve",
+    "PredictedSection": "UNKNOWN",
+    "PredictedCluster": "UNKNOWN",
+    "Status": "pending"
+  },
+  {
+    "DumpedAt": "2026-07-14 10:51:12",
+    "Customer": "Oiltek",
+    "ProjectCode": "A1706",
+    "DeviceId": "V28",
+    "DeviceType": "On/Off Valve",
+    "PredictedSection": "UNKNOWN",
+    "PredictedCluster": "UNKNOWN",
+    "Status": "pending"
+  },
+  {
+    "DumpedAt": "2026-07-14 10:51:12",
+    "Customer": "Oiltek",
+    "ProjectCode": "A1706",
+    "DeviceId": "V29",
+    "DeviceType": "On/Off Valve",
+    "PredictedSection": "UNKNOWN",
+    "PredictedCluster": "UNKNOWN",
+    "Status": "pending"
+  },
+  {
+    "DumpedAt": "2026-07-14 10:51:12",
+    "Customer": "Oiltek",
+    "ProjectCode": "A1706",
+    "DeviceId": "V211",
+    "DeviceType": "On/Off Valve",
+    "PredictedSection": "SECTION 3",
+    "PredictedCluster": "UNKNOWN",
+    "Status": "pending"
+  },
+  {
+    "DumpedAt": "2026-07-14 14:42:01",
+    "Customer": "OILTEK",
+    "ProjectCode": "A9991",
+    "DeviceId": "FCV111",
+    "DeviceType": "Control Valve",
+    "PredictedSection": "SECTION 3",
+    "PredictedCluster": "UNKNOWN",
+    "Status": "pending"
+  },
+  {
+    "DumpedAt": "2026-07-14 14:42:01",
+    "Customer": "OILTEK",
+    "ProjectCode": "A9991",
+    "DeviceId": "TCV111",
+    "DeviceType": "Control Valve",
+    "PredictedSection": "SECTION 3",
+    "PredictedCluster": "UNKNOWN",
+    "Status": "pending"
+  },
+  {
+    "DumpedAt": "2026-07-14 14:42:01",
+    "Customer": "OILTEK",
+    "ProjectCode": "A9991",
+    "DeviceId": "LLA133",
+    "DeviceType": "Low Level Switch",
+    "PredictedSection": "SECTION 3",
+    "PredictedCluster": "UNKNOWN",
+    "Status": "pending"
+  },
+  {
+    "DumpedAt": "2026-07-14 14:42:01",
+    "Customer": "OILTEK",
+    "ProjectCode": "A9991",
+    "DeviceId": "SIC133",
+    "DeviceType": "Variable Frequency Drive",
+    "PredictedSection": "SECTION 3",
+    "PredictedCluster": "UNKNOWN",
+    "Status": "pending"
+  },
+  {
+    "DumpedAt": "2026-07-14 14:42:01",
+    "Customer": "OILTEK",
+    "ProjectCode": "A9991",
+    "DeviceId": "SIC133FB",
+    "DeviceType": "Variable Frequency Drive",
+    "PredictedSection": "SECTION 3",
+    "PredictedCluster": "UNKNOWN",
+    "Status": "pending"
+  },
+  {
+    "DumpedAt": "2026-07-14 14:42:01",
+    "Customer": "OILTEK",
+    "ProjectCode": "A9991",
+    "DeviceId": "FIT211",
+    "DeviceType": "Flow Transmitter",
+    "PredictedSection": "SECTION 3",
+    "PredictedCluster": "UNKNOWN",
+    "Status": "pending"
+  },
+  {
+    "DumpedAt": "2026-07-14 14:42:01",
+    "Customer": "OILTEK",
+    "ProjectCode": "A9991",
+    "DeviceId": "V3.11",
+    "DeviceType": "On/Off Valve",
+    "PredictedSection": "SECTION 4",
+    "PredictedCluster": "UNKNOWN",
+    "Status": "pending"
+  },
+  {
+    "DumpedAt": "2026-07-14 14:42:01",
+    "Customer": "OILTEK",
+    "ProjectCode": "A9991",
+    "DeviceId": "V3.12",
+    "DeviceType": "On/Off Valve",
+    "PredictedSection": "SECTION 4",
+    "PredictedCluster": "UNKNOWN",
+    "Status": "pending"
+  },
+  {
+    "DumpedAt": "2026-07-14 14:42:01",
+    "Customer": "OILTEK",
+    "ProjectCode": "A9991",
+    "DeviceId": "V4.11",
+    "DeviceType": "On/Off Valve",
+    "PredictedSection": "SECTION 4",
+    "PredictedCluster": "UNKNOWN",
+    "Status": "pending"
+  },
+  {
+    "DumpedAt": "2026-07-14 14:42:01",
+    "Customer": "OILTEK",
+    "ProjectCode": "A9991",
+    "DeviceId": "V4.12",
+    "DeviceType": "On/Off Valve",
+    "PredictedSection": "SECTION 4",
+    "PredictedCluster": "UNKNOWN",
+    "Status": "pending"
+  },
+  {
+    "DumpedAt": "2026-07-14 14:42:01",
+    "Customer": "OILTEK",
+    "ProjectCode": "A9991",
+    "DeviceId": "V4.13",
+    "DeviceType": "On/Off Valve",
+    "PredictedSection": "SECTION 4",
+    "PredictedCluster": "UNKNOWN",
+    "Status": "pending"
   }
 ]

@@ -229,7 +229,7 @@ def preprocess_input_raw_series_vectorized(series):
 def make_display_id_series(series):
     """Build display IDs for output (keep original format)"""
     s = series.astype(str).str.strip().str.upper()
-    s = s.str.replace(r"[\s\-_\.]", "", regex=True)
+    # s = s.str.replace(r"[\s\-_\.]", "", regex=True) # delete soon
     return s.tolist()
 
 def safe_float(v, default=np.nan):
