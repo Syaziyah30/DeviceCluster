@@ -210,7 +210,7 @@ def check_entities(df: pd.DataFrame, pipeline: dict) -> tuple[pd.Series, pd.Seri
         if not dev or dev.upper() in ("", "NAN", "NONE"):
             row_reject.append("missing DEVICE_ID")
 
-        cust = str(row.get("CUSTOMER", "")).strip()
+        cust = str(row.get("CUSTOMER", "")).strip().upper()
         if not cust or cust.upper() in ("", "NAN", "NONE"):
             row_reject.append("missing CUSTOMER")
         elif cust not in known_customers:
@@ -296,6 +296,8 @@ def build_features(df: pd.DataFrame, config: dict) -> pd.DataFrame:
 
     df["suffix_letter_enc"]    = le_suffix_lt.transform(df["device_suffix_letter"])
     df["suffix_last_char_enc"] = le_suffix_last.transform(df["suffix_last_char"])
+
+    df["CUSTOMER"] = df["CUSTOMER"].astype(str).str.strip().str.upper()   # ◄── ADDED
     df["customer_enc"]         = le_customer.transform(df["CUSTOMER"])
 
     return df
