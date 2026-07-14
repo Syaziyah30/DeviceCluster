@@ -152,7 +152,7 @@ public class Program
 			client = new PythonClient(PYTHON_EXE);
 			var clusterService = new ModelClusterSuggestionService(client, SCRIPT_PIPELINE);
 
-			// ── STEP 1: SQL reads device IDs ──────────────────────────────────────────SS
+			// ── STEP 1: SQL reads device IDs ──────────────────────────────────────────
 			Console.WriteLine("[Step 1/8] Loading reference data from SQL Server...");
 			string SQL_CONN = GetConnectionString();
 			var sqlReader = new PythonSQL(SQL_CONN);
