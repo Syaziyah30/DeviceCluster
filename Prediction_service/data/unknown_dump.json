@@ -1708,5 +1708,65 @@
     "PredictedSection": "SECTION 4",
     "PredictedCluster": "UNKNOWN",
     "Status": "pending"
+  },
+  {
+    "DumpedAt": "2026-07-15 11:45:38",
+    "Customer": "Oiltek",
+    "ProjectCode": "A9995",
+    "DeviceId": "V11.1",
+    "DeviceType": "On/Off Valve",
+    "PredictedSection": "SECTION 4",
+    "PredictedCluster": "UNKNOWN",
+    "Status": "pending"
+  },
+  {
+    "DumpedAt": "2026-07-15 11:45:38",
+    "Customer": "Oiltek",
+    "ProjectCode": "A9995",
+    "DeviceId": "VP412A",
+    "DeviceType": "UNKNOWN",
+    "PredictedSection": "SECTION 2",
+    "PredictedCluster": "CLUSTER 1",
+    "Status": "pending"
+  },
+  {
+    "DumpedAt": "2026-07-15 11:45:38",
+    "Customer": "Oiltek",
+    "ProjectCode": "A9995",
+    "DeviceId": "FIT241",
+    "DeviceType": "Flow Transmitter",
+    "PredictedSection": "SECTION 3",
+    "PredictedCluster": "UNKNOWN",
+    "Status": "pending"
+  },
+  {
+    "DumpedAt": "2026-07-15 11:45:38",
+    "Customer": "Oiltek",
+    "ProjectCode": "A9995",
+    "DeviceId": "LLA893",
+    "DeviceType": "Low Level Switch",
+    "PredictedSection": "SECTION 5",
+    "PredictedCluster": "UNKNOWN",
+    "Status": "pending"
+  },
+  {
+    "DumpedAt": "2026-07-15 11:45:38",
+    "Customer": "Oiltek",
+    "ProjectCode": "A9995",
+    "DeviceId": "P893",
+    "DeviceType": "Pump",
+    "PredictedSection": "SECTION 5",
+    "PredictedCluster": "UNKNOWN",
+    "Status": "pending"
+  },
+  {
+    "DumpedAt": "2026-07-15 11:45:38",
+    "Customer": "Oiltek",
+    "ProjectCode": "A9995",
+    "DeviceId": "SIC893",
+    "DeviceType": "Variable Frequency Drive",
+    "PredictedSection": "SECTION 5",
+    "PredictedCluster": "UNKNOWN",
+    "Status": "pending"
   }
 ]
