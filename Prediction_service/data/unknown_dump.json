@@ -1768,5 +1768,385 @@
     "PredictedSection": "SECTION 5",
     "PredictedCluster": "UNKNOWN",
     "Status": "pending"
+  },
+  {
+    "DumpedAt": "2026-07-16 09:58:15",
+    "Customer": "OILTEK",
+    "ProjectCode": "A9998",
+    "DeviceId": "V21BP1",
+    "DeviceType": "On/Off Valve",
+    "PredictedSection": "SECTION 2",
+    "PredictedCluster": "UNKNOWN",
+    "Status": "pending"
+  },
+  {
+    "DumpedAt": "2026-07-16 09:58:15",
+    "Customer": "OILTEK",
+    "ProjectCode": "A9998",
+    "DeviceId": "V21ST1",
+    "DeviceType": "On/Off Valve",
+    "PredictedSection": "SECTION 2",
+    "PredictedCluster": "UNKNOWN",
+    "Status": "pending"
+  },
+  {
+    "DumpedAt": "2026-07-16 09:58:15",
+    "Customer": "OILTEK",
+    "ProjectCode": "A9998",
+    "DeviceId": "V31BP1",
+    "DeviceType": "On/Off Valve",
+    "PredictedSection": "SECTION 2",
+    "PredictedCluster": "UNKNOWN",
+    "Status": "pending"
+  },
+  {
+    "DumpedAt": "2026-07-16 09:58:15",
+    "Customer": "OILTEK",
+    "ProjectCode": "A9998",
+    "DeviceId": "V31BP2",
+    "DeviceType": "On/Off Valve",
+    "PredictedSection": "SECTION 2",
+    "PredictedCluster": "UNKNOWN",
+    "Status": "pending"
+  },
+  {
+    "DumpedAt": "2026-07-16 09:58:15",
+    "Customer": "OILTEK",
+    "ProjectCode": "A9998",
+    "DeviceId": "V31BP3",
+    "DeviceType": "On/Off Valve",
+    "PredictedSection": "SECTION 2",
+    "PredictedCluster": "UNKNOWN",
+    "Status": "pending"
+  },
+  {
+    "DumpedAt": "2026-07-16 09:58:15",
+    "Customer": "OILTEK",
+    "ProjectCode": "A9998",
+    "DeviceId": "V31ST1",
+    "DeviceType": "On/Off Valve",
+    "PredictedSection": "SECTION 2",
+    "PredictedCluster": "UNKNOWN",
+    "Status": "pending"
+  },
+  {
+    "DumpedAt": "2026-07-16 09:58:15",
+    "Customer": "OILTEK",
+    "ProjectCode": "A9998",
+    "DeviceId": "V31ST2",
+    "DeviceType": "On/Off Valve",
+    "PredictedSection": "SECTION 2",
+    "PredictedCluster": "UNKNOWN",
+    "Status": "pending"
+  },
+  {
+    "DumpedAt": "2026-07-16 09:58:15",
+    "Customer": "OILTEK",
+    "ProjectCode": "A9998",
+    "DeviceId": "V41BP1",
+    "DeviceType": "On/Off Valve",
+    "PredictedSection": "SECTION 2",
+    "PredictedCluster": "UNKNOWN",
+    "Status": "pending"
+  },
+  {
+    "DumpedAt": "2026-07-16 09:58:15",
+    "Customer": "OILTEK",
+    "ProjectCode": "A9998",
+    "DeviceId": "V41BP2",
+    "DeviceType": "On/Off Valve",
+    "PredictedSection": "SECTION 2",
+    "PredictedCluster": "UNKNOWN",
+    "Status": "pending"
+  },
+  {
+    "DumpedAt": "2026-07-16 09:58:15",
+    "Customer": "OILTEK",
+    "ProjectCode": "A9998",
+    "DeviceId": "V41BP3",
+    "DeviceType": "On/Off Valve",
+    "PredictedSection": "SECTION 2",
+    "PredictedCluster": "UNKNOWN",
+    "Status": "pending"
+  },
+  {
+    "DumpedAt": "2026-07-16 09:58:15",
+    "Customer": "OILTEK",
+    "ProjectCode": "A9998",
+    "DeviceId": "V41ST1",
+    "DeviceType": "On/Off Valve",
+    "PredictedSection": "SECTION 2",
+    "PredictedCluster": "UNKNOWN",
+    "Status": "pending"
+  },
+  {
+    "DumpedAt": "2026-07-16 09:58:15",
+    "Customer": "OILTEK",
+    "ProjectCode": "A9998",
+    "DeviceId": "V41ST2",
+    "DeviceType": "On/Off Valve",
+    "PredictedSection": "SECTION 2",
+    "PredictedCluster": "UNKNOWN",
+    "Status": "pending"
+  },
+  {
+    "DumpedAt": "2026-07-16 09:58:15",
+    "Customer": "OILTEK",
+    "ProjectCode": "A9998",
+    "DeviceId": "V51BP1",
+    "DeviceType": "On/Off Valve",
+    "PredictedSection": "SECTION 2",
+    "PredictedCluster": "UNKNOWN",
+    "Status": "pending"
+  },
+  {
+    "DumpedAt": "2026-07-16 09:58:15",
+    "Customer": "OILTEK",
+    "ProjectCode": "A9998",
+    "DeviceId": "V51ST1",
+    "DeviceType": "On/Off Valve",
+    "PredictedSection": "SECTION 2",
+    "PredictedCluster": "UNKNOWN",
+    "Status": "pending"
+  },
+  {
+    "DumpedAt": "2026-07-16 09:58:15",
+    "Customer": "OILTEK",
+    "ProjectCode": "A9998",
+    "DeviceId": "V61BP1",
+    "DeviceType": "On/Off Valve",
+    "PredictedSection": "SECTION 2",
+    "PredictedCluster": "UNKNOWN",
+    "Status": "pending"
+  },
+  {
+    "DumpedAt": "2026-07-16 09:58:15",
+    "Customer": "OILTEK",
+    "ProjectCode": "A9998",
+    "DeviceId": "V61BP2",
+    "DeviceType": "On/Off Valve",
+    "PredictedSection": "SECTION 2",
+    "PredictedCluster": "UNKNOWN",
+    "Status": "pending"
+  },
+  {
+    "DumpedAt": "2026-07-16 09:58:15",
+    "Customer": "OILTEK",
+    "ProjectCode": "A9998",
+    "DeviceId": "V61BP3",
+    "DeviceType": "On/Off Valve",
+    "PredictedSection": "SECTION 2",
+    "PredictedCluster": "UNKNOWN",
+    "Status": "pending"
+  },
+  {
+    "DumpedAt": "2026-07-16 09:58:15",
+    "Customer": "OILTEK",
+    "ProjectCode": "A9998",
+    "DeviceId": "V61ST1",
+    "DeviceType": "On/Off Valve",
+    "PredictedSection": "SECTION 2",
+    "PredictedCluster": "UNKNOWN",
+    "Status": "pending"
+  },
+  {
+    "DumpedAt": "2026-07-16 09:58:15",
+    "Customer": "OILTEK",
+    "ProjectCode": "A9998",
+    "DeviceId": "V61ST2",
+    "DeviceType": "On/Off Valve",
+    "PredictedSection": "SECTION 2",
+    "PredictedCluster": "UNKNOWN",
+    "Status": "pending"
+  },
+  {
+    "DumpedAt": "2026-07-16 09:58:15",
+    "Customer": "OILTEK",
+    "ProjectCode": "A9998",
+    "DeviceId": "VP412A",
+    "DeviceType": "UNKNOWN",
+    "PredictedSection": "SECTION 2",
+    "PredictedCluster": "CLUSTER 1",
+    "Status": "pending"
+  },
+  {
+    "DumpedAt": "2026-07-16 09:58:15",
+    "Customer": "OILTEK",
+    "ProjectCode": "A9998",
+    "DeviceId": "VP552A",
+    "DeviceType": "UNKNOWN",
+    "PredictedSection": "SECTION 2",
+    "PredictedCluster": "CLUSTER 1",
+    "Status": "pending"
+  },
+  {
+    "DumpedAt": "2026-07-16 09:58:15",
+    "Customer": "OILTEK",
+    "ProjectCode": "A9998",
+    "DeviceId": "CV34ST1",
+    "DeviceType": "Control Valve",
+    "PredictedSection": "SECTION 2",
+    "PredictedCluster": "UNKNOWN",
+    "Status": "pending"
+  },
+  {
+    "DumpedAt": "2026-07-16 09:58:15",
+    "Customer": "OILTEK",
+    "ProjectCode": "A9998",
+    "DeviceId": "V34CF1",
+    "DeviceType": "On/Off Valve",
+    "PredictedSection": "SECTION 2",
+    "PredictedCluster": "UNKNOWN",
+    "Status": "pending"
+  },
+  {
+    "DumpedAt": "2026-07-16 09:58:15",
+    "Customer": "OILTEK",
+    "ProjectCode": "A9998",
+    "DeviceId": "V34CR1",
+    "DeviceType": "On/Off Valve",
+    "PredictedSection": "SECTION 2",
+    "PredictedCluster": "UNKNOWN",
+    "Status": "pending"
+  },
+  {
+    "DumpedAt": "2026-07-16 09:58:15",
+    "Customer": "OILTEK",
+    "ProjectCode": "A9998",
+    "DeviceId": "LL27PL1",
+    "DeviceType": "Low Level Switch",
+    "PredictedSection": "SECTION 2",
+    "PredictedCluster": "UNKNOWN",
+    "Status": "pending"
+  },
+  {
+    "DumpedAt": "2026-07-16 09:58:15",
+    "Customer": "OILTEK",
+    "ProjectCode": "A9998",
+    "DeviceId": "TC27PL1",
+    "DeviceType": "Temperature Transmitter",
+    "PredictedSection": "SECTION 2",
+    "PredictedCluster": "UNKNOWN",
+    "Status": "pending"
+  },
+  {
+    "DumpedAt": "2026-07-16 09:58:15",
+    "Customer": "OILTEK",
+    "ProjectCode": "A9998",
+    "DeviceId": "V11CF1",
+    "DeviceType": "On/Off Valve",
+    "PredictedSection": "SECTION 2",
+    "PredictedCluster": "UNKNOWN",
+    "Status": "pending"
+  },
+  {
+    "DumpedAt": "2026-07-16 09:58:15",
+    "Customer": "OILTEK",
+    "ProjectCode": "A9998",
+    "DeviceId": "V11CF2DA",
+    "DeviceType": "On/Off Valve",
+    "PredictedSection": "SECTION 2",
+    "PredictedCluster": "UNKNOWN",
+    "Status": "pending"
+  },
+  {
+    "DumpedAt": "2026-07-16 09:58:15",
+    "Customer": "OILTEK",
+    "ProjectCode": "A9998",
+    "DeviceId": "V11CF3DA",
+    "DeviceType": "On/Off Valve",
+    "PredictedSection": "SECTION 2",
+    "PredictedCluster": "UNKNOWN",
+    "Status": "pending"
+  },
+  {
+    "DumpedAt": "2026-07-16 09:58:15",
+    "Customer": "OILTEK",
+    "ProjectCode": "A9998",
+    "DeviceId": "V11CF4DA",
+    "DeviceType": "On/Off Valve",
+    "PredictedSection": "SECTION 2",
+    "PredictedCluster": "UNKNOWN",
+    "Status": "pending"
+  },
+  {
+    "DumpedAt": "2026-07-16 09:58:15",
+    "Customer": "OILTEK",
+    "ProjectCode": "A9998",
+    "DeviceId": "V11CF5DA",
+    "DeviceType": "On/Off Valve",
+    "PredictedSection": "SECTION 2",
+    "PredictedCluster": "UNKNOWN",
+    "Status": "pending"
+  },
+  {
+    "DumpedAt": "2026-07-16 09:58:15",
+    "Customer": "OILTEK",
+    "ProjectCode": "A9998",
+    "DeviceId": "V11CF6DA",
+    "DeviceType": "On/Off Valve",
+    "PredictedSection": "SECTION 2",
+    "PredictedCluster": "UNKNOWN",
+    "Status": "pending"
+  },
+  {
+    "DumpedAt": "2026-07-16 09:58:15",
+    "Customer": "OILTEK",
+    "ProjectCode": "A9998",
+    "DeviceId": "V11CR1",
+    "DeviceType": "On/Off Valve",
+    "PredictedSection": "SECTION 2",
+    "PredictedCluster": "UNKNOWN",
+    "Status": "pending"
+  },
+  {
+    "DumpedAt": "2026-07-16 09:58:15",
+    "Customer": "OILTEK",
+    "ProjectCode": "A9998",
+    "DeviceId": "V11CR2DA",
+    "DeviceType": "On/Off Valve",
+    "PredictedSection": "SECTION 2",
+    "PredictedCluster": "UNKNOWN",
+    "Status": "pending"
+  },
+  {
+    "DumpedAt": "2026-07-16 09:58:15",
+    "Customer": "OILTEK",
+    "ProjectCode": "A9998",
+    "DeviceId": "V11CR3DA",
+    "DeviceType": "On/Off Valve",
+    "PredictedSection": "SECTION 2",
+    "PredictedCluster": "UNKNOWN",
+    "Status": "pending"
+  },
+  {
+    "DumpedAt": "2026-07-16 09:58:15",
+    "Customer": "OILTEK",
+    "ProjectCode": "A9998",
+    "DeviceId": "V11CR4DA",
+    "DeviceType": "On/Off Valve",
+    "PredictedSection": "SECTION 2",
+    "PredictedCluster": "UNKNOWN",
+    "Status": "pending"
+  },
+  {
+    "DumpedAt": "2026-07-16 09:58:15",
+    "Customer": "OILTEK",
+    "ProjectCode": "A9998",
+    "DeviceId": "CV12ST1",
+    "DeviceType": "Control Valve",
+    "PredictedSection": "SECTION 2",
+    "PredictedCluster": "UNKNOWN",
+    "Status": "pending"
+  },
+  {
+    "DumpedAt": "2026-07-16 09:58:15",
+    "Customer": "OILTEK",
+    "ProjectCode": "A9998",
+    "DeviceId": "CV12ST2",
+    "DeviceType": "Control Valve",
+    "PredictedSection": "SECTION 2",
+    "PredictedCluster": "UNKNOWN",
+    "Status": "pending"
   }
 ]
