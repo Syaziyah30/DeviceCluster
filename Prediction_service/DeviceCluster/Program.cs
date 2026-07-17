@@ -28,6 +28,7 @@ public class Program
 	private static readonly string SCRIPT_PIPELINE = Path.Combine(_projectDir, "predict_sectioncluster.py");
 	private static readonly string SQL_OUTPUT_JSON = Path.Combine(_serviceDir, "data", "devices.json");
 	private static readonly string UNKNOWN_DUMP = Path.Combine(_serviceDir, "data", "unknown_dump.json");
+	private static readonly string FLOATING_DUMP = Path.Combine(_serviceDir, "data", "floating_deviceid.json");
 	private static readonly JsonSerializerOptions _jsonOpts = new() { PropertyNameCaseInsensitive = true };
 
 	private const string PROJECT_NAME = "XenxibleIdentifier";
@@ -51,6 +52,21 @@ public class Program
 
 		return connectionString;
 	}
+
+
+	// FloatingDumpEntry - should be create the new class function but later to be done
+	public class FloatingDumpEntry
+	{
+		public string DumpedAt { get; set; }
+		public string Customer { get; set; }
+		public string ProjectCode { get; set; }
+		public string DeviceId { get; set; }
+		public string DeviceType { get; set; }
+		public string PredictedSection { get; set; }
+		public string PredictedCluster { get; set; }
+		public string Status { get; set; }
+	}
+
 
 	// PromptYesNo : keeps asking until the user enters a valid y/n 
 	private static string PromptYesNo(string prompt)
@@ -227,20 +243,118 @@ public class Program
 			Console.ReadLine();
 
 
+			// ◄── STEP 3.5 — Quota allocation
+			Console.WriteLine("\n[Step 3.5/8] Running quota-constrained cluster allocation...");
+
+			var predictions = pipelineResults.Select(r => new DevicePrediction
+			{
+				Section = r.PREDICTED_SECTION ?? "UNKNOWN",
+				Cluster = r.PREDICTED_CLUSTER ?? "UNKNOWN",
+				DeviceId = r.DEVICE_ID,
+				DeviceType = deviceTypeLookup.TryGetValue(r.DEVICE_ID, out var predDt) ? predDt : "UNKNOWN",
+				Score = r.CLUSTER_CONFIDENCE ?? 0
+			}).ToList();
+
+			var quotas = new List<ClusterQuota>
+			{
+				// CLUSTER 1
+				new ClusterQuota { Section = "SECTION 2", Cluster = "CLUSTER 1", DeviceType = "Fan", TargetCount = 4 },
+				new ClusterQuota { Section = "SECTION 2", Cluster = "CLUSTER 1", DeviceType = "On/Off Valve", TargetCount = 6 },
+				new ClusterQuota { Section = "SECTION 2", Cluster = "CLUSTER 1", DeviceType = "High Level Switch", TargetCount = 6 },
+				new ClusterQuota { Section = "SECTION 2", Cluster = "CLUSTER 1", DeviceType = "Low Level Switch", TargetCount = 4 },
+				new ClusterQuota { Section = "SECTION 2", Cluster = "CLUSTER 1", DeviceType = "Control Valve", TargetCount = 4 },
+				new ClusterQuota { Section = "SECTION 2", Cluster = "CLUSTER 1", DeviceType = "Level Transmitter", TargetCount = 2 },
+				new ClusterQuota { Section = "SECTION 2", Cluster = "CLUSTER 1", DeviceType = "Pump", TargetCount = 5 },
+				new ClusterQuota { Section = "SECTION 2", Cluster = "CLUSTER 1", DeviceType = "Pressure Switch", TargetCount = 3 },
+				new ClusterQuota { Section = "SECTION 2", Cluster = "CLUSTER 1", DeviceType = "Pressure Transmitter", TargetCount = 2 },
+				new ClusterQuota { Section = "SECTION 2", Cluster = "CLUSTER 1", DeviceType = "Vibrator", TargetCount = 4 },
+
+				// CLUSTER 2
+				new ClusterQuota { Section = "SECTION 2", Cluster = "CLUSTER 2", DeviceType = "On/Off Valve", TargetCount = 5 },
+				new ClusterQuota { Section = "SECTION 2", Cluster = "CLUSTER 2", DeviceType = "Control Valve", TargetCount = 5 },
+
+				// CLUSTER 3
+				new ClusterQuota { Section = "SECTION 2", Cluster = "CLUSTER 3", DeviceType = "On/Off Valve", TargetCount = 4 },
+
+				// CLUSTER 4
+				new ClusterQuota { Section = "SECTION 2", Cluster = "CLUSTER 4", DeviceType = "On/Off Valve", TargetCount = 6 },
+
+				// CLUSTER 5
+				new ClusterQuota { Section = "SECTION 2", Cluster = "CLUSTER 5", DeviceType = "Pump", TargetCount = 4 },
+				new ClusterQuota { Section = "SECTION 2", Cluster = "CLUSTER 5", DeviceType = "Heater", TargetCount = 2 },
+				new ClusterQuota { Section = "SECTION 2", Cluster = "CLUSTER 5", DeviceType = "Temperature Transmitter", TargetCount = 3 },
+				new ClusterQuota { Section = "SECTION 2", Cluster = "CLUSTER 5", DeviceType = "Low Level Switch", TargetCount = 4 },
+
+				// CLUSTER 6
+				new ClusterQuota { Section = "SECTION 2", Cluster = "CLUSTER 6", DeviceType = "Control Valve", TargetCount = 7 },
+				new ClusterQuota { Section = "SECTION 2", Cluster = "CLUSTER 6", DeviceType = "On/Off Valve", TargetCount = 7 },
+
+				// CLUSTER 7 — this is the cluster your model currently never predicts (per your earlier report)
+				new ClusterQuota { Section = "SECTION 2", Cluster = "CLUSTER 7", DeviceType = "On/Off Valve", TargetCount = 6 },
+
+				// CLUSTER 8 — same issue, model never predicts this cluster
+				new ClusterQuota { Section = "SECTION 2", Cluster = "CLUSTER 8", DeviceType = "Control Valve", TargetCount = 7 },
+			};
+
+			var allocationResult = ClusterQuotaAllocator.Allocate(predictions, quotas);
+			ClusterQuotaAllocator.PrintVacancyReport(allocationResult.VacancyReport);
+			Console.WriteLine($"[Step 3.5/8] {allocationResult.Assigned.Count} assigned, {allocationResult.Floating.Count} floating\n");
+
+			// ◄── NEW: Floating devices → print + save to JSON ────────────────────────────────
+			if (allocationResult.Floating.Count > 0)
+			{
+				Console.WriteLine($"[Step 3.5/8] {allocationResult.Floating.Count} floating device ID(s) — not claimed by any quota bucket:\n");
+				Console.WriteLine($"{"DumpedAt",-10} | {"Customer",-10} | {"ProjectCode",-12} | {"DeviceId",-25} | {"DeviceType",-25} | {"PredictedSection",-15} | {"PredictedCluster",-15} | {"Status",-8}");
+				Console.WriteLine(new string('-', 140));
+
+				var floatingEntries = allocationResult.Floating.Select(f => new FloatingDumpEntry
+				{
+					DumpedAt = DateTime.Now.ToString("HH:mm:ss"),
+					Customer = pipelineResults.FirstOrDefault(r => r.DEVICE_ID == f.DeviceId)?.CUSTOMER ?? request.customer_code,
+					ProjectCode = request.project_code,
+					DeviceId = f.DeviceId,
+					DeviceType = f.DeviceType,
+					PredictedSection = f.Section,
+					PredictedCluster = f.Cluster,
+					Status = (f.Section != "UNKNOWN" && f.Cluster != "UNKNOWN") ? "Assign" : "floating"
+				}).ToList();
+
+				foreach (var e in floatingEntries)
+				{
+					Console.WriteLine(
+						$"{e.DumpedAt,-10} | {e.Customer,-10} | {e.ProjectCode,-12} | {e.DeviceId,-25} | " +
+						$"{e.DeviceType,-25} | {e.PredictedSection,-15} | {e.PredictedCluster,-15} | {e.Status,-8}");
+				}
+
+				string floatingJson = JsonSerializer.Serialize(floatingEntries, new JsonSerializerOptions { WriteIndented = true });
+				File.WriteAllText(FLOATING_DUMP, floatingJson);
+				Console.WriteLine($"\n[Step 3.5/8] Floating device list saved → {FLOATING_DUMP}\n");
+			}
+			else
+			{
+				Console.WriteLine("[Step 3.5/8] No floating devices — all predictions claimed by quota allocation.\n");
+			}
+
+
+			Console.Write("\nPress Enter to run Logic...");
+			Console.ReadLine();
+
 			// ── STEP 4: Pass results into Logic.dll ───────────────────────────────────
 			Console.WriteLine("\n[Step 4/8] Passing results into Logic.dll...");
 			var logic = new LogicAssignment(UNKNOWN_DUMP);
 
 			// Build DeviceResult list from model outputs
-			var allDeviceResults = pipelineResults.Select(r => new DeviceResult
+
+			// NEW : after inserting the Quota Allocation variable
+			var allDeviceResults = allocationResult.Assigned.Select(a => new DeviceResult
 			{
-				Customer = r.CUSTOMER,
+				Customer = pipelineResults.FirstOrDefault(r => r.DEVICE_ID == a.DeviceId)?.CUSTOMER ?? request.customer_code,
 				ProjectCode = request.project_code,
-				DeviceId = r.DEVICE_ID,
-				DeviceType = deviceTypeLookup.TryGetValue(r.DEVICE_ID, out var dt) ? dt : "UNKNOWN",
-				Section = r.PREDICTED_SECTION ?? "UNKNOWN",
-				Cluster = r.PREDICTED_CLUSTER ?? "UNKNOWN",
-				Confidence = r.CLUSTER_CONFIDENCE ?? 0
+				DeviceId = a.DeviceId,
+				DeviceType = a.DeviceType,
+				Section = a.Section,
+				Cluster = a.Cluster,
+				Confidence = a.Score
 			}).ToList();
 
 			Console.WriteLine($"[Step 4/8] {allDeviceResults.Count} devices passed into Logic.dll\n");
