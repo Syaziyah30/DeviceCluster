@@ -192,6 +192,21 @@ public class Program
 			Console.WriteLine($"[Step 1/8] Project detected : {request.project_code} ({request.customer_code})");
 			Console.WriteLine($"[Step 1/8] Loaded {request.data_ids.Count} device IDs\n");
 
+			int deficit = quota.TargetCount - take.Count;
+			if (deficit > 0)
+			{
+				deficits.Add((quota, deficit));
+
+				// ◄── NEW: capture the ORIGINAL deficit here, before backfill has a chance to touch it
+				result.InitialDeficits.Add(new VacancyReportEntry
+				{
+					Section = quota.Section,
+					Cluster = quota.Cluster,
+					DeviceType = quota.DeviceType,
+					RemainingVacant = deficit
+				});
+			}
+
 
 			// ── STEP 2: Predict device type ───────────────────────────────────────────
 			Console.WriteLine("[Step 2/8] Predicting device types...");
@@ -209,6 +224,9 @@ public class Program
 
 			Console.Write("\nPress Enter to predict Section + Cluster...");
 			Console.ReadLine();
+
+
+
 
 
 			// ── STEP 3: Predict section + cluster ─────────────────────────────────────

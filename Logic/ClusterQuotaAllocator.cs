@@ -2,7 +2,7 @@
 using System.Collections.Generic;
 using System.Linq;
 
-namespace Logic   // 
+namespace Logic
 {
 	// ============================================================
 	// 📦 DATA CONTRACTS
@@ -50,7 +50,10 @@ namespace Logic   //
 	}
 
 	/// <summary>
-	/// A vacancy that could not be fully filled even after floating-pool backfill.
+	/// A vacancy — either the ORIGINAL deficit measured right after Step 1 (before backfill runs),
+	/// or the REMAINING deficit measured after Step 3 backfill has already tried to fill it.
+	/// Same shape is reused for both, distinguished by which list it's placed in
+	/// (AllocationResult.InitialDeficits vs AllocationResult.VacancyReport).
 	/// </summary>
 	public class VacancyReportEntry
 	{
@@ -70,6 +73,14 @@ namespace Logic   //
 	{
 		public List<AllocatedDevice> Assigned { get; set; } = new List<AllocatedDevice>();
 		public List<DevicePrediction> Floating { get; set; } = new List<DevicePrediction>();
+
+		// ◄── NEW: quota gap as it existed right after Step 1, BEFORE Step 3 backfill ran.
+		// Every quota bucket with TargetCount > directly-matched predictions shows up here,
+		// even if backfill later fully closes the gap. Use this to see the "raw" model shortfall.
+		public List<VacancyReportEntry> InitialDeficits { get; set; } = new List<VacancyReportEntry>();
+
+		// Unchanged: quota gap AFTER backfill has already tried to fill it from the floating pool.
+		// Only buckets that are STILL short after backfill appear here.
 		public List<VacancyReportEntry> VacancyReport { get; set; } = new List<VacancyReportEntry>();
 	}
 
@@ -81,12 +92,13 @@ namespace Logic   //
 	/// Two-pass quota-constrained cluster allocation:
 	///   Step 1: for each (Section, Cluster, DeviceType) quota bucket, take the top-N
 	///           highest-scoring predictions that match that Section/Cluster/DeviceType.
+	///           Any shortfall here is recorded immediately into InitialDeficits.
 	///   Step 2: whatever wasn't claimed in Step 1 becomes the "floating pool" for that Section.
 	///   Step 3: for each quota bucket left with a deficit (fewer matches than TargetCount),
 	///           backfill from the floating pool — matched by DeviceType only, NOT restricted
 	///           to the device's originally-predicted Cluster. Backfill candidates are drawn
 	///           from anywhere in the same Section.
-	///   Any deficit still remaining after backfill is reported, not silently dropped.
+	///   Any deficit still remaining after backfill is reported into VacancyReport, not silently dropped.
 	/// </summary>
 	public static class ClusterQuotaAllocator
 	{
@@ -137,6 +149,15 @@ namespace Logic   //
 				if (deficit > 0)
 				{
 					deficits.Add((quota, deficit));
+
+					// ◄── NEW: capture the ORIGINAL deficit here, before backfill has a chance to touch it
+					result.InitialDeficits.Add(new VacancyReportEntry
+					{
+						Section = quota.Section,
+						Cluster = quota.Cluster,
+						DeviceType = quota.DeviceType,
+						RemainingVacant = deficit
+					});
 				}
 			}
 
@@ -203,8 +224,9 @@ namespace Logic   //
 		}
 
 		/// <summary>
-		/// Convenience formatter for printing the vacancy report to console,
+		/// Convenience formatter for printing a vacancy-style report to console,
 		/// matching the style of PrintClusterTable elsewhere in Logic.dll.
+		/// Works for both InitialDeficits and VacancyReport since they share the same shape.
 		/// </summary>
 		public static void PrintVacancyReport(List<VacancyReportEntry> report)
 		{
