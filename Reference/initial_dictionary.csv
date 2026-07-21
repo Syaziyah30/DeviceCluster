@@ -1,95 +1,95 @@
 ﻿data_type,Initial
+On/Off Signal,A
+On/Off Valve,A
 Agitator,AG
 Agitator,AGM
-Blower,EP
-Control Valve,CV
-Control Valve,FCV
-Control Valve,ICM
-Control Valve,LCV
-Control Valve,PRV
-Control Valve,PV
-Control Valve,TCV
+Pump,CPM
 Fan,CT
+Control Valve,CV
+On/Off Valve,DV
+Blower,EP
+On/Off Valve,ES
 Fan,F
 Fan,FB
-Fan,FM
-Fan,FN
+Control Valve,FCV
 Flow Transmitter,FIT
 Flow Transmitter,FITQ
+On/Off Valve,FL
+Fan,FM
+Fan,FN
+Pump,FP
+Switch,FS
 Flow Transmitter,FT
 Flow Transmitter,FTCPKOFM
 Flow Transmitter,FTM
 Flow Transmitter,FTPL
-Flow Transmitter,MF
-Flow Transmitter,TTLFTM
-Flow Transmitter,TTLFTPL
-Heater,HT
 High Level Switch,HHLA
 High Level Switch,HL
 High Level Switch,HLA
 High Level Switch,HLAT
+Pump,HM
+Pressure Transmitter,HPP
+Pump,HST
+Heater,HT
+Control Valve,ICM
+Kombinator,KB
 High Level Switch,LAH
 High Level Switch,LAHH
-High Level Switch,LSH
-High Level Switch,LSHRM
-High Level Switch,LSHTU
-Kombinator,KB
-Level Transmitter,LT
-Level Transmitter,LTT
-Level Transmitter,LTTU
-Level Transmitter,RD
 Low Level Switch,LAL
+Control Valve,LCV
 Low Level Switch,LL
 Low Level Switch,LLA
 Low Level Switch,LLAT
+Pump,LPM
+Switch,LS
+High Level Switch,LSH
+High Level Switch,LSHRM
+High Level Switch,LSHTU
 Low Level Switch,LSL
 Low Level Switch,LSLCTF
 Low Level Switch,LSLTU
-Mid Level Switch,ML
-On/Off Signal,A
-On/Off Valve,A
-On/Off Valve,DV
-On/Off Valve,ES
-On/Off Valve,FL
-On/Off Valve,NV
-On/Off Valve,S
-On/Off Valve,UV
-On/Off Valve,V
-Pin Rotot Motor,PRM
-Pressure Switch,PSAH
-Pressure Switch,PSH
-Pressure Switch,PSL
-Pressure Transmitter,HPP
-Pressure Transmitter,PC
-Pressure Transmitter,PT
-Pressure Transmitter,PV
-Pump,CPM
-Pump,FP
-Pump,HM
-Pump,HST
-Pump,LPM
+Level Transmitter,LT
+Level Transmitter,LTT
+Level Transmitter,LTTU
 Pump,M
+Flow Transmitter,MF
+Mid Level Switch,ML
 Pump,MU
+On/Off Valve,NV
 Pump,OC
 Pump,P
+Pressure Transmitter,PC
 Pump,PF
 Pump,PFM
 Pump,PLM
+Pin Rotot Motor,PRM
+Control Valve,PRV
+Switch,PS
+Pressure Switch,PSAH
+Pressure Switch,PSH
+Pressure Switch,PSL
+Pressure Transmitter,PT
 Pump,PU
+Control Valve,PV
+Pressure Transmitter,PV
+Reactor Chopper,RC
+Level Transmitter,RD
 Pump,RPP
+Rotary Valve,RV
+On/Off Valve,S
+Variable Frequency Drive,SIC
+Temperature Transmitter,TC
+Control Valve,TCV
+Temperature Transmitter,TE
 Pump,TS
 Pump,TSAH
-Pump,VP
-Reactor Chopper,RC
-Rotary Valve,RV
-Switch,FS
-Switch,LS
-Switch,PS
-Switch,ZS
-Temperature Transmitter,TC
-Temperature Transmitter,TE
 Temperature Transmitter,TT
+Flow Transmitter,TTLFTM
+Flow Transmitter,TTLFTPL
 Temperature Transmitter,TTT
 Temperature Transmitter,TTTU
-Variable Frequency Drive,SIC
+On/Off Valve,UV
+On/Off Valve,V
 Vibrator,VB
+Pump,VP
+Switch,ZS
