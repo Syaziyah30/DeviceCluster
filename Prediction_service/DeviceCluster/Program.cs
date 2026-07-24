@@ -192,21 +192,6 @@ public class Program
 			Console.WriteLine($"[Step 1/8] Project detected : {request.project_code} ({request.customer_code})");
 			Console.WriteLine($"[Step 1/8] Loaded {request.data_ids.Count} device IDs\n");
 
-			int deficit = quota.TargetCount - take.Count;
-			if (deficit > 0)
-			{
-				deficits.Add((quota, deficit));
-
-				// ◄── NEW: capture the ORIGINAL deficit here, before backfill has a chance to touch it
-				result.InitialDeficits.Add(new VacancyReportEntry
-				{
-					Section = quota.Section,
-					Cluster = quota.Cluster,
-					DeviceType = quota.DeviceType,
-					RemainingVacant = deficit
-				});
-			}
-
 
 			// ── STEP 2: Predict device type ───────────────────────────────────────────
 			Console.WriteLine("[Step 2/8] Predicting device types...");
@@ -238,7 +223,9 @@ public class Program
 					device_id = r.data_id,
 					customer = r.customer ?? request.customer_code,
 					project = request.project_code
-				}).ToList()
+				}).ToList(),
+				// ◄── CSV export 
+				export_raw_csv_path = @"C:\Users\sitisyaziyah\source\repos\DeviceCluster\1.training_model\output_prediction\cluster_prediction_raw.csv"
 			};
 
 			sw.Restart();
@@ -675,7 +662,7 @@ public class Program
 				string tag = row.IsSuggestion ? "  -- CLUSTER SUGGESTION" : "";
 				Console.WriteLine($"{section,-12} | {g.Cluster,-12} | {row.Id,-25} | {row.Type,-25} | {row.Score,9:F1}%{tag}");
 			}
-		}
+		} 
 
 		// ◄── Suggested clusters that don't have any existing devices yet
 		var newClusters = suggestions.Where(s => !sectionGroups.Any(g => g.Cluster == s.Cluster)).ToList();

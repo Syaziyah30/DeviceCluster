@@ -55,6 +55,12 @@ UNKNOWN_THRESHOLD = float(_cfg["unknown_threshold"])
 # ◄── ADDED: corrections file path — sits beside config in predict_sectioncluster_folder/
 MANUAL_ASSIGN_SECTION_CLUSTER = os.path.join(_BASE_DIR, "manual_assign_sectioncluster.json")
 
+# ◄── ADDED: default output path for the raw cluster-probability CSV export
+DEFAULT_RAW_CLUSTER_CSV_PATH = (
+    r"C:\Users\sitisyaziyah\source\repos\DeviceCluster"
+    r"\1.training_model\output_prediction\raw_clusterprediction.csv"
+)
+
 # ============================================================
 # PIPELINE CACHE
 # ============================================================
@@ -342,10 +348,51 @@ def apply_ood_penalty(
 # PREDICT
 # ============================================================
 
+def _write_raw_cluster_csv(
+    base_df: pd.DataFrame,
+    elig_idx: list,
+    clu_proba_raw: np.ndarray,
+    le_cluster,
+    output_path: str,
+) -> None:
+    """
+    Writes the FULL per-cluster probability matrix to CSV.
+    Reuses a clu_proba_raw that was already computed by predict() —
+    no extra model_cluster.predict_proba() call, no second subprocess.
+    """
+    cluster_labels = le_cluster.inverse_transform(np.arange(len(le_cluster.classes_)))
+    keep_mask = ~np.isin(cluster_labels, [SafeLabelEncoder.UNKNOWN_LABEL, "__OOD__"])
+    kept_label_positions = np.where(keep_mask)[0]
+    kept_labels          = cluster_labels[keep_mask]
+    column_names          = [f"CLUSTER {lbl}" for lbl in kept_labels]
+
+    prob_matrix = np.full((len(base_df), len(kept_labels)), np.nan)
+    selected    = clu_proba_raw[:, kept_label_positions] * 100.0
+    for i, orig_idx in enumerate(elig_idx):
+        prob_matrix[orig_idx, :] = selected[i]
+
+    device_type_col = (
+        base_df["DEVICE_TYPE"].values if "DEVICE_TYPE" in base_df.columns
+        else [""] * len(base_df)
+    )
+
+    out_df = pd.DataFrame({
+        "Device ID":   base_df["DEVICE_ID"].values,
+        "Device Type": device_type_col,
+    })
+    out_df = pd.concat([out_df, pd.DataFrame(np.round(prob_matrix, 1), columns=column_names)], axis=1)
+
+    os.makedirs(os.path.dirname(output_path), exist_ok=True)
+    out_df.to_csv(output_path, index=False)
+    logger.info("Raw cluster probability CSV written: %s (%d rows, %d clusters)",
+                output_path, len(out_df), len(kept_labels))
+
+
 def predict(
     records: list[dict],
     pipeline: dict,
     threshold: float = UNKNOWN_THRESHOLD,
+    export_csv_path: str | None = None,   # ◄── ADDED
 ) -> pd.DataFrame:
     validate_records(records)
 
@@ -406,6 +453,11 @@ def predict(
         clu_pred_enc            = np.argmax(clu_proba_raw, axis=1)
         clu_conf_raw            = clu_proba_raw.max(axis=1)
         clu_conf_adj, _         = apply_ood_penalty(clu_conf_raw, df_feat, pipeline)
+
+        # ◄── ADDED: optional raw cluster-probability CSV export.
+        # Reuses the clu_proba_raw computed above — no second model call, no second subprocess.
+        if export_csv_path:
+            _write_raw_cluster_csv(base_df, elig_idx, clu_proba_raw, le_cluster, export_csv_path)
 
         clu_conf_adj = np.where(
             sec_conf_adj < threshold,
@@ -501,6 +553,108 @@ def get_top_clusters(device_id: str, customer: str, project: str,
         })
 
     return results
+
+
+# ============================================================
+# EXPORT RAW CLUSTER PROBABILITIES (ALL CLASSES, NOT JUST ARGMAX)   ◄── ADDED
+# ============================================================
+#
+# Purpose: dump model_cluster.predict_proba(X_clu) in full — one column
+# per cluster class — instead of collapsing to a single predicted cluster.
+#
+# Output structure:
+#   Device ID | Device Type | CLUSTER 1 | CLUSTER 2 | ... | CLUSTER N
+
+def export_cluster_probabilities(
+    records: list[dict],
+    pipeline: dict,
+    output_path: str = DEFAULT_RAW_CLUSTER_CSV_PATH,
+) -> pd.DataFrame:
+    """
+    Runs the section+cluster model on `records` and writes a CSV containing
+    the FULL cluster probability distribution per device (not just the
+    argmax winner).
+
+    records: same shape as predict() expects, e.g.
+        [{"device_id": "CV04ST1", "customer": "OILTEK", "project": "A1706",
+          "device_type": "Control valve"}, ...]
+        "device_type" is optional — if present in the record it's carried
+        straight through to the "Device Type" column; if absent, it's left
+        blank (fill it in afterwards, e.g. by merging with predict_equipment
+        output, if you need it populated).
+
+    Returns the DataFrame it wrote (useful for testing without touching disk).
+    """
+    config        = pipeline["config"]
+    model_section = pipeline["model_section"]
+    model_cluster = pipeline["model_cluster"]
+    le_section    = config["le_section"]
+    le_cluster    = config["le_cluster"]
+
+    section_features = config["section_features"]
+    cluster_features = config["cluster_features"]
+
+    base_df         = pd.DataFrame(records)
+    base_df.columns = base_df.columns.str.upper()
+    if "PROJECT" not in base_df.columns:
+        base_df["PROJECT"] = ""
+    if "DEVICE_TYPE" not in base_df.columns:
+        base_df["DEVICE_TYPE"] = ""
+
+    rejection_reasons, _ = check_entities(base_df, pipeline)
+    eligible_mask = rejection_reasons == ""
+
+    # Cluster class labels, in the exact column order predict_proba() returns them
+    cluster_labels = le_cluster.inverse_transform(np.arange(len(le_cluster.classes_)))
+    # Drop the synthetic classes — they aren't real clusters
+    keep_mask = ~np.isin(cluster_labels, [SafeLabelEncoder.UNKNOWN_LABEL, "__OOD__"])
+    kept_label_positions = np.where(keep_mask)[0]
+    kept_labels          = cluster_labels[keep_mask]
+    column_names          = [f"CLUSTER {lbl}" for lbl in kept_labels]
+
+    # Pre-fill output rows with NaN for ineligible/rejected devices
+    prob_matrix = np.full((len(base_df), len(kept_labels)), np.nan)
+
+    if eligible_mask.any():
+        elig_idx = base_df.index[eligible_mask].tolist()
+        df_elig  = base_df.loc[elig_idx].copy()
+        df_feat  = build_features(df_elig, config)
+
+        X_sec = df_feat[section_features].apply(pd.to_numeric, errors="coerce").fillna(0)
+        sec_proba_raw = model_section.predict_proba(X_sec)
+        sec_pred_enc  = np.argmax(sec_proba_raw, axis=1)
+
+        X_clu = (
+            df_feat[[f for f in cluster_features if f != "predicted_section"]]
+            .apply(pd.to_numeric, errors="coerce")
+            .fillna(0)
+            .copy()
+        )
+        X_clu["predicted_section"] = sec_pred_enc
+        X_clu = X_clu[cluster_features]
+
+        # ◄── THE LINE THAT MATTERS: full probability matrix, all classes kept
+        clu_proba_raw = model_cluster.predict_proba(X_clu)
+
+        # Select only the "real" cluster columns, in kept_label_positions order
+        selected = clu_proba_raw[:, kept_label_positions] * 100.0
+
+        for i, orig_idx in enumerate(elig_idx):
+            prob_matrix[orig_idx, :] = selected[i]
+
+    result = pd.DataFrame({
+        "Device ID":   base_df["DEVICE_ID"].values,
+        "Device Type": base_df["DEVICE_TYPE"].values,
+    })
+    prob_df = pd.DataFrame(np.round(prob_matrix, 1), columns=column_names)
+    result  = pd.concat([result, prob_df], axis=1)
+
+    os.makedirs(os.path.dirname(output_path), exist_ok=True)
+    result.to_csv(output_path, index=False)
+    logger.info("Raw cluster probability CSV written: %s (%d rows, %d clusters)",
+                output_path, len(result), len(kept_labels))
+
+    return result
 
 
 # ============================================================
@@ -610,15 +764,32 @@ def run_cli():
             print(json.dumps(_clean_nan(result), ensure_ascii=False))
             return
 
-        # (3) Predict (default)
-        else:
-            records = payload.get("records", [])
+        # (3) Export raw cluster probabilities to CSV               ◄── ADDED
+        elif action == "export_cluster_csv":
+            records     = payload.get("records", [])
+            output_path = payload.get("output_path", DEFAULT_RAW_CLUSTER_CSV_PATH)
 
             if not isinstance(records, list) or not records:
                 raise ValueError("records must be a non-empty list.")
 
             pipeline  = get_pipeline()
-            result_df = predict(records, pipeline, threshold=UNKNOWN_THRESHOLD)
+            result_df = export_cluster_probabilities(records, pipeline, output_path)
+
+            print(json.dumps({"status": "ok", "rows_written": len(result_df),
+                               "output_path": output_path}, ensure_ascii=False))
+            return
+
+        # (4) Predict (default)
+        else:
+            records         = payload.get("records", [])
+            export_csv_path = payload.get("export_raw_csv_path")   # ◄── ADDED, optional
+
+            if not isinstance(records, list) or not records:
+                raise ValueError("records must be a non-empty list.")
+
+            pipeline  = get_pipeline()
+            result_df = predict(records, pipeline, threshold=UNKNOWN_THRESHOLD,
+                                 export_csv_path=export_csv_path)
 
             out = _clean_nan(result_df.to_dict(orient="records"))
             print(json.dumps(out, ensure_ascii=False))
@@ -630,4 +801,4 @@ def run_cli():
 
 
 if __name__ == "__main__":
-    run_cli()   # ◄── MODIFIED: was main()
+    run_cli()  
