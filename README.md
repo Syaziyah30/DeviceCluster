@@ -171,7 +171,8 @@ Dictionary Name = `initial_map`
 - Empty (exact match) - (e.g. `CR` matches key `CR`)
 - Digits only         -  (e.g. `CR1234` matches key `CR`)
 
-➡️ Rejected if remainder contains any letters (`CR123ABC` does **not** match `CR`). <br>
+➡️ Rejected if remainder contains any letters (`CR123ABC` does **not** match `CR`). 
+
 ➡️ Special case: inputs starting with `SP` also probe the stripped version (`probe[2:]`).
 
 ### Batch prefix counting — `matches_prefix_strict()`
