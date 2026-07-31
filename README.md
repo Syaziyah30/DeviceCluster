@@ -185,11 +185,11 @@ Correctly counts how many devices in a **batch** share a given prefix, since nai
 
 | Column | Description |
 |---|---|
-| `customer` | Resolved customer code |
-| `data_id` | Cleaned display ID — 🆕 no longer strips periods (see §9 bug fixes) |
+| `customer` | Resolved customer code                   |
+| `data_id` | Cleaned display ID                        |
 | `manual_check` | Empty placeholder for UI review flag |
-| `data_type` | Predicted equipment type |
-| `confidence` | Final confidence (0.0–1.0) |
+| `data_type` | Predicted equipment type                |
+| `confidence` | Final confidence (0.0–1.0)             |
 | `sgd_conf` | Raw SGD confidence (may differ from final) |
 | `reason` | Internal decision reason |
 
