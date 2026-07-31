@@ -269,7 +269,7 @@ Features → [XGBoost] → Predicted Section → Features + Section → [XGBoost
 ```
 
 - **Stage 1:** Predict Section
-- **Stage 2:** Predict Cluster using original features **plus** Predicted Section
+- **Stage 2:** Predict Cluster using original features **+** Predicted Section
 
 ## 📍 Thresholds & Penalties
 
