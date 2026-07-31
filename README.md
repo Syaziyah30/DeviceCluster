@@ -177,10 +177,10 @@ Dictionary Name = `initial_map`
 
 ### Batch prefix counting — `matches_prefix_strict()`
 
-Correctly counts how many devices in a **batch** share a given prefix, since naive substring counting over-counted devices whose remainder contained letters.
-
-- Applies the same "remainder must be digits-only" rule as single-device matching, but across an entire batch of `data_ids` at once.
-- Used wherever the pipeline needs a prefix-share count (e.g. deciding dictionary confidence, grouping candidates) rather than a single match/no-match check.
+- Counts devices sharing the same prefix across a batch of `data_ids`.
+- Applies the same strict matching rule: the remaining characters must be empty or digits only.
+- Prevents false matches caused by alphabetic suffixes.
+- Used for dictionary confidence scoring and candidate grouping.
 - **TODO:** confirm exact call sites (`predict_equipment.py` function names/line refs) once finalized, so this section can point directly to them.
 
 ## 📍 Output Columns (Device Type)
