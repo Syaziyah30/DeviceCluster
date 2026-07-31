@@ -323,7 +323,7 @@ cluster_conf_final = cluster_raw_conf × section_conf   (when section_conf < 0.6
   - Confirm the JSON payload includes `export_raw_csv_path`.
 ---
 
-## 🆕 3.5️⃣ Quota Allocation (`ClusterQuotaAllocator`, `Logic.dll`)
+## 3. Quota Allocation (`ClusterQuotaAllocator`, `Logic.dll`)
 
 Allocates devices to clusters based on predefined quotas before cascading placement.
 
@@ -340,7 +340,7 @@ Allocates devices to clusters based on predefined quotas before cascading placem
 
 ### 📍 Confidence Threshold
 - Reassigned devices must meet the minimum confidence threshold.
-- Low-confidence predictions are routed to the **Unknown** list instead of being force-assigned.
+- Low-confidence predictions are routed to the **UNKNOWN** list instead of being force-assigned.
 
 ### 📍 UNKNOWN Handling
 - UNKNOWN devices are separated **before** quota allocation.
