@@ -400,28 +400,27 @@ Processes the prediction results after quota allocation and determines the final
 
 # 5️⃣ Manual Correction Flow (C# ↔ Python)
 
-Spans both the C# (`Logic.dll`, `Program.cs`) and Python (`predict_equipment.py` / `predict_sectioncluster.py`) layers. 🆕 Confirmed: **Type** corrections and **Section/Cluster** corrections are two distinct code paths, not unified:
+Processes user corrections for device predictions across the C# and Python layers.
 
-| Correction type | What runs | Persists? |
-|---|---|---|
-| Device **Type** correction (`correctType` non-empty) | Lightweight dict path — updates `initial_map.pkl` directly, skips `partial_fit` | ✅ Yes, immediately |
-| Device **Section/Cluster** correction | Logged to `manual_assign_sectioncluster.json` via `save_manual_assign_sectioncluster()` in `predict_sectioncluster.py` | ✅ Yes, but only as a queued record — XGBoost requires full retraining (no incremental `partial_fit` equivalent), so these feed a **periodic retrain cycle**, not a live model update |
-| Any correction submitted | **Logic placement** re-runs in `Logic.dll` to re-place the device | Depends on placement logic |
+### 📍 Correction Types
 
-## 📍 Lightweight Correction Path (Type only)
+| Correction | Action | Saved |
+|------------|--------|-------|
+| Device Type | Updates `initial_map.pkl` | ✅ Immediate |
+| Device Section/Cluster | Records correction in `manual_assign_sectioncluster.json` for future model retraining | ✅ Queued |
 
-When a manual type correction is submitted:
+### 📍 Processing Flow
 
-- Updates `initial_map.pkl` (the prefix → equipment type dictionary) directly.
-- **Does not** call `partial_fit` on the SGD model.
-- This avoids the class-mismatch error described in the Incremental Learning Notes above, where `initial_map.pkl` changes previously caused `partial_fit` to choke on an altered class set.
+- **Device Type**
+  - Updates the prefix dictionary (`initial_map.pkl`).
+  - Does not retrain the SGD model.
 
-## 📍 Section/Cluster Correction Path 🆕
+- **Device Section/Cluster**
+  - Stores corrections for the next XGBoost retraining cycle.
+  - No incremental model update.
 
-- Corrections are written to `manual_assign_sectioncluster.json` (constant: `MANUAL_ASSIGN_SECTION_CLUSTER`) via atomic file writes.
-- Routed through `save_correction` vs `predict` action dispatch in `run_cli()`.
-- Not consumed automatically — intended for the data team to pull into the next XGBoost retrain cycle.
-
+- **After Any Correction**
+  - `Logic.dll` re-runs the placement process to generate the updated device assignment.
 ---
 
 # 6️⃣ C# Orchestration (`Program.cs`)
