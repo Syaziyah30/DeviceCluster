@@ -310,18 +310,17 @@ cluster_conf_final = cluster_raw_conf × section_conf   (when section_conf < 0.6
 | `model_cluster.pkl` | Trained XGBoost cluster model |
 | `pipeline_config.pkl` | All label encoders, feature lists, OOD scaler/KNN, known customers, numeric width stats |
 
-## 🆕 📍 Raw Cluster Probability Export (`cluster_prediction_raw.csv`)
+## 📍 Raw Cluster Probability Export (`cluster_prediction_raw.csv`)
 
-Added so the full `predict_proba` distribution (one column per cluster, per device) can be reviewed offline, rather than only the single winning label.
+- Exports the complete `predict_proba` results for each device (one column per cluster).
+- Implemented as an optional output of the existing `predict` action to avoid redundant model execution.
+- Enabled by providing `export_raw_csv_path` in the prediction request.
 
-- **Design decision:** implemented as an **optional side effect of the existing `predict` action**, not a new subprocess call — `predict()` already computes `clu_proba_raw` internally via `model_cluster.predict_proba(X_clu)`, so `_write_raw_cluster_csv()` reuses that matrix instead of loading the pickled models and re-running `predict_proba` a second time.
-- Triggered by an optional `export_raw_csv_path` field on the same JSON payload already sent to Step 3.
-- **Current status — in progress:** `export_csv_path` is arriving as `None` inside Python at runtime even though the console shows real predictions (ruling out `eligible_mask.any() == False`). Two live hypotheses, being verified in order:
-  1. **Stale build** — Visual Studio may be running a compiled version predating the `export_raw_csv_path` field on `PipelinePredictRequest.cs`; a `Build` doesn't always force a full recompile of every project in the solution. Fix: `Clean Solution` → `Rebuild Solution`.
-  2. The JSON payload genuinely isn't carrying the field (serialization issue).
-- **Diagnostic added:** a temporary sentinel file write (`_debug_received.txt`, unconditional, independent of `eligible_mask`) right where `export_csv_path` is read in `run_cli()`, to confirm exactly what Python received without digging through stderr routing.
-- File is written to `cluster_prediction_raw.csv` (see filepath glossary in §11).
-
+**Status:** ❗In Progress
+- `export_raw_csv_path` is currently received as `None` in Python.
+- Verification in progress:
+  - Clean & Rebuild solution to eliminate stale builds.
+  - Confirm the JSON payload includes `export_raw_csv_path`.
 ---
 
 # 🆕 3.5️⃣ Quota Allocation (`ClusterQuotaAllocator`, `Logic.dll`)
