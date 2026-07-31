@@ -135,18 +135,18 @@ Hybrid classifier combining four sources, resolved in strict priority order:
 2. Exact match from training dataset   → label from reference_df, confidence = 1.0
 3. SGD confidence >= 0.60              → SGD label
 4. Composite similarity >= 0.60        → Nearest-neighbour cosine label
-5. Dictionary (initial_map) match?     → dict label, confidence = 0.75
-6. None of the above                   → UNKNOWN, confidence = max(composite, sgd)
+5. Dictionary match (initial_map)      → dict label, confidence = 0.75
+6. None of the above                   → UNKNOWN [confidence = max(composite, sgd)]
 ```
 
 ## 📍 Configuration Thresholds
 
 | Constant | Value | Purpose |
 |---|---|---|
-| `SGD_STRONG_THRESHOLD` | `0.60` | Minimum SGD confidence to accept SGD label |
-| `COSINE_THRESHOLD` | `0.60` | Minimum composite score to accept NN/cosine label |
-| `INITIAL_DICT_CONF` | `0.75` | Fixed confidence assigned for dictionary-only match |
-| `ALPHA_PREFIX_WEIGHT` | `0.65` (from `composite_config`) | Prefix weight in composite formula |
+| `SGD_STRONG_THRESHOLD`  | `0.60` | Minimum SGD confidence to accept SGD label |
+| `COSINE_THRESHOLD`      | `0.60` | Minimum composite score to accept NN/cosine label |
+| `INITIAL_DICT_CONF`     | `0.75` | Fixed confidence assigned for dictionary-only match |
+| `ALPHA_PREFIX_WEIGHT`   | `0.65` (from `composite_config`) | Prefix weight in composite formula |
 | `top_k_default` | `10` (from `composite_config`) | Nearest neighbours retrieved per query |
 
 **Composite similarity formula:**
@@ -165,10 +165,11 @@ composite_score = (0.65 × prefix_score) + (0.35 × cosine_similarity)
 > Flush happens when `len(PENDING_NEW_ROWS) >= flush_batch_size`.
 
 ## 📍 Dictionary / Prefix Matching Rules
+Dictionary Name = `initial_map`
 
-➡️ Prefix from `initial_map` accepted **only if** the remainder after the prefix is:
-- **Empty** — exact match (e.g. `CR` matches key `CR`)
-- **All digits** — numeric suffix (e.g. `CR1234` matches key `CR`)
+➡️ A prefix is valid only IF the remaining characters are:
+- Empty (exact match) - (e.g. `CR` matches key `CR`)
+- Digits only         -  (e.g. `CR1234` matches key `CR`)
 
 ➡️ Rejected if remainder contains any letters (`CR123ABC` does **not** match `CR`).
 ➡️ Special case: inputs starting with `SP` also probe the stripped version (`probe[2:]`).
