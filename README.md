@@ -24,9 +24,9 @@
 | Model-based Top-3 Cluster Suggestion `predict_sectioncluster.py` from XGBoost | ✅ Completed |
 | Update Model                        | ✅ Completed (Once workflow is complete,need retraining) |
 | `Logic.dll` Development             | ❗❗❗ **STUCK HERE** |
-| Raw Prediction Output ins CSV       | ❌ Not Started (for the analysis purpose. at this moment, using dummy data for workflow cluster logic instead of extraction from dataset) |
+| Raw Prediction Output ins CSV       | ❌ Not Started (this subpoint is for the analysis purpose. at this moment, using dummy data for workflow cluster logic instead of extraction from dataset) |
 | DLL Testing                         | ❌ Pending |
-| Project References Migration (Replace Assembly References) | ❌ Pending |
+
 
 ---
 Script active : DeviceClusterConsoleApp [`Program.cs`]
