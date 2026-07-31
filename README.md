@@ -323,50 +323,38 @@ cluster_conf_final = cluster_raw_conf × section_conf   (when section_conf < 0.6
   - Confirm the JSON payload includes `export_raw_csv_path`.
 ---
 
-# 🆕 3.5️⃣ Quota Allocation (`ClusterQuotaAllocator`, `Logic.dll`)
+## 🆕 3.5️⃣ Quota Allocation (`ClusterQuotaAllocator`, `Logic.dll`)
 
-New allocation layer sitting between the raw model predictions (Step 3) and the existing cascading placement logic (Step 4). Solves a different problem than cascading placement: **each Section/Cluster/DeviceType combination has a fixed quota (`TargetCount`)**, and devices need to be distributed to fit those quotas rather than simply placed wherever the model's top prediction points.
+Allocates devices to clusters based on predefined quotas before cascading placement.
 
-## 📍 Design
+### 📍 Purpose
+- Ensures each **Section–Cluster–DeviceType** meets its target quota.
+- Uses model predictions while respecting capacity constraints.
 
-Quota is treated as a plain, source-agnostic **input parameter** — the allocator has no opinion on where the quota numbers come from (currently a hardcoded table in `Program.cs`'s `Main()`; historical-data lookup or manual entry can be wired in later without touching the allocator).
+### 📍 Allocation Flow
+**Pass 1 – Initial Allocation**
+- Assign devices to their highest-confidence cluster until the quota is reached.
 
-```
-ClusterQuotaAllocator.Allocate(
-    predictions: List<DevicePrediction>,   // full raw model output, unfiltered
-    quotas: List<ClusterQuota>              // Section, Cluster, DeviceType, TargetCount
-) -> AllocationResult
-```
+**Pass 2 – Vacancy Backfill**
+- Redistribute remaining devices to clusters with available capacity.
 
-## 📍 Two-Pass Logic
+### 📍 Confidence Threshold
+- Reassigned devices must meet the minimum confidence threshold.
+- Low-confidence predictions are routed to the **Unknown** list instead of being force-assigned.
 
-1. **Pass 1 — Ranked assignment.** Devices are assigned to their predicted cluster up to quota, ranked by confidence.
-2. **Pass 2 — Floating-pool backfill.** Devices that didn't fit in Pass 1 go into a floating pool and get redistributed against remaining vacancies (`InitialDeficits`).
+### 📍 UNKNOWN Handling
+- UNKNOWN devices are separated **before** quota allocation.
+- Only fully identified devices participate in quota allocation and backfill.
 
-## 📍 `MinCascadeConfidence` Floor
+### 📍 Data Models
 
-🆕 During re-evaluation (a device cascading to its next-highest candidate cluster because its top choice was full), the candidate's confidence is checked against a floor (currently reusing the existing `0.60` threshold used elsewhere in the pipeline) **before** treating a vacancy as fillable:
-
-- Candidate ≥ `MinCascadeConfidence` → cascade normally, assign if vacant.
-- Candidate < `MinCascadeConfidence` → do **not** force-place. Route to the unknown/floating dump instead of accepting a low-confidence placement that would just need manual correction later anyway.
-
-## 📍 UNKNOWN Split — Moved Earlier 🆕
-
-**Bug found and fixed:** UNKNOWN devices (by `DeviceType`, not just Section/Cluster) were previously only detected *after* allocation, at the old Step 4/5 `SplitKnownUnknown` check. Because `allDeviceResults` was built only from `AllocationResult.Assigned`, any device that got silently resolved by backfill — or fell into `Floating` (invisible past that point) — meant `SplitKnownUnknown` never found any unknowns, even when some existed. A secondary bug also mislabeled `DeviceType == "UNKNOWN"` devices as `"Assign"` because the floating-dump status logic only checked `Section`/`Cluster`, not `DeviceType`.
-
-**Fix:** UNKNOWN devices are now split out from the raw predictions **before** allocation runs (new Step 3.5a), so `Floating` only ever contains devices that are fully known (type, section, cluster all resolved) but simply didn't fit a quota.
-
-## 📍 Core Data Contracts
-
-| Model | Represents |
-|---|---|
-| `DevicePrediction` | Normalized shape (Section, Cluster, DeviceId, DeviceType, Score) built from `PipelineResult` before allocation runs |
-| `ClusterQuota` | One row of the quota table (Section, Cluster, DeviceType, TargetCount) — currently hardcoded inline in `Program.cs`'s `Main()` |
-| `AllocationResult` | `Assigned` (placed devices) · `Floating` (unplaced, fully-known devices) · `InitialDeficits` (vacancies before backfill) · `VacancyReport` (vacancies after backfill) |
-| `AllocatedDevice` | A device once placed by the allocator |
-| `VacancyReportEntry` | One row of "this quota bucket still has N slots open" |
-
-`ClusterQuotaAllocator.PrintVacancyReport(...)` prints how many slots per quota bucket remain open.
+| Model | Description |
+|--------|-------------|
+| `DevicePrediction` | Prediction result used for allocation |
+| `ClusterQuota` | Target quota for each Section–Cluster–DeviceType |
+| `AllocationResult` | Assigned devices, unassigned devices, and vacancy summary |
+| `AllocatedDevice` | Successfully allocated device |
+| `VacancyReportEntry` | Remaining quota after allocation |
 
 ---
 
