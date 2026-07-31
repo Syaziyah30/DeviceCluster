@@ -33,15 +33,14 @@ Script active : DeviceClusterConsoleApp [`Program.cs`]
 ---
 # 📍 `Logic.dll` Status
 
-| Feature | Status |
-|----------|--------|
-| Cascading Placement | ✅ Completed |
-| Similarity Scoring & Cluster Grouping | ✅ Completed |
-| Quota-Constrained Allocation | ✅ Completed |
-| UNKNOWN Device Preprocessing | ✅ Completed |
-| Unknown Device JSON Export | ✅ Completed |
-| Model-based Top-3 Suggestion | ✅ Completed |
-| Testing | ❌ Pending |
+| Stage | Status |
+|-------|--------|
+| Stage 1 – Initial Cluster Assignment | ✅ Completed |
+| Stage 2 – Exceeded & Vacancy Evaluation | ✅ Completed |
+| Stage 3 – Reassignment Pool & Allocation | ✅ Completed |
+| Model-based Top-3 Cluster Prediction | ✅ Completed |
+| UNKNOWN Device Handling | ✅ Completed |
+| Logic.dll Testing | ❌ Pending |
 | Project References Migration | ❌ Pending |
 
 ---
