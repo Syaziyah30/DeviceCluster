@@ -323,7 +323,7 @@ cluster_conf_final = cluster_raw_conf × section_conf   (when section_conf < 0.6
   - Confirm the JSON payload includes `export_raw_csv_path`.
 ---
 
-## 3. Quota Allocation (`ClusterQuotaAllocator`, `Logic.dll`)
+# 🆕 3. Quota Allocation (`ClusterQuotaAllocator`, `Logic.dll`)
 
 Allocates devices to clusters based on predefined quotas before cascading placement.
 
@@ -360,56 +360,42 @@ Allocates devices to clusters based on predefined quotas before cascading placem
 
 # 4️⃣ Logic Placement (`Logic.dll`, C#)
 
-Separate class library consumed by `Program.cs` after the Python pipeline and `ClusterQuotaAllocator` return their results. Handles cascading device placement, numeric similarity scoring, cluster grouping, and unknown device routing. 🆕 Internally split into distinct namespaces:
 
-| Namespace | Role |
-|---|---|
-| `Logic` (root) | Quota allocation engine — `ClusterQuotaAllocator`, `DevicePrediction`, `ClusterQuota`, `AllocationResult`, `AllocatedDevice`, `ClusterSuggestion`, `VacancyReportEntry` (see §3.5) |
-| `Logic.LogicAssignUser` | The "human in the loop" layer, driven by `LogicAssignment` — `ClusterGroup`, `ScoredDevice`, `UnknownDumpEntry` |
-| `Logic.Models` | `DeviceResult` (final per-device record fed into `LogicAssignment`) and `ClusterPrediction` (lighter internal prediction shape) |
-| `Logic.SimilarityScore` | `NumericalSimilarity` — the older device-ID-numeric-proximity method; superseded for cluster *suggestion* by the model-driven top-3 feature, but still the actual placement mechanism when a user manually corrects a device (`AssignByNumericSimilarity`) |
+Processes the prediction results after quota allocation and determines the final device placement.
 
-## 📍 Purpose
+### 📍 Responsibilities
+- Apply cascading placement logic.
+- Group devices into clusters.
+- Route low-confidence devices to the Unknown list.
+- Generate the final placement results for the C# application.
 
-- Takes ML-predicted Section/Cluster results (now post-quota-allocation) and resolves them into final placements using cascading logic.
-- Separates "known" devices (confidently placed) from "unknown" devices (routed to manual review / suggestion flow).
-- Provides the final `DeviceResult` objects consumed by the C# UI and by Faiz's downstream integration.
+### 📍 Components
 
-## 📍 Core Models
+| Namespace | Purpose |
+|-----------|---------|
+| `Logic` | Quota allocation and core allocation models |
+| `Logic.LogicAssignUser` | Device placement, cluster grouping, and Unknown handling |
+| `Logic.Models` | Shared data models for prediction and placement |
+| `Logic.SimilarityScore` | Numeric similarity used for manual device reassignment |
 
-| Model | Represents |
-|---|---|
-| `DeviceResult` | Final per-device placement result. 🆕 Fields confirmed: `Customer`, `ProjectCode`, `DeviceId`, `DeviceType`, `Section`, `Cluster`, `Confidence` |
-| `ClusterGroup` | A group of devices placed together under one cluster, used for table/UI display |
-| `ScoredDevice` | A device paired with its numeric similarity score against a candidate cluster/group |
-| `UnknownDumpEntry` | Record shape for devices that couldn't be confidently placed — dumped to `unknown_dump.json` for review |
+### 📍 Core Models
 
-> **TODO:** fill in exact property types (not just names) for each model — useful for Faiz's integration reference.
+| Model | Description |
+|-------|-------------|
+| `DeviceResult` | Final device placement result |
+| `ClusterGroup` | Devices grouped under the same cluster |
+| `ScoredDevice` | Device with similarity score |
+| `UnknownDumpEntry` | Device requiring manual review |
 
-## 📍 Key `LogicAssignment` Methods (used in `Program.cs`) 🆕
+### 📍 Processing Flow
+1. Separate known and unknown devices.
+2. Group known devices by cluster.
+3. Apply numeric similarity for manual reassignment.
+4. Export unknown devices to `unknown_dump.json`.
 
-| Method | Purpose |
-|---|---|
-| `SplitKnownUnknown(allDeviceResults)` | → `(knownDevices, unknownDevices)` |
-| `DumpUnknown(unknownDevices)` | Writes `unknown_dump.json` |
-| `BuildClusterGroups(knownDevices)` | → `List<ClusterGroup>` |
-| `PrintClusterTable(clusterGroups[, sectionFilter])` | Console table output |
-| `AssignByNumericSimilarity(correctedEntry, knownDevices)` | Placement for a manually corrected device |
-| `PlaceDevice(placed, clusterGroups)` / `MarkAsAssigned(deviceId, projectCode, section, cluster)` | Placement bookkeeping |
-
-## 📍 Numeric Similarity Scoring
-
-Cascading placement uses numeric similarity between a device's ID structure (digit patterns, counts, leading zeros, etc.) and existing cluster members, to decide whether an ambiguous device can be folded into an existing `ClusterGroup`. 🆕 Confirmed: leading zeros and field width are meaningful (not noise) — `count_num_digit` (field width) and `numeric_remove_zero` (significant value) are both used, so an unusually wide/narrow numeric field naturally lowers confidence via the KNN OOD scorer rather than being hard-blocked.
-
-> **TODO:** document the actual scoring formula/weights once finalized.
-
-## 📍 Unknown Device Handling
-
-- Devices that fail confident placement are collected as `UnknownDumpEntry` records and dumped to `unknown_dump.json` for manual review.
-- `SuggestTopClusters` — 🆕 retired in favor of the model-driven top-3 suggestion feature (`ModelClusterSuggestionService`, calling a new `predict_sectioncluster.py` action branch `top_clusters` that exposes `predict_proba()` directly), which replaced the old `NumericalSimilarity`-based suggestion approach.
-
-> **TODO:** document `ModelClusterSuggestionService` / `top_clusters` action signature (inputs/outputs, how N is chosen, tie-breaking rules).
-
+### 📍 Unknown Device Handling
+- Low-confidence devices are routed to `unknown_dump.json`.
+- Cluster suggestions are generated using the model-based Top-3 prediction service.
 ---
 
 # 5️⃣ Manual Correction Flow (C# ↔ Python)
