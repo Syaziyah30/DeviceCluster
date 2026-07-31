@@ -3,7 +3,7 @@
 | | |
 |---|---|
 | **Full pipeline** | Device Type → Section → Cluster → Quota Allocation → Logic Placement (cascading) |
-| **Runtime** | C# reads SQL DB → saves as JSON → Python ML scripts predict → `ClusterQuotaAllocator` fits quotas → `Logic.dll` places/groups → C# outputs to UI / Faiz's consumer |
+| **Runtime** | C# reads SQL DB → saves as JSON → Python ML scripts predict → `ClusterQuotaAllocator` fits quotas → `Logic.dll` places/groups → C# outputs to UI|
 
 > Last synced 31 July 2026 (previous version: 3 July 2026). Changes are marked with 🆕 where useful.
 
@@ -20,12 +20,12 @@
 | C# Service Integration              | ✅ Completed |
 | SQL Integration (`PythonSQL.cs`)    | ✅ Completed |
 | Incremental Learning                | ✅ Completed |
-| DLL Development (`AppRegistryEditor.dll`, `Logic.dll`, `Model.dll`) | ✅ Completed |
-| Model-based Top-3 Cluster Suggestion `predict_sectioncluster.py` from XGBoost | ✅ Completed |
+| 🆕DLL Development (`AppRegistryEditor.dll`, `Logic.dll`, `Model.dll`) | ✅ Completed |
+| 🆕Model-based Top-3 Cluster Suggestion `predict_sectioncluster.py` from XGBoost | ✅ Completed |
 | Update Model                        | ✅ Completed (Once workflow is complete,need retraining) |
-| `Logic.dll` Development             | ❗❗❗ **STUCK HERE** |
-| Raw Prediction Output ins CSV       | ❌ Not Started (this subpoint is for the analysis purpose. at this moment, using dummy data for workflow cluster logic instead of extraction from dataset) |
-| DLL Testing                         | ❌ Pending |
+| 🆕`Logic.dll` Development             | ❗❗❗ **STUCK HERE** |
+| 🆕Raw Prediction Output ins CSV       | ❌ Not Started (this subpoint is for the analysis purpose. at this moment, using dummy data for workflow cluster logic instead of extraction from dataset) |
+| 🆕DLL Testing                         | ❌ Pending |
 
 
 ---
