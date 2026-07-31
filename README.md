@@ -48,7 +48,7 @@ Script active : DeviceClusterConsoleApp [`Program.cs`]
 ## 📍 Recent Fixes
 
 - ✅ Fixed case-sensitivity issue (`OILTEK` vs `Oiltek`)
-- ✅ Fixed device ID formatting issue (e.g. `V001.21` preserved correctly)mbly references → Project references (stale-DLL trap affecting this DLL) | ❌ Pending |
+- ✅ Fixed device ID formatting issue (e.g. `V001.21` preserved correctly)
 
 ---
 
@@ -56,11 +56,14 @@ Script active : DeviceClusterConsoleApp [`Program.cs`]
 
 ```
              Data Source DB SQL (XenCreator → DummyInput table)
+                    │
                     │  PythonSQL.cs (C#): dynamic SELECT DISTINCT
                     │  project detection, SQL → JSON
                     ▼
                 Input JSON
       (project_code, customer_code, data_ids[])
+                    │
+                    │
                     │
                     ▼
 ┌───────────────────────────────────────────────────┐
@@ -68,6 +71,8 @@ Script active : DeviceClusterConsoleApp [`Program.cs`]
 │ Hybrid: exact match + SGD + TF-IDF cosine + dict  │
 │ 22 equipment classes                              │
 └───────────────────┬───────────────────────────────┘
+                    │
+                    │
                     │  DeviceTypeResult[]
                     ▼
 ┌───────────────────────────────────────────────────┐
@@ -75,25 +80,30 @@ Script active : DeviceClusterConsoleApp [`Program.cs`]
 │ XGBoost (27+ engineered features)                 │
 │ OOD KNN penalty applied                           │
 └───────────────────┬───────────────────────────────┘
+                    │
+                    │
                     │  PipelineResult[] (with PREDICTED_SECTION)
                     ▼
 ┌───────────────────────────────────────────────────┐
 │ Step 3 — Cluster [predict_sectioncluster.py]      │
-│ XGBoost chained on Predicted Section               │
-│ Confidence penalised by Section confidence         │
-│ 🆕 optional side-effect: export_raw_csv_path       │
-│    writes full predict_proba matrix (see §8)       │
+│ XGBoost chained on Predicted Section              │
+│ Confidence penalised by Section confidence        │
+│ 🆕 optional side-effect: export_raw_csv_path     │
+│    writes full predict_proba matrix (see §8)      │
 └───────────────────┬───────────────────────────────┘
+                    │
+                    │
                     │  PipelineResult[] (with PREDICTED_CLUSTER)
                     ▼
 ┌───────────────────────────────────────────────────┐
-│ 🆕 Step 3.5 — Quota Allocation [Logic.dll, C#]     │
+│ 🆕 Step 3.5 — Quota Allocation [Logic.dll, C#]    │
 │ Split UNKNOWN (type) devices out BEFORE allocation │
 │ ClusterQuotaAllocator two-pass:                    │
 │   Pass 1 — ranked assignment against quota         │
 │   Pass 2 — floating-pool backfill vs InitialDeficits│
 │ MinCascadeConfidence floor (60%) blocks bad forces │
 └───────────────────┬───────────────────────────────┘
+                    │
                     │  AllocationResult (Assigned / Floating /
                     │  InitialDeficits / VacancyReport)
                     ▼
@@ -101,9 +111,11 @@ Script active : DeviceClusterConsoleApp [`Program.cs`]
 │ Step 4 — Logic Placement [Logic.dll, C#]          │
 │ Split known/unknown devices                       │
 │ Cascading placement + numeric similarity scoring  │
-│ Cluster grouping → ClusterGroup / ScoredDevice     │
-│ Unknown devices → JSON dump + SuggestTopClusters   │
+│ Cluster grouping → ClusterGroup / ScoredDevice    │
+│ Unknown devices → JSON dump + SuggestTopClusters  │
 └───────────────────┬───────────────────────────────┘
+                    │
+                    
                     │  DeviceResult[] / UnknownDumpEntry[]
                     ▼
         Program.cs — print tables, prompt manual
