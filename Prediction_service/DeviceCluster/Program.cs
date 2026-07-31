@@ -212,8 +212,6 @@ public class Program
 
 
 
-
-
 			// ── STEP 3: Predict section + cluster ─────────────────────────────────────
 			Console.WriteLine("[Step 3/8] Predicting sections...");
 			var pipelineRequest = new PipelinePredictRequest
