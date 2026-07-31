@@ -187,8 +187,8 @@ Dictionary Name = `initial_map`
 
 | Column | Description |
 |---|---|
-| `customer` | Resolved customer code                   |
-| `data_id` | Cleaned display ID                        |
+| `customer` | OILTEK/LIPICO                 |
+| `data_id` | Cleaned Device ID                        |
 | `manual_check` | Empty placeholder for UI review flag |
 | `data_type` | Predicted equipment type                |
 | `confidence` | Final confidence (0.0–1.0)             |
@@ -199,9 +199,9 @@ Dictionary Name = `initial_map`
 
 | `reason` | Trigger |
 |---|---|
-| `all_letters` | Input is purely alphabetic — hard blocked |
-| `exact_match` | Found exactly similar in reference set |
-| `sgd_strong` | SGD confidence >= 0.60 |
+| `all_letters`             | Input is purely alphabetic — hard blocked |
+| `exact_match`             | Found exactly similar in reference set |
+| `sgd_strong`              | SGD confidence >= 0.60 |
 | `cosine_prefix_accepted` | Composite similarity >= 0.60 |
 | `initial_dict_only` | Dictionary match, no other confident source |
 | `no_confident_source` | Fallback — returns UNKNOWN |
@@ -286,10 +286,10 @@ cluster_conf_final = cluster_raw_conf × section_conf   (when section_conf < 0.6
 
 ## 📍 Input Validation
 
-| Condition | Behaviour |
-|---|---|
-| Unseen CUSTOMER or missing DEVICE_ID | Returns `REJECTION_REASON`, no prediction |
-| Numeric field width outside training distribution | Confidence penalised by KNN scorer, returns `FORMAT_WARNING` |
+| Condition | Result |
+|-----------|--------|
+| Unknown CUSTOMER or missing DEVICE_ID | Prediction rejected |
+| Unexpected numeric format | Confidence reduced with `FORMAT_WARNING` |
 
 ## 📍 Output Columns (Section & Cluster)
 
