@@ -68,8 +68,8 @@ Script active : DeviceClusterConsoleApp [`Program.cs`]
                     ▼
 ┌───────────────────────────────────────────────────┐
 │ Step 1 — Device Type [predict_equipment.py]       │
-│ Hybrid: exact match + SGD + TF-IDF cosine + dict  │
-│ 22 equipment classes                              │
+│ Hybrid: exact match + SGD + TF-IDF cosine         │
+│         + dict 22 equipment classes               │
 └───────────────────┬───────────────────────────────┘
                     │
                     │
@@ -78,7 +78,7 @@ Script active : DeviceClusterConsoleApp [`Program.cs`]
 ┌───────────────────────────────────────────────────┐
 │ Step 2 — Section [predict_sectioncluster.py]      │
 │ XGBoost (27+ engineered features)                 │
-│ OOD KNN penalty applied                           │
+│       + OOD KNN penalty applied                   │
 └───────────────────┬───────────────────────────────┘
                     │
                     │
@@ -95,14 +95,14 @@ Script active : DeviceClusterConsoleApp [`Program.cs`]
                     │
                     │  PipelineResult[] (with PREDICTED_CLUSTER)
                     ▼
-┌───────────────────────────────────────────────────┐
-│ 🆕 Step 3.5 — Quota Allocation [Logic.dll, C#]    │
-│ Split UNKNOWN (type) devices out BEFORE allocation │
-│ ClusterQuotaAllocator two-pass:                    │
-│   Pass 1 — ranked assignment against quota         │
+┌─────────────────────────────────────────────────────┐
+│ 🆕 Step 3.5 — Quota Allocation [Logic.dll, C#]      │
+│ Split UNKNOWN (type) devices out BEFORE allocation  │
+│ ClusterQuotaAllocator two-pass:                     │
+│   Pass 1 — ranked assignment against quota          │
 │   Pass 2 — floating-pool backfill vs InitialDeficits│
-│ MinCascadeConfidence floor (60%) blocks bad forces │
-└───────────────────┬───────────────────────────────┘
+│ MinCascadeConfidence floor (60%) blocks bad forces  │
+└───────────────────┬─────────────────────────────────┘
                     │
                     │  AllocationResult (Assigned / Floating /
                     │  InitialDeficits / VacancyReport)
@@ -110,12 +110,12 @@ Script active : DeviceClusterConsoleApp [`Program.cs`]
 ┌───────────────────────────────────────────────────┐
 │ Step 4 — Logic Placement [Logic.dll, C#]          │
 │ Split known/unknown devices                       │
-│ Cascading placement + numeric similarity scoring  │
+│ Cascading placement                               │
 │ Cluster grouping → ClusterGroup / ScoredDevice    │
 │ Unknown devices → JSON dump + SuggestTopClusters  │
 └───────────────────┬───────────────────────────────┘
                     │
-                    
+                    │
                     │  DeviceResult[] / UnknownDumpEntry[]
                     ▼
         Program.cs — print tables, prompt manual
