@@ -525,19 +525,6 @@ C# spawns Python as a child process for each ML step via `System.Diagnostics.Pro
 | `LOG_LEVEL` | `INFO` | Python logging level |
 
 ---
-
-# 🆕 9️⃣ Known Bugs — Fixed This Cycle
-
-| Bug | Root cause | Fix |
-|---|---|---|
-| Oiltek devices all returning `UNKNOWN` / `N/A` confidence at Section prediction | Training data stored customer as `'OILTEK'` (uppercase) in `pipeline_config.pkl`'s `known_customers`, but SQL source passed `'Oiltek'` (mixed case) — `check_entities()` rejected every row as an unseen customer before the model ever ran | Added `.upper()` normalization in both `check_entities()` (on `cust`) and `build_features()` (on `df["CUSTOMER"]` before `le_customer.transform()`) |
-| Device IDs with periods getting mangled (`V001.21` → `V00121`) in output | `make_display_id_series()` applied the internal feature-normalization regex `r"[\s\-_\.]"` to the display/output ID as well, not just internal features | Removed the character-stripping regex from `make_display_id_series()`, leaving only `.str.strip().str.upper()` |
-| XGBoost model predicting only 3 sections for devices trained across 5 sections (Oiltek A1827) | `PROJECT` is absent from `feature_columns` in the training script — model can't distinguish between different projects under the same customer | **Identified, not yet fixed** — requires adding `PROJECT` to `feature_columns` and retraining `model_section.pkl` |
-| `export_csv_path` arriving as `None` in Python despite valid predictions returning | Almost certainly a stale build — VS running a compiled version predating the `export_raw_csv_path` field on `PipelinePredictRequest.cs` | **In progress** — sentinel debug file added; Clean Solution → Rebuild Solution is the next step to confirm |
-| `initial_map.pkl` corrections silently breaking `predict_equipment.py` persistence (`ref_id_set` desync, duplicate-index `ValueError`) | `new_row` DataFrame built with only 3/4 required columns (missing `initial`); `ref_id_set` not updated by `manual_correction_lightweight()`, causing re-append duplicates on next predict | Replaced `ref_id_set`-based dedup with direct membership check against `reference_df['data_id']`, upsert pattern with `existing_ids.add(...)` inside the loop, wrapped append block in `try/except` with `traceback.print_exc()` |
-
----
-
 ## 📍 Filepath Reference
 
 | Path | Description |
@@ -567,26 +554,13 @@ C# spawns Python as a child process for each ML step via `System.Diagnostics.Pro
 
 ## 📍 Deployment Notes
 
-- Python 3.13 must be installed at the path hardcoded in `Program.cs`.
-- All `.pkl` model files must be present in `DeviceCluster_Prediction/model_config/`.
-- Input devices read from SQL (`XenCreator` → `DummyInput`) — `TestDevice/<project>.json` is now a legacy fallback, not the live path.
-- No network calls — fully local inference (SQL retrieval is the only external dependency).
-- `Logic.dll`'s `.csproj` was manually converted to SDK-style, targeting `net10.0` — keep this in mind when referencing it from consumer projects (e.g. Faiz's integration) to avoid legacy-style project reference issues.
-- 🆕 `DeviceClusterConsoleApp` currently references the three DLLs via **Assembly file references**, not **Project references** — this is a known recurring source of "I rebuilt but nothing changed" bugs (including the current `export_csv_path` issue). Switching to Project references has been discussed repeatedly but not yet implemented; recommended as a permanent fix.
-- For production: use `dotnet publish` instead of debug build.
+
+- Install **Python 3.13** and update the Python path in `Program.cs`.
+- Ensure all model (`.pkl`) files are available in `DeviceCluster_Prediction/model_config/`.
+- Device input is retrieved from SQL (`XenCreator` → `DummyInput`); JSON input is for legacy/testing only.
+- Runs entirely locally; SQL is the only external dependency.
+- `Logic.dll` targets **.NET 10.0** (SDK-style project).
+- `DeviceClusterConsoleApp` currently uses **Assembly References** (known issue); **Project References** are recommended.
+- Use `dotnet publish` for production deployment.
 
 ---
-
-## 📍 Open TODOs Before This Doc Is Fully Synced
-
-- [ ] Confirm exact property **types** (not just names) for `DeviceResult`, `ClusterGroup`, `ScoredDevice`, `UnknownDumpEntry`, `AllocationResult`
-- [x] ~~Document `SuggestTopClusters` signature and selection logic~~ → retired; document `ModelClusterSuggestionService` / `top_clusters` action instead
-- [ ] Document numeric similarity scoring formula used in cascading placement
-- [ ] Confirm `Logic.csproj` real path and add to filepath table
-- [ ] Add Step 3.5/4 (quota allocation + Logic.dll) request/response example to the Subprocess Protocol section
-- [x] ~~Confirm whether dictionary-only correction and full `user_manual_assign` are exposed as separate UI actions or unified~~ → confirmed: Type corrections use the lightweight dict path; Section/Cluster corrections are logged separately for periodic retrain
-- [ ] Document `PythonSQL.cs` / `PythonClient.cs` method signatures in full
-- [ ] 🆕 Resolve `export_csv_path` arriving as `None` — confirm via sentinel debug file, then Clean/Rebuild
-- [ ] 🆕 Retrain `model_section.pkl` with `PROJECT` added to `feature_columns`
-- [ ] 🆕 Switch `DeviceClusterConsoleApp` to Project references to eliminate the stale-DLL trap
-- [ ] 🆕 Confirm exact `MinCascadeConfidence` value if it diverges from the reused `0.60` threshold
