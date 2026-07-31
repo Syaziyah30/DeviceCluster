@@ -19,18 +19,18 @@
 | Device Cluster Prediction           | ✅ Completed |
 | C# Service Integration              | ✅ Completed |
 | SQL Integration (`PythonSQL.cs`)    | ✅ Completed |
-| Incremental Learning | ✅ Completed |
+| Incremental Learning                | ✅ Completed |
 | DLL Development (`AppRegistryEditor.dll`, `Logic.dll`, `Model.dll`) | ✅ Completed |
 | Model-based Top-3 Cluster Suggestion `predict_sectioncluster.py` from XGBoost | ✅ Completed |
-| `Logic.dll` Development | ❗In Progress |
-| Update Model | ❗Partial (Type: Incremental ✓, Section/Cluster: Pending Retraining) |
-| Raw Prediction CSV Export | ❗In Progress |
-| XGBoost Feature Fix (`PROJECT` feature) | ⚠️ Identified, Retraining Pending |
-| DLL Testing | ❌ Pending |
+| Update Model                        | ✅ Completed (Once workflow is complete,need retraining) |
+| `Logic.dll` Development             | ❗❗❗ **STUCK HERE** |
+| Raw Prediction Output ins CSV       | ❌ Not Started (for the analysis purpose. at this moment, using dummy data for workflow cluster logic instead of extraction from dataset) |
+| DLL Testing                         | ❌ Pending |
 | Project References Migration (Replace Assembly References) | ❌ Pending |
 
 ---
-
+Script active : DeviceClusterConsoleApp [`Program.cs`]
+---
 # 📍 `Logic.dll` Status
 
 | Feature | Status |
