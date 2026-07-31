@@ -218,7 +218,7 @@ Dictionary Name = `initial_map`
 
 ## 📍 CLI Actions (`predict_equipment.py`)
 
-| `action` | Description | Persists to disk? |
+| `action` | Description | Changes Saved? |
 |---|---|---|
 | `predict` (default) | Predict device types for `data_ids` | No |
 | `user_manual_assign` | Manually assign labels + incremental learn | ✅ Yes (full persist) |
