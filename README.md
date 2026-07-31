@@ -242,10 +242,11 @@ Dictionary Name = `initial_map`
 
 ## 📍 Incremental Learning Notes
 
-Updates live via `partial_fit`, flushed to disk every 50 rows.
-`user_manual_assign` saves immediately · `import_equipment` does not.
-
-⚠️ **Known gotcha:** modifying `initial_map.pkl` directly can shift the SGD label space and cause a `partial_fit` class-mismatch error, because SGD expects a fixed set of classes seen at first fit. This is why the **lightweight correction path** (see Manual Correction Flow below) updates `initial_map.pkl` only and deliberately avoids touching the SGD model.
+- Uses `partial_fit` for live model updates.
+- Changes are saved every 50 records.
+- `user_manual_assign` saves immediately.
+- `import_equipment` updates the model in memory only.
+- `initial_map.pkl` should not be edited directly, as it may cause SGD class mismatch errors.
 
 ## 📍 Features
 
