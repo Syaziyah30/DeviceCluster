@@ -11,39 +11,46 @@
 
 ## 📍 Current Status
 
+# 📍 Project Status
+
 | Component | Status |
-|---|---|
-| Device Type prediction        | ✅ Completed |
-| Device Section prediction     | ✅ Completed |
-| Device Cluster prediction     | ✅ Completed |
-| C# service integration        | ✅ Completed |
-| Incremental learning          | ✅ Completed |
-| Development DLL library (now split into `AppRegistryEditor.dll`, `Logic.dll`, `Model.dll`) | ✅ Completed |
-| SQL integration (`PythonSQL.cs`)      | ✅ Completed |
-| 🆕 `Logic.dll` (see detailed breakdown below) | ❗In progress |
-| Model-driven top-3 cluster suggestion (`ModelClusterSuggestionService`, replacing `NumericalSimilarity`) | ✅ Completed |
-| Update Model (Type, Section, Cluster)  | ❗Partially Completed — Type: full incremental (`partial_fit`) + lightweight dict path both done. Section/Cluster: corrections logged to `manual_assign_sectioncluster.json` for periodic XGBoost retrain, **not yet incrementally retrained** |
-| 🆕 Raw `predict_proba` matrix CSV export (`cluster_prediction_raw.csv`) | ❗In progress — export wired in as a side effect of the existing `predict` call, but `export_csv_path` is currently arriving as `None` in Python at runtime; root-caused to a likely stale build, fix in verification (see §8) |
-| 🆕 Case-sensitivity bug (`'OILTEK'` vs `'Oiltek'` rejecting all rows via `check_entities()`) | ✅ Fixed |
-| 🆕 Display ID stripping bug (periods stripped from device IDs like `V001.21` → `V00121`) | ✅ Fixed |
-| 🆕 `PROJECT` missing from `feature_columns` (XGBoost collapsing 5 trained sections into 3) | ⚠️ Root cause identified, **not yet retrained** |
-| Testing DLL library | ❌ Pending |
-| 🆕 Switch `DeviceClusterConsoleApp` from Assembly references to Project references (stale-DLL trap) | ❌ Pending — discussed repeatedly, not yet implemented |
+|------------|--------|
+| Device Type Prediction | ✅ Completed |
+| Device Section Prediction | ✅ Completed |
+| Device Cluster Prediction | ✅ Completed |
+| C# Service Integration | ✅ Completed |
+| SQL Integration (`PythonSQL.cs`) | ✅ Completed |
+| Incremental Learning | ✅ Completed |
+| DLL Modularization (`AppRegistryEditor.dll`, `Logic.dll`, `Model.dll`) | ✅ Completed |
+| Model-based Top-3 Cluster Suggestion | ✅ Completed |
+| `Logic.dll` Development | ❗In Progress |
+| Update Model | ❗Partial (Type: Incremental ✓, Section/Cluster: Pending Retraining) |
+| Raw Prediction CSV Export | ❗In Progress |
+| XGBoost Feature Fix (`PROJECT` feature) | ⚠️ Identified, Retraining Pending |
+| DLL Testing | ❌ Pending |
+| Project References Migration (Replace Assembly References) | ❌ Pending |
 
 ---
 
-## 📍 `Logic.dll` Status Breakdown 🆕
+# 📍 `Logic.dll` Status
 
-| Item | Status |
-|---|---|
-| Cascading placement | ✅ Completed |
-| Similarity scoring & cluster grouping | ✅ Completed |
-| Quota-constrained allocation (`ClusterQuotaAllocator`, two-pass + `MinCascadeConfidence` floor) | ✅ Completed |
-| UNKNOWN devices split from raw predictions **before** allocation (not after) | ✅ Fixed |
-| Unknown device handling (JSON dump) | ✅ Completed |
-| `SuggestTopClusters` (old numeric-similarity suggestion path) | ⛔ Retired — replaced by model-driven top-3 (`ModelClusterSuggestionService`) |
-| Testing coverage for `Logic.dll` | ❌ Pending |
-| Assembly references → Project references (stale-DLL trap affecting this DLL) | ❌ Pending |
+| Feature | Status |
+|----------|--------|
+| Cascading Placement | ✅ Completed |
+| Similarity Scoring & Cluster Grouping | ✅ Completed |
+| Quota-Constrained Allocation | ✅ Completed |
+| UNKNOWN Device Preprocessing | ✅ Completed |
+| Unknown Device JSON Export | ✅ Completed |
+| Model-based Top-3 Suggestion | ✅ Completed |
+| Testing | ❌ Pending |
+| Project References Migration | ❌ Pending |
+
+---
+
+## 📍 Recent Fixes
+
+- ✅ Fixed case-sensitivity issue (`OILTEK` vs `Oiltek`)
+- ✅ Fixed device ID formatting issue (e.g. `V001.21` preserved correctly)mbly references → Project references (stale-DLL trap affecting this DLL) | ❌ Pending |
 
 ---
 
