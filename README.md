@@ -151,7 +151,8 @@ Hybrid classifier combining four sources, resolved in strict priority order:
 
 **Composite similarity formula:**
 ```
-composite_score = (0.65 × prefix_score) + (0.35 × cosine_similarity)
+composite_scores  = (ALPHA_PREFIX_WEIGHT * prefix_scores) + ((1 - ALPHA_PREFIX_WEIGHT) * sims)
+composite_score   = (0.65 × prefix_score)                 + (0.35 × cosine_similarity)
 ```
 
 ## 📍 Batch & Buffer Settings
