@@ -32,40 +32,41 @@ logger = logging.getLogger(__name__)
 # MODEL FOLDER
 # =============================================================================
 
-MODEL_FOLDER = Path(
-    r"C:\Users\sitisyaziyah\source\repos\DeviceCluster\Prediction_service\DeviceCluster\predict_equipment_folder\model_config_devicetype"
-)
+# initial script - hard-coded
+# MODEL_FOLDER = Path(
+#     r"C:\Users\sitisyaziyah\source\repos\DeviceCluster\Prediction_service\DeviceCluster\predict_equipment_folder\model_config_devicetype"
+# )
 
-if not MODEL_FOLDER.exists():
-    raise FileNotFoundError(
-        f"Model folder not found: {MODEL_FOLDER}"
-    )
-
-MAX_BATCH_SIZE = int(os.environ.get("MAX_BATCH_SIZE", "5000"))
-
-
-###### FROM PREVIOUS SCRIPT "predict_equipment.py" (Modify soon)
-# _script_dir  = Path(__file__).resolve().parent
-
-# _config_path = Path(os.environ.get(
-#     "DEVICE_CLUSTER_CONFIG",
-#     _script_dir / "predict_equipment_folder" / "Config_devicetype.json"
-# ))
-
-# if not _config_path.exists():
+# if not MODEL_FOLDER.exists():
 #     raise FileNotFoundError(
-#         f"Config not found at: {_config_path}\n"
-#         f"Set DEVICE_CLUSTER_CONFIG environment variable to override."
+#         f"Model folder not found: {MODEL_FOLDER}"
 #     )
 
-# with open(_config_path, "r", encoding="utf-8") as f:
-#     config = json.load(f)
-
-# _config_dir       = _config_path.parent                               # .../predict_equipment_folder/
-# JSON_MODEL_FOLDER = (_config_dir / config["model_folder"]).resolve()  # .../predict_equipment_folder/model_config_devicetype/
-# MODEL_FOLDER      = JSON_MODEL_FOLDER                                  # same folder
-
 # MAX_BATCH_SIZE = int(os.environ.get("MAX_BATCH_SIZE", "5000"))
+# end here
+
+###### FROM PREVIOUS SCRIPT "predict_equipment.py" (Modify soon)
+_script_dir  = Path(__file__).resolve().parent
+
+_config_path = Path(os.environ.get(
+    "DEVICE_CLUSTER_CONFIG",
+    _script_dir / "predict_equipment_folder" / "Config_devicetype.json"
+))
+
+if not _config_path.exists():
+    raise FileNotFoundError(
+        f"Config not found at: {_config_path}\n"
+        f"Set DEVICE_CLUSTER_CONFIG environment variable to override."
+    )
+
+with open(_config_path, "r", encoding="utf-8") as f:
+    config = json.load(f)
+
+_config_dir       = _config_path.parent                               # .../predict_equipment_folder/
+JSON_MODEL_FOLDER = (_config_dir / config["model_folder"]).resolve()  # .../predict_equipment_folder/model_config_devicetype/
+MODEL_FOLDER      = JSON_MODEL_FOLDER                                  # same folder
+
+MAX_BATCH_SIZE = int(os.environ.get("MAX_BATCH_SIZE", "5000"))
 ###### END HERE
 
 
