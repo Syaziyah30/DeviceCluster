@@ -20,9 +20,9 @@ namespace Model.Services
 		}
 
 
-		// Runs a SQL query and returns result as a grouped JSON envelope.
+		// Runs the query once and pulls out ProjectCode/CustomerCode/DataIds — shared by all the QueryToJson* variants.
 
-		public async Task<string> QueryToJsonAsync(string sql)
+		private async Task<(string ProjectCode, string CustomerCode, List<string> DataIds)> ExecuteQueryAsync(string sql)
 		{
 			if (string.IsNullOrWhiteSpace(sql))
 				throw new ArgumentException("SQL query cannot be empty.", nameof(sql));
@@ -51,6 +51,11 @@ namespace Model.Services
 					dataIds.Add(dataId);
 			}
 
+			return (projectCode, customerCode, dataIds);
+		}
+
+		private static string BuildEnvelopeJson(string projectCode, string customerCode, List<string> dataIds)
+		{
 			// Build envelope format — matches predict_equipment.py input
 			var envelope = new
 			{
@@ -63,6 +68,15 @@ namespace Model.Services
 			{
 				WriteIndented = true
 			});
+		}
+
+
+		// Runs a SQL query and returns result as a grouped JSON envelope.
+
+		public async Task<string> QueryToJsonAsync(string sql)
+		{
+			var (projectCode, customerCode, dataIds) = await ExecuteQueryAsync(sql);
+			return BuildEnvelopeJson(projectCode, customerCode, dataIds);
 		}
 
 
@@ -79,6 +93,28 @@ namespace Model.Services
 			await File.WriteAllTextAsync(outputPath, json);
 
 			return json; // also return the string in case caller needs it
+		}
+
+
+		// Same as QueryToJsonFileAsync, but names the file after the ProjectCode found in the
+		// query results instead of a fixed filename, e.g. "A9998_devices.json".
+		// Returns the full path that was written to, since the filename isn't known ahead of time.
+
+		public async Task<string> QueryToJsonFileByProjectCodeAsync(string sql, string outputDirectory, string suffix = "_devices.json")
+		{
+			var (projectCode, customerCode, dataIds) = await ExecuteQueryAsync(sql);
+
+			if (string.IsNullOrWhiteSpace(projectCode))
+				throw new InvalidOperationException("ProjectCode not found in query result — cannot name output file.");
+
+			string json = BuildEnvelopeJson(projectCode, customerCode, dataIds);
+
+			Directory.CreateDirectory(outputDirectory); // creates folder if missing
+
+			string outputPath = Path.Combine(outputDirectory, $"{projectCode}{suffix}");
+			await File.WriteAllTextAsync(outputPath, json);
+
+			return outputPath;
 		}
 	}
 }

@@ -26,7 +26,7 @@ public class Program
 	private static readonly string PYTHON_EXE = Environment.GetEnvironmentVariable("PYTHON_EXE") ?? "python";
 	private static readonly string SCRIPT_TYPE = Path.Combine(_projectDir, "predict_equipment.py");
 	private static readonly string SCRIPT_PIPELINE = Path.Combine(_projectDir, "predict_sectioncluster.py");
-	private static readonly string SQL_OUTPUT_JSON = Path.Combine(_serviceDir, "data", "devices.json");
+	private static readonly string SQL_OUTPUT_DIR = Path.Combine(_serviceDir, "data");
 	private static readonly string UNKNOWN_DUMP = Path.Combine(_serviceDir, "data", "unknown_dump.json");
 	private static readonly string FLOATING_DUMP = Path.Combine(_serviceDir, "data", "floating_deviceid.json");
 	private static readonly JsonSerializerOptions _jsonOpts = new() { PropertyNameCaseInsensitive = true };
@@ -172,8 +172,10 @@ public class Program
 			Console.WriteLine("[Step 1/8] Loading reference data from SQL Server...");
 			string SQL_CONN = GetConnectionString();
 			var sqlReader = new PythonSQL(SQL_CONN);
-			await sqlReader.QueryToJsonFileAsync("SELECT * FROM DummySection2OiltekA9998", SQL_OUTPUT_JSON);
-			Console.WriteLine($"[Step 1/8] Reference data saved → {SQL_OUTPUT_JSON}\n");
+			string sqlOutputJson = await sqlReader.QueryToJsonFileByProjectCodeAsync(
+				"SELECT * FROM DummySection2OiltekA9998", SQL_OUTPUT_DIR
+			);
+			Console.WriteLine($"[Step 1/8] Reference data saved → {sqlOutputJson}\n");
 
 			string requestJson = await sqlReader.QueryToJsonAsync(
 				"SELECT ProjectCode, CustomerCode, DataIds FROM DummySection2OiltekA9998"
