@@ -28,7 +28,7 @@ public class Program
 	private static readonly string SCRIPT_PIPELINE = Path.Combine(_projectDir, "predict_sectioncluster.py");
 	private static readonly string SQL_OUTPUT_DIR = Path.Combine(_serviceDir, "data");
 	private static readonly string UNKNOWN_DUMP = Path.Combine(_serviceDir, "data", "unknown_dump.json");
-	private static readonly string FLOATING_DUMP = Path.Combine(_serviceDir, "data", "floating_deviceid.json");
+	private static readonly string FLOATING_DUMP = Path.Combine(_serviceDir, "data", "cluster_floating_device_ids.json");
 	private static readonly JsonSerializerOptions _jsonOpts = new() { PropertyNameCaseInsensitive = true };
 
 	private const string PROJECT_NAME = "XenxibleIdentifier";
@@ -54,18 +54,6 @@ public class Program
 	}
 
 
-	// FloatingDumpEntry - should be create the new class function but later to be done
-	public class FloatingDumpEntry
-	{
-		public string DumpedAt { get; set; }
-		public string Customer { get; set; }
-		public string ProjectCode { get; set; }
-		public string DeviceId { get; set; }
-		public string DeviceType { get; set; }
-		public string PredictedSection { get; set; }
-		public string PredictedCluster { get; set; }
-		public string Status { get; set; }
-	}
 
 
 	// PromptYesNo : keeps asking until the user enters a valid y/n 
@@ -167,6 +155,7 @@ public class Program
 		{
 			client = new PythonClient(PYTHON_EXE);
 			var clusterService = new ModelClusterSuggestionService(client, SCRIPT_PIPELINE);
+			var logic = new LogicAssignment(UNKNOWN_DUMP, FLOATING_DUMP);
 
 			// ── STEP 1: SQL reads device IDs ──────────────────────────────────────────
 			Console.WriteLine("[Step 1/8] Loading reference data from SQL Server...");
@@ -305,35 +294,33 @@ public class Program
 			ClusterQuotaAllocator.PrintVacancyReport(allocationResult.VacancyReport);
 			Console.WriteLine($"[Step 3.5/8] {allocationResult.Assigned.Count} assigned, {allocationResult.Floating.Count} floating\n");
 
-			// ◄── NEW: Floating devices → print + save to JSON ────────────────────────────────
+			// ── Floating devices → print + dump via Logic.dll ─────────────────────────
 			if (allocationResult.Floating.Count > 0)
 			{
 				Console.WriteLine($"[Step 3.5/8] {allocationResult.Floating.Count} floating device ID(s) — not claimed by any quota bucket:\n");
-				Console.WriteLine($"{"DumpedAt",-10} | {"Customer",-10} | {"ProjectCode",-12} | {"DeviceId",-25} | {"DeviceType",-25} | {"PredictedSection",-15} | {"PredictedCluster",-15} | {"Status",-8}");
-				Console.WriteLine(new string('-', 140));
+				Console.WriteLine($"{"Customer",-10} | {"ProjectCode",-12} | {"DeviceId",-25} | {"DeviceType",-25} | {"PredictedSection",-15} | {"PredictedCluster",-15}");
+				Console.WriteLine(new string('-', 130));
 
-				var floatingEntries = allocationResult.Floating.Select(f => new FloatingDumpEntry
+				var floatingDevices = allocationResult.Floating.Select(f => new DeviceResult
 				{
-					DumpedAt = DateTime.Now.ToString("HH:mm:ss"),
 					Customer = pipelineResults.FirstOrDefault(r => r.DEVICE_ID == f.DeviceId)?.CUSTOMER ?? request.customer_code,
 					ProjectCode = request.project_code,
 					DeviceId = f.DeviceId,
 					DeviceType = f.DeviceType,
-					PredictedSection = f.Section,
-					PredictedCluster = f.Cluster,
-					Status = (f.Section != "UNKNOWN" && f.Cluster != "UNKNOWN") ? "Assign" : "floating"
+					Section = f.Section,
+					Cluster = f.Cluster,
+					Confidence = f.Score
 				}).ToList();
 
-				foreach (var e in floatingEntries)
+				foreach (var d in floatingDevices)
 				{
 					Console.WriteLine(
-						$"{e.DumpedAt,-10} | {e.Customer,-10} | {e.ProjectCode,-12} | {e.DeviceId,-25} | " +
-						$"{e.DeviceType,-25} | {e.PredictedSection,-15} | {e.PredictedCluster,-15} | {e.Status,-8}");
+						$"{d.Customer,-10} | {d.ProjectCode,-12} | {d.DeviceId,-25} | " +
+						$"{d.DeviceType,-25} | {d.Section,-15} | {d.Cluster,-15}");
 				}
 
-				string floatingJson = JsonSerializer.Serialize(floatingEntries, new JsonSerializerOptions { WriteIndented = true });
-				File.WriteAllText(FLOATING_DUMP, floatingJson);
-				Console.WriteLine($"\n[Step 3.5/8] Floating device list saved → {FLOATING_DUMP}\n");
+				Console.WriteLine();
+				logic.DumpFloating(floatingDevices);
 			}
 			else
 			{
@@ -346,7 +333,6 @@ public class Program
 
 			// ── STEP 4: Pass results into Logic.dll ───────────────────────────────────
 			Console.WriteLine("\n[Step 4/8] Passing results into Logic.dll...");
-			var logic = new LogicAssignment(UNKNOWN_DUMP);
 
 			// Build DeviceResult list from model outputs
 

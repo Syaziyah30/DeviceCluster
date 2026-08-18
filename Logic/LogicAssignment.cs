@@ -22,15 +22,17 @@ namespace Logic
 	public class LogicAssignment
 	{
 		private readonly string _dumpFilePath;
+		private readonly string _floatingDumpFilePath;
 		private readonly JsonSerializerOptions _jsonOpts = new()
 		{
 			WriteIndented = true,
 			PropertyNameCaseInsensitive = true
 		};
 
-		public LogicAssignment(string dumpFilePath)
+		public LogicAssignment(string dumpFilePath, string floatingDumpFilePath)
 		{
 			_dumpFilePath = dumpFilePath;
+			_floatingDumpFilePath = floatingDumpFilePath;
 		}
 
 		// ── STEP 1: Split KNOWN vs UNKNOWN ────────────────────────────────────
@@ -86,6 +88,46 @@ namespace Logic
 			Directory.CreateDirectory(Path.GetDirectoryName(_dumpFilePath)!);
 			File.WriteAllText(_dumpFilePath, json);
 			Console.WriteLine($"[Logic] Dumped {unknownDevices.Count} unknown devices → {_dumpFilePath}");
+		}
+
+
+		// ── STEP 3.5: Dump FLOATING devices to JSON (quota allocator couldn't place them) ──
+		public void DumpFloating(List<DeviceResult> floatingDevices)
+		{
+			if (floatingDevices.Count == 0)
+			{
+				Console.WriteLine("[Logic] No floating devices to dump.");
+				return;
+			}
+
+			List<FloatingDumpEntry> existing = LoadFloatingDumpFile();
+			string now = DateTime.Now.ToString("yyyy-MM-dd HH:mm:ss");
+
+			foreach (var d in floatingDevices)
+			{
+				bool alreadyExists = existing.Any(e =>
+					e.DeviceId == d.DeviceId && e.ProjectCode == d.ProjectCode);
+
+				if (!alreadyExists)
+				{
+					existing.Add(new FloatingDumpEntry
+					{
+						DumpedAt = now,
+						Customer = d.Customer,
+						ProjectCode = d.ProjectCode,
+						DeviceId = d.DeviceId,
+						DeviceType = d.DeviceType,
+						PredictedSection = d.Section,
+						PredictedCluster = d.Cluster,
+						Status = (d.Section != "UNKNOWN" && d.Cluster != "UNKNOWN") ? "Assign" : "floating"
+					});
+				}
+			}
+
+			string json = JsonSerializer.Serialize(existing, _jsonOpts);
+			Directory.CreateDirectory(Path.GetDirectoryName(_floatingDumpFilePath)!);
+			File.WriteAllText(_floatingDumpFilePath, json);
+			Console.WriteLine($"[Logic] Dumped {floatingDevices.Count} floating device(s) → {_floatingDumpFilePath}");
 		}
 
 
@@ -281,6 +323,14 @@ namespace Logic
 			string json = File.ReadAllText(_dumpFilePath);
 			return JsonSerializer.Deserialize<List<UnknownDumpEntry>>(json, _jsonOpts)
 				   ?? new List<UnknownDumpEntry>();
+		}
+
+		private List<FloatingDumpEntry> LoadFloatingDumpFile()
+		{
+			if (!File.Exists(_floatingDumpFilePath)) return new List<FloatingDumpEntry>();
+			string json = File.ReadAllText(_floatingDumpFilePath);
+			return JsonSerializer.Deserialize<List<FloatingDumpEntry>>(json, _jsonOpts)
+				   ?? new List<FloatingDumpEntry>();
 		}
 
 

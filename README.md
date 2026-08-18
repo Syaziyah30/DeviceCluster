@@ -544,7 +544,7 @@ C# spawns Python as a child process for each ML step via `System.Diagnostics.Pro
 | `bin/Debug/net10.0/DeviceCluster.exe` | Debug build executable |
 | `1.training_model/Section XGB Model - Model Training.ipynb` | Training notebook |
 | 🆕 `data/devices.json` | Raw dump of the SQL source table, written by `PythonSQL.QueryToJsonFileAsync` (Step 1) |
-| 🆕 `data/floating_deviceid.json` | Devices the quota allocator couldn't place (Step 3.5) |
+| 🆕 `data/cluster_floating_device_ids.json` | Devices the quota allocator couldn't place (Step 3.5) |
 | 🆕 `data/unknown_dump.json` | Devices needing manual type/section/cluster assignment (Step 5–6) |
 | 🆕 `cluster_prediction_raw.csv` | Wide-format CSV of raw cluster probabilities per device, triggered via `export_raw_csv_path` in Step 3 — currently being debugged |
 | 🆕 `manual_assign_sectioncluster.json` | Queued Section/Cluster corrections pending the next XGBoost retrain cycle |
