@@ -21,89 +21,51 @@ namespace Logic
 
 	public class LogicAssignment
 	{
-		private readonly string _dumpFilePath;
 		private readonly string _floatingDumpFilePath;
+		private readonly string _unallocatedDumpFilePath;
 		private readonly JsonSerializerOptions _jsonOpts = new()
 		{
 			WriteIndented = true,
 			PropertyNameCaseInsensitive = true
 		};
 
-		public LogicAssignment(string dumpFilePath, string floatingDumpFilePath)
+		public LogicAssignment(string floatingDumpFilePath, string unallocatedDumpFilePath)
 		{
-			_dumpFilePath = dumpFilePath;
 			_floatingDumpFilePath = floatingDumpFilePath;
+			_unallocatedDumpFilePath = unallocatedDumpFilePath;
 		}
 
-		// ── STEP 1: Split KNOWN vs UNKNOWN ────────────────────────────────────
-		public (List<DeviceResult> known, List<DeviceResult> unknown) SplitKnownUnknown(
-			List<DeviceResult> allResults)
+		// ── STEP 3.5a: Split the FLOATING pool by cause ────────────────────────
+		// unknownPrediction: DeviceType/Section/Cluster itself is UNKNOWN — the model gave nothing to allocate.
+		// unallocatedKnown: prediction is fully known, but no quota bucket had room (or none matched at all).
+		public (List<DeviceResult> unknownPrediction, List<DeviceResult> unallocatedKnown) SplitFloatingPool(
+			List<DeviceResult> floatingDevices)
 		{
-			var known = allResults.Where(r => IsKnown(r)).ToList();
-			var unknown = allResults.Where(r => !IsKnown(r)).ToList();
-			Console.WriteLine($"[Logic] Known: {known.Count} devices | Unknown: {unknown.Count} devices");
-			return (known, unknown);
+			var unknownPrediction = floatingDevices.Where(r => !HasKnownPrediction(r)).ToList();
+			var unallocatedKnown = floatingDevices.Where(r => HasKnownPrediction(r)).ToList();
+			Console.WriteLine($"[Logic] Floating: {unknownPrediction.Count} unknown prediction | {unallocatedKnown.Count} known but unallocated");
+			return (unknownPrediction, unallocatedKnown);
 		}
 
-		private bool IsKnown(DeviceResult r) =>
+		private bool HasKnownPrediction(DeviceResult r) =>
 			!string.IsNullOrEmpty(r.DeviceType) && r.DeviceType != "UNKNOWN" &&
 			!string.IsNullOrEmpty(r.Section) && r.Section != "UNKNOWN" &&
 			!string.IsNullOrEmpty(r.Cluster) && r.Cluster != "UNKNOWN";
 
 
-		// ── STEP 2: Dump UNKNOWN to JSON file ─────────────────────────────────
-		public void DumpUnknown(List<DeviceResult> unknownDevices)
+		// ── STEP 3.5b: Dump devices with an UNKNOWN prediction to JSON ─────────
+		public void DumpFloating(List<DeviceResult> unknownDevices)
 		{
 			if (unknownDevices.Count == 0)
 			{
-				Console.WriteLine("[Logic] No unknown devices to dump.");
-				return;
-			}
-
-			List<UnknownDumpEntry> existing = LoadDumpFile();
-			string now = DateTime.Now.ToString("yyyy-MM-dd HH:mm:ss");
-
-			foreach (var d in unknownDevices)
-			{
-				bool alreadyExists = existing.Any(e =>
-					e.DeviceId == d.DeviceId && e.ProjectCode == d.ProjectCode);
-
-				if (!alreadyExists)
-				{
-					existing.Add(new UnknownDumpEntry
-					{
-						DumpedAt = now,
-						Customer = d.Customer,
-						ProjectCode = d.ProjectCode,
-						DeviceId = d.DeviceId,
-						DeviceType = d.DeviceType,
-						PredictedSection = d.Section,
-						PredictedCluster = d.Cluster,
-						Status = "pending"
-					});
-				}
-			}
-
-			string json = JsonSerializer.Serialize(existing, _jsonOpts);
-			Directory.CreateDirectory(Path.GetDirectoryName(_dumpFilePath)!);
-			File.WriteAllText(_dumpFilePath, json);
-			Console.WriteLine($"[Logic] Dumped {unknownDevices.Count} unknown devices → {_dumpFilePath}");
-		}
-
-
-		// ── STEP 3.5: Dump FLOATING devices to JSON (quota allocator couldn't place them) ──
-		public void DumpFloating(List<DeviceResult> floatingDevices)
-		{
-			if (floatingDevices.Count == 0)
-			{
-				Console.WriteLine("[Logic] No floating devices to dump.");
+				Console.WriteLine("[Logic] No unknown-prediction devices to dump.");
 				return;
 			}
 
 			List<FloatingDumpEntry> existing = LoadFloatingDumpFile();
 			string now = DateTime.Now.ToString("yyyy-MM-dd HH:mm:ss");
 
-			foreach (var d in floatingDevices)
+			foreach (var d in unknownDevices)
 			{
 				bool alreadyExists = existing.Any(e =>
 					e.DeviceId == d.DeviceId && e.ProjectCode == d.ProjectCode);
@@ -119,7 +81,7 @@ namespace Logic
 						DeviceType = d.DeviceType,
 						PredictedSection = d.Section,
 						PredictedCluster = d.Cluster,
-						Status = (d.Section != "UNKNOWN" && d.Cluster != "UNKNOWN") ? "Assign" : "floating"
+						Status = "pending"
 					});
 				}
 			}
@@ -127,7 +89,47 @@ namespace Logic
 			string json = JsonSerializer.Serialize(existing, _jsonOpts);
 			Directory.CreateDirectory(Path.GetDirectoryName(_floatingDumpFilePath)!);
 			File.WriteAllText(_floatingDumpFilePath, json);
-			Console.WriteLine($"[Logic] Dumped {floatingDevices.Count} floating device(s) → {_floatingDumpFilePath}");
+			Console.WriteLine($"[Logic] Dumped {unknownDevices.Count} unknown-prediction device(s) → {_floatingDumpFilePath}");
+		}
+
+
+		// ── STEP 3.5c: Dump devices with a known prediction that quota allocation couldn't place ──
+		public void DumpUnallocated(List<DeviceResult> unallocatedDevices)
+		{
+			if (unallocatedDevices.Count == 0)
+			{
+				Console.WriteLine("[Logic] No unallocated devices to dump.");
+				return;
+			}
+
+			List<UnallocatedDumpEntry> existing = LoadUnallocatedDumpFile();
+			string now = DateTime.Now.ToString("yyyy-MM-dd HH:mm:ss");
+
+			foreach (var d in unallocatedDevices)
+			{
+				bool alreadyExists = existing.Any(e =>
+					e.DeviceId == d.DeviceId && e.ProjectCode == d.ProjectCode);
+
+				if (!alreadyExists)
+				{
+					existing.Add(new UnallocatedDumpEntry
+					{
+						DumpedAt = now,
+						Customer = d.Customer,
+						ProjectCode = d.ProjectCode,
+						DeviceId = d.DeviceId,
+						DeviceType = d.DeviceType,
+						PredictedSection = d.Section,
+						PredictedCluster = d.Cluster,
+						Status = "pending"
+					});
+				}
+			}
+
+			string json = JsonSerializer.Serialize(existing, _jsonOpts);
+			Directory.CreateDirectory(Path.GetDirectoryName(_unallocatedDumpFilePath)!);
+			File.WriteAllText(_unallocatedDumpFilePath, json);
+			Console.WriteLine($"[Logic] Dumped {unallocatedDevices.Count} unallocated device(s) → {_unallocatedDumpFilePath}");
 		}
 
 
@@ -160,7 +162,7 @@ namespace Logic
 
 
 		// ── Resolve a manual correction into a placeable DeviceResult ──────────────
-		public DeviceResult? AssignByNumericSimilarity(UnknownDumpEntry entry, List<DeviceResult> knownDevices)
+		public DeviceResult? AssignByNumericSimilarity(UnallocatedDumpEntry entry, List<DeviceResult> knownDevices)
 		{
 			string resolvedSection = entry.PredictedSection;
 			string resolvedCluster = entry.PredictedCluster;
@@ -292,7 +294,7 @@ namespace Logic
 		// ── UPDATE dump status after user assigns ─────────────────────────────  // ◄── NEW
 		public void MarkAsAssigned(string deviceId, string projectCode, string resolvedSection, string resolvedCluster)
 		{
-			List<UnknownDumpEntry> existing = LoadDumpFile();
+			List<UnallocatedDumpEntry> existing = LoadUnallocatedDumpFile();
 
 			var entry = existing.FirstOrDefault(e =>
 				e.DeviceId == deviceId && e.ProjectCode == projectCode);
@@ -305,8 +307,8 @@ namespace Logic
 			}
 
 			string json = JsonSerializer.Serialize(existing, _jsonOpts);
-			File.WriteAllText(_dumpFilePath, json);
-			Console.WriteLine($"[Logic] '{deviceId}' marked as assigned → {_dumpFilePath}");
+			File.WriteAllText(_unallocatedDumpFilePath, json);
+			Console.WriteLine($"[Logic] '{deviceId}' marked as assigned → {_unallocatedDumpFilePath}");
 		}
 
 
@@ -317,12 +319,12 @@ namespace Logic
 				sd.Score = sd.Device.Confidence;
 		}
 
-		private List<UnknownDumpEntry> LoadDumpFile()
+		private List<UnallocatedDumpEntry> LoadUnallocatedDumpFile()
 		{
-			if (!File.Exists(_dumpFilePath)) return new List<UnknownDumpEntry>();
-			string json = File.ReadAllText(_dumpFilePath);
-			return JsonSerializer.Deserialize<List<UnknownDumpEntry>>(json, _jsonOpts)
-				   ?? new List<UnknownDumpEntry>();
+			if (!File.Exists(_unallocatedDumpFilePath)) return new List<UnallocatedDumpEntry>();
+			string json = File.ReadAllText(_unallocatedDumpFilePath);
+			return JsonSerializer.Deserialize<List<UnallocatedDumpEntry>>(json, _jsonOpts)
+				   ?? new List<UnallocatedDumpEntry>();
 		}
 
 		private List<FloatingDumpEntry> LoadFloatingDumpFile()

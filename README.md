@@ -97,11 +97,13 @@ Script active : DeviceClusterConsoleApp [`Program.cs`]
                     ▼
 ┌─────────────────────────────────────────────────────┐
 │ 🆕 Step 3.5 — Quota Allocation [Logic.dll, C#]      │
-│ Split UNKNOWN (type) devices out BEFORE allocation  │
 │ ClusterQuotaAllocator two-pass:                     │
 │   Pass 1 — ranked assignment against quota          │
 │   Pass 2 — floating-pool backfill vs InitialDeficits│
 │ MinCascadeConfidence floor (60%) blocks bad forces  │
+│ Floating pool split by cause:                       │
+│   any UNKNOWN field   → floating_deviceid.json      │
+│   known, no quota room → unallocated_device_ids.json│
 └───────────────────┬─────────────────────────────────┘
                     │
                     │  AllocationResult (Assigned / Floating /
@@ -109,14 +111,14 @@ Script active : DeviceClusterConsoleApp [`Program.cs`]
                     ▼
 ┌───────────────────────────────────────────────────┐
 │ Step 4 — Logic Placement [Logic.dll, C#]          │
-│ Split known/unknown devices                       │
-│ Cascading placement                               │
 │ Cluster grouping → ClusterGroup / ScoredDevice    │
-│ Unknown devices → JSON dump + SuggestTopClusters  │
+│ (Assigned devices are already known by construction│
+│  — no separate known/unknown split needed here)   │
+│ Unallocated devices → JSON dump + SuggestTopClusters│
 └───────────────────┬───────────────────────────────┘
                     │
                     │
-                    │  DeviceResult[] / UnknownDumpEntry[]
+                    │  DeviceResult[] / FloatingDumpEntry[] / UnallocatedDumpEntry[]
                     ▼
         Program.cs — print tables, prompt manual
         correction, output DLL result to Faiz
@@ -386,16 +388,18 @@ Processes the prediction results after quota allocation and determines the final
 | `DeviceResult` | Final device placement result |
 | `ClusterGroup` | Devices grouped under the same cluster |
 | `ScoredDevice` | Device with similarity score |
-| `UnknownDumpEntry` | Device requiring manual review |
+| `FloatingDumpEntry` | Floating device with an UNKNOWN prediction, needs re-prediction |
+| `UnallocatedDumpEntry` | Floating device with a known prediction but no quota room, needs manual placement |
 
 ### 📍 Processing Flow
-1. Separate known and unknown devices.
-2. Group known devices by cluster.
+1. Split the quota allocator's floating pool by cause (`LogicAssignment.SplitFloatingPool`).
+2. Group assigned devices by cluster.
 3. Apply numeric similarity for manual reassignment.
-4. Export unknown devices to `unknown_dump.json`.
+4. Export the two floating populations to `floating_deviceid.json` and `unallocated_device_ids.json`.
 
-### 📍 Unknown Device Handling
-- Low-confidence devices are routed to `unknown_dump.json`.
+### 📍 Floating Device Handling
+- Devices with an UNKNOWN type/section/cluster are routed to `floating_deviceid.json`.
+- Devices with a known prediction but no quota vacancy are routed to `unallocated_device_ids.json`.
 - Cluster suggestions are generated using the model-based Top-3 prediction service.
 ---
 
@@ -426,21 +430,19 @@ Processes user corrections for device predictions across the C# and Python layer
 
 # 6️⃣ C# Orchestration (`Program.cs`)
 
-Steps run in order after SQL retrieval and JSON input are ready. 🆕 Updated to reflect the new quota-allocation step and confirmed Step 9 behaviour:
+Steps run in order after SQL retrieval and JSON input are ready. 🆕 Updated to reflect the retired known/unknown split and the new floating-pool routing:
 
 | Step | Description |
 |---|---|
 | 1–3 | Call Python pipeline (Device Type → Section → Cluster), collect `PipelineResult[]` |
-| 🆕 3.5a | Split devices into KNOWN vs UNKNOWN **from raw predictions**, before allocation (`LogicAssignment` instantiated here, moved up from old Step 4) |
-| 🆕 3.5b | `ClusterQuotaAllocator.Allocate(...)` — two-pass quota fitting on known devices, producing `AllocationResult` |
-| 4 | Build `ClusterGroup`s from `AllocationResult.Assigned` via `Logic.dll` |
-| 5 | Dump unknown devices to `unknown_dump.json` (`UnknownDumpEntry[]`) |
-| 6 | `LogicAssignment.DumpUnknown` — writes unknown dump |
-| 7 | Print result tables (Unicode-safe console output, `PrintClusterTable`) |
-| 8 | Prompt for manual correction (see Manual Correction Flow) |
-| 9 | Finalize/persist output for downstream consumption (Faiz's DLL integration) |
+| 🆕 3.5 | `ClusterQuotaAllocator.Allocate(...)` — two-pass quota fitting, producing `AllocationResult` (`LogicAssignment` instantiated before this step) |
+| 🆕 3.5 (floating) | `LogicAssignment.SplitFloatingPool` splits `AllocationResult.Floating` by cause, then `DumpFloating`/`DumpUnallocated` write `floating_deviceid.json` / `unallocated_device_ids.json` |
+| 4 | Build `DeviceResult[]` from `AllocationResult.Assigned` — every entry is guaranteed known (it matched a real quota bucket), so no separate known/unknown split is needed |
+| 5 | Build `ClusterGroup`s from those devices via `Logic.dll` |
+| 6 | Print result tables (Unicode-safe console output, `PrintClusterTable`) |
+| 7 | Print unallocated devices pending manual assignment; prompt for manual correction (see Manual Correction Flow) |
 
-> **TODO:** confirm exact behavior of Step 9 (what gets persisted, in what format) once finalized — Faiz still consumes `Logic.dll` output directly.
+> Note: the previous Step 5/6 (`SplitKnownUnknown` / `DumpUnknown` / `unknown_dump.json`) was retired — it only ever ran on already-`Assigned` devices, which can never be "unknown" by construction, so that path was permanently dead code. Its role is now covered by the floating-pool split above.
 
 ---
 
@@ -505,7 +507,7 @@ C# spawns Python as a child process for each ML step via `System.Diagnostics.Pro
 }]
 ```
 
-> **TODO:** add a Step 3.5/4 entry here showing what `Program.cs` passes into `ClusterQuotaAllocator` and `Logic.dll`, and what it gets back (`AllocationResult` / `DeviceResult[]` / `UnknownDumpEntry[]` shape), once fully stable.
+> **TODO:** add a Step 3.5/4 entry here showing what `Program.cs` passes into `ClusterQuotaAllocator` and `Logic.dll`, and what it gets back (`AllocationResult` / `DeviceResult[]` / `FloatingDumpEntry[]` / `UnallocatedDumpEntry[]` shape), once fully stable.
 
 ---
 
@@ -543,9 +545,9 @@ C# spawns Python as a child process for each ML step via `System.Diagnostics.Pro
 | `TestDevice/<project>.json` | Input device IDs per project (🆕 now legacy — SQL is the live source) |
 | `bin/Debug/net10.0/DeviceCluster.exe` | Debug build executable |
 | `1.training_model/Section XGB Model - Model Training.ipynb` | Training notebook |
-| 🆕 `data/devices.json` | Raw dump of the SQL source table, written by `PythonSQL.QueryToJsonFileAsync` (Step 1) |
-| 🆕 `data/cluster_floating_device_ids.json` | Devices the quota allocator couldn't place (Step 3.5) |
-| 🆕 `data/unknown_dump.json` | Devices needing manual type/section/cluster assignment (Step 5–6) |
+| 🆕 `data/{ProjectCode}_devices.json` | Raw dump of the SQL source table, named per project, written by `PythonSQL.QueryToJsonFileByProjectCodeAsync` (Step 1) |
+| 🆕 `data/floating_deviceid.json` | Floating devices with an UNKNOWN type/section/cluster prediction (Step 3.5) |
+| 🆕 `data/unallocated_device_ids.json` | Floating devices with a known prediction but no quota room — needs manual assignment (Step 3.5) |
 | 🆕 `cluster_prediction_raw.csv` | Wide-format CSV of raw cluster probabilities per device, triggered via `export_raw_csv_path` in Step 3 — currently being debugged |
 | 🆕 `manual_assign_sectioncluster.json` | Queued Section/Cluster corrections pending the next XGBoost retrain cycle |
 
