@@ -116,5 +116,30 @@ namespace Model.Services
 
 			return outputPath;
 		}
+
+
+		// Reads a table's full contents, writes it to {ProjectCode}_devices.json, and returns
+		// both the JSON content and the file path — one query instead of two separate calls.
+		// The caller decides which table; this method has no opinion about table names.
+
+		public async Task<(string Json, string OutputPath)> LoadProjectDataAsync(string tableName, string outputDirectory, string suffix = "_devices.json")
+		{
+			if (string.IsNullOrWhiteSpace(tableName))
+				throw new ArgumentException("Table name cannot be empty.", nameof(tableName));
+
+			string sql = $"SELECT * FROM {tableName}";
+			var (projectCode, customerCode, dataIds) = await ExecuteQueryAsync(sql);
+
+			if (string.IsNullOrWhiteSpace(projectCode))
+				throw new InvalidOperationException($"No project data found in '{tableName}' table.");
+
+			string json = BuildEnvelopeJson(projectCode, customerCode, dataIds);
+
+			Directory.CreateDirectory(outputDirectory);
+			string outputPath = Path.Combine(outputDirectory, $"{projectCode}{suffix}");
+			await File.WriteAllTextAsync(outputPath, json);
+
+			return (json, outputPath);
+		}
 	}
 }

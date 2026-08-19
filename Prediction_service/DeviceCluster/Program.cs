@@ -24,6 +24,7 @@ public class Program
 	private static readonly string _serviceDir = Path.GetFullPath(Path.Combine(_baseDir, @"..\..\..\.."));
 
 	private static readonly string PYTHON_EXE = Environment.GetEnvironmentVariable("PYTHON_EXE") ?? "python";
+	private static readonly string SQL_SOURCE_TABLE = Environment.GetEnvironmentVariable("SQL_SOURCE_TABLE") ?? "DummyTestingData";
 	private static readonly string SCRIPT_TYPE = Path.Combine(_projectDir, "predict_equipment.py");
 	private static readonly string SCRIPT_PIPELINE = Path.Combine(_projectDir, "predict_sectioncluster.py");
 	private static readonly string SQL_OUTPUT_DIR = Path.Combine(_serviceDir, "data");
@@ -161,19 +162,13 @@ public class Program
 			Console.WriteLine("[Step 1/6] Loading reference data from SQL Server...");
 			string SQL_CONN = GetConnectionString();
 			var sqlReader = new PythonSQL(SQL_CONN);
-			string sqlOutputJson = await sqlReader.QueryToJsonFileByProjectCodeAsync(
-				"SELECT * FROM DummyTestingData", SQL_OUTPUT_DIR
-			);
+			var (requestJson, sqlOutputJson) = await sqlReader.LoadProjectDataAsync(SQL_SOURCE_TABLE, SQL_OUTPUT_DIR);
 			Console.WriteLine($"[Step 1/6] Reference data saved → {sqlOutputJson}\n");
-
-			string requestJson = await sqlReader.QueryToJsonAsync(
-				"SELECT ProjectCode, CustomerCode, DataIds FROM DummyTestingData"
-			);
 
 			request = JsonSerializer.Deserialize<DevicePredictRequest>(requestJson, _jsonOpts);
 
 			if (request == null || request.data_ids == null || request.data_ids.Count == 0)
-				throw new InvalidOperationException("No project data found in DummyTestingData table.");
+				throw new InvalidOperationException($"No project data found in '{SQL_SOURCE_TABLE}' table.");
 
 			request.data_ids = request.data_ids
 				.Select(id => id.Replace("\uFEFF", "").Trim())
