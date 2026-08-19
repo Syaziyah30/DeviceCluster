@@ -212,9 +212,7 @@ public class Program
 					device_id = r.data_id,
 					customer = r.customer ?? request.customer_code,
 					project = request.project_code
-				}).ToList(),
-				// ◄── CSV export 
-				export_raw_csv_path = @"C:\Users\sitisyaziyah\source\repos\DeviceCluster\1.training_model\output_prediction\cluster_prediction_raw.csv"
+				}).ToList()
 			};
 
 			sw.Restart();

@@ -88,8 +88,6 @@ Script active : DeviceClusterConsoleApp [`Program.cs`]
 │ Step 3 — Cluster [predict_sectioncluster.py]      │
 │ XGBoost chained on Predicted Section              │
 │ Confidence penalised by Section confidence        │
-│ 🆕 optional side-effect: export_raw_csv_path     │
-│    writes full predict_proba matrix (see §8)      │
 └───────────────────┬───────────────────────────────┘
                     │
                     │
@@ -313,17 +311,8 @@ cluster_conf_final = cluster_raw_conf × section_conf   (when section_conf < 0.6
 | `model_cluster.pkl` | Trained XGBoost cluster model |
 | `pipeline_config.pkl` | All label encoders, feature lists, OOD scaler/KNN, known customers, numeric width stats |
 
-## 📍 Raw Cluster Probability Export (`cluster_prediction_raw.csv`)
+> Note: the `export_raw_csv_path` field previously on `PipelinePredictRequest` (a debug-only raw `predict_proba` dump per device) has been removed from the C# request — `Program.cs` no longer sets it. `predict_sectioncluster.py` still supports it (it just always receives `None` now), and the separate `export_cluster_csv` action is untouched.
 
-- Exports the complete `predict_proba` results for each device (one column per cluster).
-- Implemented as an optional output of the existing `predict` action to avoid redundant model execution.
-- Enabled by providing `export_raw_csv_path` in the prediction request.
-
-**Status:** ❗In Progress
-- `export_raw_csv_path` is currently received as `None` in Python.
-- Verification in progress:
-  - Clean & Rebuild solution to eliminate stale builds.
-  - Confirm the JSON payload includes `export_raw_csv_path`.
 ---
 
 # 🆕 3. Quota Allocation (`ClusterQuotaAllocator`, `Logic.dll`)
@@ -495,8 +484,7 @@ C# spawns Python as a child process for each ML step via `System.Diagnostics.Pro
 **Step 2 & 3 request/response:**
 ```jsonc
 // stdin → predict_sectioncluster.py
-{ "records": [{ "device_id": "CR1234", "customer": "Lipico", "project": "A1825" }],
-  "export_raw_csv_path": "cluster_prediction_raw.csv" }   // 🆕 optional field, see §2/3 raw export
+{ "records": [{ "device_id": "CR1234", "customer": "Lipico", "project": "A1825" }] }
 
 // stdout ← predict_sectioncluster.py
 [{
@@ -548,7 +536,6 @@ C# spawns Python as a child process for each ML step via `System.Diagnostics.Pro
 | 🆕 `data/{ProjectCode}_devices.json` | Raw dump of the SQL source table, named per project, written by `PythonSQL.QueryToJsonFileByProjectCodeAsync` (Step 1) |
 | 🆕 `data/floating_deviceid.json` | Floating devices with an UNKNOWN type/section/cluster prediction (Step 3.5) |
 | 🆕 `data/unallocated_device_ids.json` | Floating devices with a known prediction but no quota room — needs manual assignment (Step 3.5) |
-| 🆕 `cluster_prediction_raw.csv` | Wide-format CSV of raw cluster probabilities per device, triggered via `export_raw_csv_path` in Step 3 — currently being debugged |
 | 🆕 `manual_assign_sectioncluster.json` | Queued Section/Cluster corrections pending the next XGBoost retrain cycle |
 
 > **TODO:** confirm the actual `Logic.csproj` path — placeholder above assumes it sits under `DeviceCluster/Logic/`; update once the real project structure is checked.
