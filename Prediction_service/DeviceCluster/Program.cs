@@ -154,15 +154,23 @@ public class Program
 
 		try
 		{
+			// ProjectCode selects which project's rows to pull from the shared SQL table —
+			// pass it as a CLI arg for automation, or leave blank to be prompted interactively.
+			string? projectCodeArg = args.Length > 0 ? args[0].Trim().ToUpper() : null;
+			string projectCode = !string.IsNullOrWhiteSpace(projectCodeArg)
+				? projectCodeArg
+				: PromptRequiredText("Enter Project Code to process: ", "Project Code")
+					?? throw new InvalidOperationException("Project Code is required.");
+
 			client = new PythonClient(PYTHON_EXE);
 			var clusterService = new ModelClusterSuggestionService(client, SCRIPT_PIPELINE);
 			var logic = new LogicAssignment(FLOATING_DUMP, UNALLOCATED_DUMP);
 
 			// ── STEP 1: SQL reads device IDs ──────────────────────────────────────────
-			Console.WriteLine("[Step 1/6] Loading reference data from SQL Server...");
+			Console.WriteLine($"[Step 1/6] Loading reference data for project '{projectCode}' from SQL Server...");
 			string SQL_CONN = GetConnectionString();
 			var sqlReader = new PythonSQL(SQL_CONN);
-			var (requestJson, sqlOutputJson) = await sqlReader.LoadProjectDataAsync(SQL_SOURCE_TABLE, SQL_OUTPUT_DIR);
+			var (requestJson, sqlOutputJson) = await sqlReader.LoadProjectDataAsync(SQL_SOURCE_TABLE, projectCode, SQL_OUTPUT_DIR);
 			Console.WriteLine($"[Step 1/6] Reference data saved → {sqlOutputJson}\n");
 
 			request = JsonSerializer.Deserialize<DevicePredictRequest>(requestJson, _jsonOpts);

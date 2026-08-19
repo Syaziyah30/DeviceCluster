@@ -22,7 +22,7 @@ namespace Model.Services
 
 		// Runs the query once and pulls out ProjectCode/CustomerCode/DataIds — shared by all the QueryToJson* variants.
 
-		private async Task<(string ProjectCode, string CustomerCode, List<string> DataIds)> ExecuteQueryAsync(string sql)
+		private async Task<(string ProjectCode, string CustomerCode, List<string> DataIds)> ExecuteQueryAsync(string sql, params SqlParameter[] parameters)
 		{
 			if (string.IsNullOrWhiteSpace(sql))
 				throw new ArgumentException("SQL query cannot be empty.", nameof(sql));
@@ -35,6 +35,9 @@ namespace Model.Services
 			await connection.OpenAsync();
 
 			await using var command = new SqlCommand(sql, connection);
+			if (parameters.Length > 0)
+				command.Parameters.AddRange(parameters);
+
 			await using var reader = await command.ExecuteReaderAsync();
 
 			while (await reader.ReadAsync())
@@ -118,25 +121,29 @@ namespace Model.Services
 		}
 
 
-		// Reads a table's full contents, writes it to {ProjectCode}_devices.json, and returns
-		// both the JSON content and the file path — one query instead of two separate calls.
-		// The caller decides which table; this method has no opinion about table names.
+		// Reads one project's rows from the shared table (filtered by ProjectCode — the table may
+		// hold many projects at once), writes them to {ProjectCode}_devices.json, and returns both
+		// the JSON content and the file path. The caller decides table + project; this method has
+		// no opinion about either.
 
-		public async Task<(string Json, string OutputPath)> LoadProjectDataAsync(string tableName, string outputDirectory, string suffix = "_devices.json")
+		public async Task<(string Json, string OutputPath)> LoadProjectDataAsync(string tableName, string projectCode, string outputDirectory, string suffix = "_devices.json")
 		{
 			if (string.IsNullOrWhiteSpace(tableName))
 				throw new ArgumentException("Table name cannot be empty.", nameof(tableName));
-
-			string sql = $"SELECT * FROM {tableName}";
-			var (projectCode, customerCode, dataIds) = await ExecuteQueryAsync(sql);
-
 			if (string.IsNullOrWhiteSpace(projectCode))
-				throw new InvalidOperationException($"No project data found in '{tableName}' table.");
+				throw new ArgumentException("Project code cannot be empty.", nameof(projectCode));
 
-			string json = BuildEnvelopeJson(projectCode, customerCode, dataIds);
+			string sql = $"SELECT * FROM {tableName} WHERE ProjectCode = @ProjectCode";
+			var parameter = new SqlParameter("@ProjectCode", projectCode);
+			var (matchedProjectCode, customerCode, dataIds) = await ExecuteQueryAsync(sql, parameter);
+
+			if (string.IsNullOrWhiteSpace(matchedProjectCode))
+				throw new InvalidOperationException($"No data found in '{tableName}' table for ProjectCode '{projectCode}'.");
+
+			string json = BuildEnvelopeJson(matchedProjectCode, customerCode, dataIds);
 
 			Directory.CreateDirectory(outputDirectory);
-			string outputPath = Path.Combine(outputDirectory, $"{projectCode}{suffix}");
+			string outputPath = Path.Combine(outputDirectory, $"{matchedProjectCode}{suffix}");
 			await File.WriteAllTextAsync(outputPath, json);
 
 			return (json, outputPath);
