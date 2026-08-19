@@ -3208,5 +3208,1015 @@
     "PredictedSection": "SECTION 6",
     "PredictedCluster": "CLUSTER 1",
     "Status": "pending"
+  },
+  {
+    "DumpedAt": "2026-08-19 16:16:51",
+    "Customer": "OILTEK",
+    "ProjectCode": "A1993",
+    "DeviceId": "A350",
+    "DeviceType": "On/Off Signal",
+    "PredictedSection": "SECTION 1",
+    "PredictedCluster": "CLUSTER 1",
+    "Status": "pending"
+  },
+  {
+    "DumpedAt": "2026-08-19 16:16:51",
+    "Customer": "OILTEK",
+    "ProjectCode": "A1993",
+    "DeviceId": "HT350",
+    "DeviceType": "Heater",
+    "PredictedSection": "SECTION 1",
+    "PredictedCluster": "CLUSTER 1",
+    "Status": "pending"
+  },
+  {
+    "DumpedAt": "2026-08-19 16:16:51",
+    "Customer": "OILTEK",
+    "ProjectCode": "A1993",
+    "DeviceId": "PT350A",
+    "DeviceType": "Pressure Transmitter",
+    "PredictedSection": "SECTION 1",
+    "PredictedCluster": "CLUSTER 1",
+    "Status": "pending"
+  },
+  {
+    "DumpedAt": "2026-08-19 16:16:51",
+    "Customer": "OILTEK",
+    "ProjectCode": "A1993",
+    "DeviceId": "PV350B",
+    "DeviceType": "Control Valve",
+    "PredictedSection": "SECTION 1",
+    "PredictedCluster": "CLUSTER 1",
+    "Status": "pending"
+  },
+  {
+    "DumpedAt": "2026-08-19 16:16:51",
+    "Customer": "OILTEK",
+    "ProjectCode": "A1993",
+    "DeviceId": "TE350",
+    "DeviceType": "Temperature Transmitter",
+    "PredictedSection": "SECTION 1",
+    "PredictedCluster": "CLUSTER 1",
+    "Status": "pending"
+  },
+  {
+    "DumpedAt": "2026-08-19 16:16:51",
+    "Customer": "OILTEK",
+    "ProjectCode": "A1993",
+    "DeviceId": "PT482",
+    "DeviceType": "Pressure Transmitter",
+    "PredictedSection": "SECTION 2",
+    "PredictedCluster": "CLUSTER 1",
+    "Status": "pending"
+  },
+  {
+    "DumpedAt": "2026-08-19 16:16:51",
+    "Customer": "OILTEK",
+    "ProjectCode": "A1993",
+    "DeviceId": "FCV051",
+    "DeviceType": "Control Valve",
+    "PredictedSection": "SECTION 3",
+    "PredictedCluster": "CLUSTER 1",
+    "Status": "pending"
+  },
+  {
+    "DumpedAt": "2026-08-19 16:16:51",
+    "Customer": "OILTEK",
+    "ProjectCode": "A1993",
+    "DeviceId": "FITQ051",
+    "DeviceType": "Flow Transmitter",
+    "PredictedSection": "SECTION 3",
+    "PredictedCluster": "CLUSTER 1",
+    "Status": "pending"
+  },
+  {
+    "DumpedAt": "2026-08-19 16:16:51",
+    "Customer": "OILTEK",
+    "ProjectCode": "A1993",
+    "DeviceId": "M051A",
+    "DeviceType": "Pump",
+    "PredictedSection": "SECTION 3",
+    "PredictedCluster": "CLUSTER 1",
+    "Status": "pending"
+  },
+  {
+    "DumpedAt": "2026-08-19 16:16:51",
+    "Customer": "OILTEK",
+    "ProjectCode": "A1993",
+    "DeviceId": "P051",
+    "DeviceType": "Pump",
+    "PredictedSection": "SECTION 3",
+    "PredictedCluster": "CLUSTER 1",
+    "Status": "pending"
+  },
+  {
+    "DumpedAt": "2026-08-19 16:16:51",
+    "Customer": "OILTEK",
+    "ProjectCode": "A1993",
+    "DeviceId": "TCV051",
+    "DeviceType": "Control Valve",
+    "PredictedSection": "SECTION 3",
+    "PredictedCluster": "CLUSTER 1",
+    "Status": "pending"
+  },
+  {
+    "DumpedAt": "2026-08-19 16:16:51",
+    "Customer": "OILTEK",
+    "ProjectCode": "A1993",
+    "DeviceId": "TE051",
+    "DeviceType": "Temperature Transmitter",
+    "PredictedSection": "SECTION 3",
+    "PredictedCluster": "CLUSTER 1",
+    "Status": "pending"
+  },
+  {
+    "DumpedAt": "2026-08-19 16:16:51",
+    "Customer": "OILTEK",
+    "ProjectCode": "A1993",
+    "DeviceId": "V051.21",
+    "DeviceType": "On/Off Valve",
+    "PredictedSection": "SECTION 3",
+    "PredictedCluster": "CLUSTER 2",
+    "Status": "pending"
+  },
+  {
+    "DumpedAt": "2026-08-19 16:16:51",
+    "Customer": "OILTEK",
+    "ProjectCode": "A1993",
+    "DeviceId": "V051.25",
+    "DeviceType": "On/Off Valve",
+    "PredictedSection": "SECTION 3",
+    "PredictedCluster": "CLUSTER 2",
+    "Status": "pending"
+  },
+  {
+    "DumpedAt": "2026-08-19 16:16:51",
+    "Customer": "OILTEK",
+    "ProjectCode": "A1993",
+    "DeviceId": "SIC073FB",
+    "DeviceType": "Variable Frequency Drive",
+    "PredictedSection": "SECTION 3",
+    "PredictedCluster": "CLUSTER 3",
+    "Status": "pending"
+  },
+  {
+    "DumpedAt": "2026-08-19 16:16:51",
+    "Customer": "OILTEK",
+    "ProjectCode": "A1993",
+    "DeviceId": "A073.4",
+    "DeviceType": "On/Off Signal",
+    "PredictedSection": "SECTION 3",
+    "PredictedCluster": "CLUSTER 3",
+    "Status": "pending"
+  },
+  {
+    "DumpedAt": "2026-08-19 16:16:51",
+    "Customer": "OILTEK",
+    "ProjectCode": "A1993",
+    "DeviceId": "PSL181.1",
+    "DeviceType": "Pressure Switch",
+    "PredictedSection": "SECTION 3",
+    "PredictedCluster": "CLUSTER 4",
+    "Status": "pending"
+  },
+  {
+    "DumpedAt": "2026-08-19 16:16:51",
+    "Customer": "OILTEK",
+    "ProjectCode": "A1993",
+    "DeviceId": "PSL182.1",
+    "DeviceType": "Pressure Switch",
+    "PredictedSection": "SECTION 3",
+    "PredictedCluster": "CLUSTER 4",
+    "Status": "pending"
+  },
+  {
+    "DumpedAt": "2026-08-19 16:16:51",
+    "Customer": "OILTEK",
+    "ProjectCode": "A1993",
+    "DeviceId": "ES7",
+    "DeviceType": "On/Off Valve",
+    "PredictedSection": "SECTION 4",
+    "PredictedCluster": "CLUSTER 1",
+    "Status": "pending"
+  },
+  {
+    "DumpedAt": "2026-08-19 16:16:51",
+    "Customer": "OILTEK",
+    "ProjectCode": "A1993",
+    "DeviceId": "ES8",
+    "DeviceType": "On/Off Valve",
+    "PredictedSection": "SECTION 4",
+    "PredictedCluster": "CLUSTER 1",
+    "Status": "pending"
+  },
+  {
+    "DumpedAt": "2026-08-19 16:16:51",
+    "Customer": "OILTEK",
+    "ProjectCode": "A1993",
+    "DeviceId": "V7.1",
+    "DeviceType": "On/Off Valve",
+    "PredictedSection": "SECTION 4",
+    "PredictedCluster": "CLUSTER 2",
+    "Status": "pending"
+  },
+  {
+    "DumpedAt": "2026-08-19 16:16:51",
+    "Customer": "OILTEK",
+    "ProjectCode": "A1993",
+    "DeviceId": "V7.2",
+    "DeviceType": "On/Off Valve",
+    "PredictedSection": "SECTION 4",
+    "PredictedCluster": "CLUSTER 2",
+    "Status": "pending"
+  },
+  {
+    "DumpedAt": "2026-08-19 16:16:51",
+    "Customer": "OILTEK",
+    "ProjectCode": "A1993",
+    "DeviceId": "V7.3",
+    "DeviceType": "On/Off Valve",
+    "PredictedSection": "SECTION 4",
+    "PredictedCluster": "CLUSTER 2",
+    "Status": "pending"
+  },
+  {
+    "DumpedAt": "2026-08-19 16:16:51",
+    "Customer": "OILTEK",
+    "ProjectCode": "A1993",
+    "DeviceId": "V7.4",
+    "DeviceType": "On/Off Valve",
+    "PredictedSection": "SECTION 4",
+    "PredictedCluster": "CLUSTER 2",
+    "Status": "pending"
+  },
+  {
+    "DumpedAt": "2026-08-19 16:16:51",
+    "Customer": "OILTEK",
+    "ProjectCode": "A1993",
+    "DeviceId": "V7.6",
+    "DeviceType": "On/Off Valve",
+    "PredictedSection": "SECTION 4",
+    "PredictedCluster": "CLUSTER 2",
+    "Status": "pending"
+  },
+  {
+    "DumpedAt": "2026-08-19 16:16:51",
+    "Customer": "OILTEK",
+    "ProjectCode": "A1993",
+    "DeviceId": "V7.7",
+    "DeviceType": "On/Off Valve",
+    "PredictedSection": "SECTION 4",
+    "PredictedCluster": "CLUSTER 2",
+    "Status": "pending"
+  },
+  {
+    "DumpedAt": "2026-08-19 16:16:51",
+    "Customer": "OILTEK",
+    "ProjectCode": "A1993",
+    "DeviceId": "V7.8",
+    "DeviceType": "On/Off Valve",
+    "PredictedSection": "SECTION 4",
+    "PredictedCluster": "CLUSTER 2",
+    "Status": "pending"
+  },
+  {
+    "DumpedAt": "2026-08-19 16:16:51",
+    "Customer": "OILTEK",
+    "ProjectCode": "A1993",
+    "DeviceId": "V7.9",
+    "DeviceType": "On/Off Valve",
+    "PredictedSection": "SECTION 4",
+    "PredictedCluster": "CLUSTER 2",
+    "Status": "pending"
+  },
+  {
+    "DumpedAt": "2026-08-19 16:16:51",
+    "Customer": "OILTEK",
+    "ProjectCode": "A1993",
+    "DeviceId": "V7.10A",
+    "DeviceType": "On/Off Valve",
+    "PredictedSection": "SECTION 4",
+    "PredictedCluster": "CLUSTER 3",
+    "Status": "pending"
+  },
+  {
+    "DumpedAt": "2026-08-19 16:16:51",
+    "Customer": "OILTEK",
+    "ProjectCode": "A1993",
+    "DeviceId": "V7.10B",
+    "DeviceType": "On/Off Valve",
+    "PredictedSection": "SECTION 4",
+    "PredictedCluster": "CLUSTER 3",
+    "Status": "pending"
+  },
+  {
+    "DumpedAt": "2026-08-19 16:16:51",
+    "Customer": "OILTEK",
+    "ProjectCode": "A1993",
+    "DeviceId": "V7.11",
+    "DeviceType": "On/Off Valve",
+    "PredictedSection": "SECTION 4",
+    "PredictedCluster": "CLUSTER 5",
+    "Status": "pending"
+  },
+  {
+    "DumpedAt": "2026-08-19 16:16:51",
+    "Customer": "OILTEK",
+    "ProjectCode": "A1993",
+    "DeviceId": "V7.12",
+    "DeviceType": "On/Off Valve",
+    "PredictedSection": "SECTION 4",
+    "PredictedCluster": "CLUSTER 5",
+    "Status": "pending"
+  },
+  {
+    "DumpedAt": "2026-08-19 16:16:51",
+    "Customer": "OILTEK",
+    "ProjectCode": "A1993",
+    "DeviceId": "V8.1",
+    "DeviceType": "On/Off Valve",
+    "PredictedSection": "SECTION 4",
+    "PredictedCluster": "CLUSTER 4",
+    "Status": "pending"
+  },
+  {
+    "DumpedAt": "2026-08-19 16:16:51",
+    "Customer": "OILTEK",
+    "ProjectCode": "A1993",
+    "DeviceId": "V8.2",
+    "DeviceType": "On/Off Valve",
+    "PredictedSection": "SECTION 4",
+    "PredictedCluster": "CLUSTER 4",
+    "Status": "pending"
+  },
+  {
+    "DumpedAt": "2026-08-19 16:16:51",
+    "Customer": "OILTEK",
+    "ProjectCode": "A1993",
+    "DeviceId": "V8.3",
+    "DeviceType": "On/Off Valve",
+    "PredictedSection": "SECTION 4",
+    "PredictedCluster": "CLUSTER 4",
+    "Status": "pending"
+  },
+  {
+    "DumpedAt": "2026-08-19 16:16:51",
+    "Customer": "OILTEK",
+    "ProjectCode": "A1993",
+    "DeviceId": "V8.4",
+    "DeviceType": "On/Off Valve",
+    "PredictedSection": "SECTION 4",
+    "PredictedCluster": "CLUSTER 4",
+    "Status": "pending"
+  },
+  {
+    "DumpedAt": "2026-08-19 16:16:51",
+    "Customer": "OILTEK",
+    "ProjectCode": "A1993",
+    "DeviceId": "V8.6",
+    "DeviceType": "On/Off Valve",
+    "PredictedSection": "SECTION 4",
+    "PredictedCluster": "CLUSTER 4",
+    "Status": "pending"
+  },
+  {
+    "DumpedAt": "2026-08-19 16:16:51",
+    "Customer": "OILTEK",
+    "ProjectCode": "A1993",
+    "DeviceId": "V8.7",
+    "DeviceType": "On/Off Valve",
+    "PredictedSection": "SECTION 4",
+    "PredictedCluster": "CLUSTER 4",
+    "Status": "pending"
+  },
+  {
+    "DumpedAt": "2026-08-19 16:16:51",
+    "Customer": "OILTEK",
+    "ProjectCode": "A1993",
+    "DeviceId": "V8.8",
+    "DeviceType": "On/Off Valve",
+    "PredictedSection": "SECTION 4",
+    "PredictedCluster": "CLUSTER 4",
+    "Status": "pending"
+  },
+  {
+    "DumpedAt": "2026-08-19 16:16:51",
+    "Customer": "OILTEK",
+    "ProjectCode": "A1993",
+    "DeviceId": "V8.9",
+    "DeviceType": "On/Off Valve",
+    "PredictedSection": "SECTION 4",
+    "PredictedCluster": "CLUSTER 4",
+    "Status": "pending"
+  },
+  {
+    "DumpedAt": "2026-08-19 16:16:51",
+    "Customer": "OILTEK",
+    "ProjectCode": "A1993",
+    "DeviceId": "V8.11",
+    "DeviceType": "On/Off Valve",
+    "PredictedSection": "SECTION 4",
+    "PredictedCluster": "CLUSTER 5",
+    "Status": "pending"
+  },
+  {
+    "DumpedAt": "2026-08-19 16:16:51",
+    "Customer": "OILTEK",
+    "ProjectCode": "A1993",
+    "DeviceId": "V8.12",
+    "DeviceType": "On/Off Valve",
+    "PredictedSection": "SECTION 4",
+    "PredictedCluster": "CLUSTER 5",
+    "Status": "pending"
+  },
+  {
+    "DumpedAt": "2026-08-19 16:16:51",
+    "Customer": "OILTEK",
+    "ProjectCode": "A1993",
+    "DeviceId": "V8.13",
+    "DeviceType": "On/Off Valve",
+    "PredictedSection": "SECTION 4",
+    "PredictedCluster": "CLUSTER 5",
+    "Status": "pending"
+  },
+  {
+    "DumpedAt": "2026-08-19 16:16:51",
+    "Customer": "OILTEK",
+    "ProjectCode": "A1993",
+    "DeviceId": "FIT581",
+    "DeviceType": "Flow Transmitter",
+    "PredictedSection": "SECTION 5",
+    "PredictedCluster": "CLUSTER 1",
+    "Status": "pending"
+  },
+  {
+    "DumpedAt": "2026-08-19 16:16:51",
+    "Customer": "OILTEK",
+    "ProjectCode": "A1993",
+    "DeviceId": "HLA581",
+    "DeviceType": "High Level Switch",
+    "PredictedSection": "SECTION 5",
+    "PredictedCluster": "CLUSTER 1",
+    "Status": "pending"
+  },
+  {
+    "DumpedAt": "2026-08-19 16:16:51",
+    "Customer": "OILTEK",
+    "ProjectCode": "A1993",
+    "DeviceId": "LT581",
+    "DeviceType": "Level Transmitter",
+    "PredictedSection": "SECTION 5",
+    "PredictedCluster": "CLUSTER 1",
+    "Status": "pending"
+  },
+  {
+    "DumpedAt": "2026-08-19 16:16:51",
+    "Customer": "OILTEK",
+    "ProjectCode": "A1993",
+    "DeviceId": "P581",
+    "DeviceType": "Pump",
+    "PredictedSection": "SECTION 5",
+    "PredictedCluster": "CLUSTER 1",
+    "Status": "pending"
+  },
+  {
+    "DumpedAt": "2026-08-19 16:16:51",
+    "Customer": "OILTEK",
+    "ProjectCode": "A1993",
+    "DeviceId": "PSH581",
+    "DeviceType": "Pressure Switch",
+    "PredictedSection": "SECTION 5",
+    "PredictedCluster": "CLUSTER 1",
+    "Status": "pending"
+  },
+  {
+    "DumpedAt": "2026-08-19 16:16:51",
+    "Customer": "OILTEK",
+    "ProjectCode": "A1993",
+    "DeviceId": "SIC581",
+    "DeviceType": "Variable Frequency Drive",
+    "PredictedSection": "SECTION 5",
+    "PredictedCluster": "CLUSTER 1",
+    "Status": "pending"
+  },
+  {
+    "DumpedAt": "2026-08-19 16:16:51",
+    "Customer": "OILTEK",
+    "ProjectCode": "A1993",
+    "DeviceId": "SIC581FB",
+    "DeviceType": "Variable Frequency Drive",
+    "PredictedSection": "SECTION 5",
+    "PredictedCluster": "CLUSTER 1",
+    "Status": "pending"
+  },
+  {
+    "DumpedAt": "2026-08-19 16:16:51",
+    "Customer": "OILTEK",
+    "ProjectCode": "A1993",
+    "DeviceId": "HLAT582",
+    "DeviceType": "High Level Switch",
+    "PredictedSection": "SECTION 5",
+    "PredictedCluster": "CLUSTER 1",
+    "Status": "pending"
+  },
+  {
+    "DumpedAt": "2026-08-19 16:16:51",
+    "Customer": "OILTEK",
+    "ProjectCode": "A1993",
+    "DeviceId": "LLAT582",
+    "DeviceType": "Low Level Switch",
+    "PredictedSection": "SECTION 5",
+    "PredictedCluster": "CLUSTER 1",
+    "Status": "pending"
+  },
+  {
+    "DumpedAt": "2026-08-19 16:16:51",
+    "Customer": "OILTEK",
+    "ProjectCode": "A1993",
+    "DeviceId": "LT582",
+    "DeviceType": "Level Transmitter",
+    "PredictedSection": "SECTION 5",
+    "PredictedCluster": "CLUSTER 1",
+    "Status": "pending"
+  },
+  {
+    "DumpedAt": "2026-08-19 16:16:51",
+    "Customer": "OILTEK",
+    "ProjectCode": "A1993",
+    "DeviceId": "P582",
+    "DeviceType": "Pump",
+    "PredictedSection": "SECTION 5",
+    "PredictedCluster": "CLUSTER 1",
+    "Status": "pending"
+  },
+  {
+    "DumpedAt": "2026-08-19 16:16:51",
+    "Customer": "OILTEK",
+    "ProjectCode": "A1993",
+    "DeviceId": "PSH582",
+    "DeviceType": "Pressure Switch",
+    "PredictedSection": "SECTION 5",
+    "PredictedCluster": "CLUSTER 1",
+    "Status": "pending"
+  },
+  {
+    "DumpedAt": "2026-08-19 16:16:51",
+    "Customer": "OILTEK",
+    "ProjectCode": "A1993",
+    "DeviceId": "SIC582",
+    "DeviceType": "Variable Frequency Drive",
+    "PredictedSection": "SECTION 5",
+    "PredictedCluster": "CLUSTER 1",
+    "Status": "pending"
+  },
+  {
+    "DumpedAt": "2026-08-19 16:16:51",
+    "Customer": "OILTEK",
+    "ProjectCode": "A1993",
+    "DeviceId": "PT582A",
+    "DeviceType": "Pressure Transmitter",
+    "PredictedSection": "SECTION 5",
+    "PredictedCluster": "CLUSTER 1",
+    "Status": "pending"
+  },
+  {
+    "DumpedAt": "2026-08-19 16:16:51",
+    "Customer": "OILTEK",
+    "ProjectCode": "A1993",
+    "DeviceId": "S582A",
+    "DeviceType": "On/Off Valve",
+    "PredictedSection": "SECTION 5",
+    "PredictedCluster": "CLUSTER 1",
+    "Status": "pending"
+  },
+  {
+    "DumpedAt": "2026-08-19 16:16:51",
+    "Customer": "OILTEK",
+    "ProjectCode": "A1993",
+    "DeviceId": "V582A",
+    "DeviceType": "On/Off Valve",
+    "PredictedSection": "SECTION 5",
+    "PredictedCluster": "CLUSTER 1",
+    "Status": "pending"
+  },
+  {
+    "DumpedAt": "2026-08-19 16:16:51",
+    "Customer": "OILTEK",
+    "ProjectCode": "A1993",
+    "DeviceId": "VP582A",
+    "DeviceType": "Pump",
+    "PredictedSection": "SECTION 5",
+    "PredictedCluster": "CLUSTER 1",
+    "Status": "pending"
+  },
+  {
+    "DumpedAt": "2026-08-19 16:16:51",
+    "Customer": "OILTEK",
+    "ProjectCode": "A1993",
+    "DeviceId": "PT582B",
+    "DeviceType": "Pressure Transmitter",
+    "PredictedSection": "SECTION 5",
+    "PredictedCluster": "CLUSTER 1",
+    "Status": "pending"
+  },
+  {
+    "DumpedAt": "2026-08-19 16:16:51",
+    "Customer": "OILTEK",
+    "ProjectCode": "A1993",
+    "DeviceId": "V582D",
+    "DeviceType": "On/Off Valve",
+    "PredictedSection": "SECTION 5",
+    "PredictedCluster": "CLUSTER 1",
+    "Status": "pending"
+  },
+  {
+    "DumpedAt": "2026-08-19 16:16:51",
+    "Customer": "OILTEK",
+    "ProjectCode": "A1993",
+    "DeviceId": "V582E",
+    "DeviceType": "On/Off Valve",
+    "PredictedSection": "SECTION 5",
+    "PredictedCluster": "CLUSTER 1",
+    "Status": "pending"
+  },
+  {
+    "DumpedAt": "2026-08-19 16:16:51",
+    "Customer": "OILTEK",
+    "ProjectCode": "A1993",
+    "DeviceId": "V582F",
+    "DeviceType": "On/Off Valve",
+    "PredictedSection": "SECTION 5",
+    "PredictedCluster": "CLUSTER 1",
+    "Status": "pending"
+  },
+  {
+    "DumpedAt": "2026-08-19 16:16:51",
+    "Customer": "OILTEK",
+    "ProjectCode": "A1993",
+    "DeviceId": "SIC582FB",
+    "DeviceType": "Variable Frequency Drive",
+    "PredictedSection": "SECTION 5",
+    "PredictedCluster": "CLUSTER 1",
+    "Status": "pending"
+  },
+  {
+    "DumpedAt": "2026-08-19 16:16:51",
+    "Customer": "OILTEK",
+    "ProjectCode": "A1993",
+    "DeviceId": "TE583A",
+    "DeviceType": "Temperature Transmitter",
+    "PredictedSection": "SECTION 5",
+    "PredictedCluster": "CLUSTER 1",
+    "Status": "pending"
+  },
+  {
+    "DumpedAt": "2026-08-19 16:16:51",
+    "Customer": "OILTEK",
+    "ProjectCode": "A1993",
+    "DeviceId": "TE583B",
+    "DeviceType": "Temperature Transmitter",
+    "PredictedSection": "SECTION 5",
+    "PredictedCluster": "CLUSTER 1",
+    "Status": "pending"
+  },
+  {
+    "DumpedAt": "2026-08-19 16:16:51",
+    "Customer": "OILTEK",
+    "ProjectCode": "A1993",
+    "DeviceId": "FITQ584",
+    "DeviceType": "Flow Transmitter",
+    "PredictedSection": "SECTION 5",
+    "PredictedCluster": "CLUSTER 1",
+    "Status": "pending"
+  },
+  {
+    "DumpedAt": "2026-08-19 16:16:51",
+    "Customer": "OILTEK",
+    "ProjectCode": "A1993",
+    "DeviceId": "TCV584",
+    "DeviceType": "Control Valve",
+    "PredictedSection": "SECTION 5",
+    "PredictedCluster": "CLUSTER 1",
+    "Status": "pending"
+  },
+  {
+    "DumpedAt": "2026-08-19 16:16:51",
+    "Customer": "OILTEK",
+    "ProjectCode": "A1993",
+    "DeviceId": "TE584",
+    "DeviceType": "Temperature Transmitter",
+    "PredictedSection": "SECTION 5",
+    "PredictedCluster": "CLUSTER 1",
+    "Status": "pending"
+  },
+  {
+    "DumpedAt": "2026-08-19 16:16:51",
+    "Customer": "OILTEK",
+    "ProjectCode": "A1993",
+    "DeviceId": "V584.5A",
+    "DeviceType": "On/Off Valve",
+    "PredictedSection": "SECTION 5",
+    "PredictedCluster": "CLUSTER 1",
+    "Status": "pending"
+  },
+  {
+    "DumpedAt": "2026-08-19 16:16:51",
+    "Customer": "OILTEK",
+    "ProjectCode": "A1993",
+    "DeviceId": "V584.5B",
+    "DeviceType": "On/Off Valve",
+    "PredictedSection": "SECTION 5",
+    "PredictedCluster": "CLUSTER 1",
+    "Status": "pending"
+  },
+  {
+    "DumpedAt": "2026-08-19 16:16:51",
+    "Customer": "OILTEK",
+    "ProjectCode": "A1993",
+    "DeviceId": "FITQ585",
+    "DeviceType": "Flow Transmitter",
+    "PredictedSection": "SECTION 5",
+    "PredictedCluster": "CLUSTER 1",
+    "Status": "pending"
+  },
+  {
+    "DumpedAt": "2026-08-19 16:16:51",
+    "Customer": "OILTEK",
+    "ProjectCode": "A1993",
+    "DeviceId": "LSH585",
+    "DeviceType": "High Level Switch",
+    "PredictedSection": "SECTION 5",
+    "PredictedCluster": "CLUSTER 1",
+    "Status": "pending"
+  },
+  {
+    "DumpedAt": "2026-08-19 16:16:51",
+    "Customer": "OILTEK",
+    "ProjectCode": "A1993",
+    "DeviceId": "LSL585",
+    "DeviceType": "Low Level Switch",
+    "PredictedSection": "SECTION 5",
+    "PredictedCluster": "CLUSTER 1",
+    "Status": "pending"
+  },
+  {
+    "DumpedAt": "2026-08-19 16:16:51",
+    "Customer": "OILTEK",
+    "ProjectCode": "A1993",
+    "DeviceId": "P585",
+    "DeviceType": "Pump",
+    "PredictedSection": "SECTION 5",
+    "PredictedCluster": "CLUSTER 1",
+    "Status": "pending"
+  },
+  {
+    "DumpedAt": "2026-08-19 16:16:51",
+    "Customer": "OILTEK",
+    "ProjectCode": "A1993",
+    "DeviceId": "TCV585",
+    "DeviceType": "Control Valve",
+    "PredictedSection": "SECTION 5",
+    "PredictedCluster": "CLUSTER 1",
+    "Status": "pending"
+  },
+  {
+    "DumpedAt": "2026-08-19 16:16:51",
+    "Customer": "OILTEK",
+    "ProjectCode": "A1993",
+    "DeviceId": "TE585",
+    "DeviceType": "Temperature Transmitter",
+    "PredictedSection": "SECTION 5",
+    "PredictedCluster": "CLUSTER 1",
+    "Status": "pending"
+  },
+  {
+    "DumpedAt": "2026-08-19 16:16:51",
+    "Customer": "OILTEK",
+    "ProjectCode": "A1993",
+    "DeviceId": "FIT585A",
+    "DeviceType": "Flow Transmitter",
+    "PredictedSection": "SECTION 5",
+    "PredictedCluster": "CLUSTER 1",
+    "Status": "pending"
+  },
+  {
+    "DumpedAt": "2026-08-19 16:16:51",
+    "Customer": "OILTEK",
+    "ProjectCode": "A1993",
+    "DeviceId": "S585B",
+    "DeviceType": "On/Off Valve",
+    "PredictedSection": "SECTION 5",
+    "PredictedCluster": "CLUSTER 1",
+    "Status": "pending"
+  },
+  {
+    "DumpedAt": "2026-08-19 16:16:51",
+    "Customer": "OILTEK",
+    "ProjectCode": "A1993",
+    "DeviceId": "S585.1",
+    "DeviceType": "On/Off Valve",
+    "PredictedSection": "SECTION 5",
+    "PredictedCluster": "CLUSTER 1",
+    "Status": "pending"
+  },
+  {
+    "DumpedAt": "2026-08-19 16:16:51",
+    "Customer": "OILTEK",
+    "ProjectCode": "A1993",
+    "DeviceId": "S586A",
+    "DeviceType": "On/Off Valve",
+    "PredictedSection": "SECTION 5",
+    "PredictedCluster": "CLUSTER 1",
+    "Status": "pending"
+  },
+  {
+    "DumpedAt": "2026-08-19 16:16:51",
+    "Customer": "OILTEK",
+    "ProjectCode": "A1993",
+    "DeviceId": "TE586A",
+    "DeviceType": "Temperature Transmitter",
+    "PredictedSection": "SECTION 5",
+    "PredictedCluster": "CLUSTER 1",
+    "Status": "pending"
+  },
+  {
+    "DumpedAt": "2026-08-19 16:16:51",
+    "Customer": "OILTEK",
+    "ProjectCode": "A1993",
+    "DeviceId": "LLA603",
+    "DeviceType": "Low Level Switch",
+    "PredictedSection": "SECTION 5",
+    "PredictedCluster": "CLUSTER 2",
+    "Status": "pending"
+  },
+  {
+    "DumpedAt": "2026-08-19 16:16:51",
+    "Customer": "OILTEK",
+    "ProjectCode": "A1993",
+    "DeviceId": "P603",
+    "DeviceType": "Pump",
+    "PredictedSection": "SECTION 5",
+    "PredictedCluster": "CLUSTER 2",
+    "Status": "pending"
+  },
+  {
+    "DumpedAt": "2026-08-19 16:16:51",
+    "Customer": "OILTEK",
+    "ProjectCode": "A1993",
+    "DeviceId": "SIC603",
+    "DeviceType": "Variable Frequency Drive",
+    "PredictedSection": "SECTION 5",
+    "PredictedCluster": "CLUSTER 2",
+    "Status": "pending"
+  },
+  {
+    "DumpedAt": "2026-08-19 16:16:51",
+    "Customer": "OILTEK",
+    "ProjectCode": "A1993",
+    "DeviceId": "SIC603FB",
+    "DeviceType": "Variable Frequency Drive",
+    "PredictedSection": "SECTION 5",
+    "PredictedCluster": "CLUSTER 2",
+    "Status": "pending"
+  },
+  {
+    "DumpedAt": "2026-08-19 16:16:51",
+    "Customer": "OILTEK",
+    "ProjectCode": "A1993",
+    "DeviceId": "A603.4",
+    "DeviceType": "On/Off Signal",
+    "PredictedSection": "SECTION 5",
+    "PredictedCluster": "CLUSTER 2",
+    "Status": "pending"
+  },
+  {
+    "DumpedAt": "2026-08-19 16:16:51",
+    "Customer": "OILTEK",
+    "ProjectCode": "A1993",
+    "DeviceId": "LLA604",
+    "DeviceType": "Low Level Switch",
+    "PredictedSection": "SECTION 5",
+    "PredictedCluster": "CLUSTER 2",
+    "Status": "pending"
+  },
+  {
+    "DumpedAt": "2026-08-19 16:16:51",
+    "Customer": "OILTEK",
+    "ProjectCode": "A1993",
+    "DeviceId": "P604",
+    "DeviceType": "Pump",
+    "PredictedSection": "SECTION 5",
+    "PredictedCluster": "CLUSTER 2",
+    "Status": "pending"
+  },
+  {
+    "DumpedAt": "2026-08-19 16:16:51",
+    "Customer": "OILTEK",
+    "ProjectCode": "A1993",
+    "DeviceId": "SIC604",
+    "DeviceType": "Variable Frequency Drive",
+    "PredictedSection": "SECTION 5",
+    "PredictedCluster": "CLUSTER 2",
+    "Status": "pending"
+  },
+  {
+    "DumpedAt": "2026-08-19 16:16:51",
+    "Customer": "OILTEK",
+    "ProjectCode": "A1993",
+    "DeviceId": "SIC604FB",
+    "DeviceType": "Variable Frequency Drive",
+    "PredictedSection": "SECTION 5",
+    "PredictedCluster": "CLUSTER 2",
+    "Status": "pending"
+  },
+  {
+    "DumpedAt": "2026-08-19 16:16:51",
+    "Customer": "OILTEK",
+    "ProjectCode": "A1993",
+    "DeviceId": "A604.4",
+    "DeviceType": "On/Off Signal",
+    "PredictedSection": "SECTION 5",
+    "PredictedCluster": "CLUSTER 2",
+    "Status": "pending"
+  },
+  {
+    "DumpedAt": "2026-08-19 16:16:51",
+    "Customer": "OILTEK",
+    "ProjectCode": "A1993",
+    "DeviceId": "HLA621",
+    "DeviceType": "High Level Switch",
+    "PredictedSection": "SECTION 5",
+    "PredictedCluster": "CLUSTER 2",
+    "Status": "pending"
+  },
+  {
+    "DumpedAt": "2026-08-19 16:16:51",
+    "Customer": "OILTEK",
+    "ProjectCode": "A1993",
+    "DeviceId": "LLA621",
+    "DeviceType": "Low Level Switch",
+    "PredictedSection": "SECTION 5",
+    "PredictedCluster": "CLUSTER 2",
+    "Status": "pending"
+  },
+  {
+    "DumpedAt": "2026-08-19 16:16:51",
+    "Customer": "OILTEK",
+    "ProjectCode": "A1993",
+    "DeviceId": "P621",
+    "DeviceType": "Pump",
+    "PredictedSection": "SECTION 5",
+    "PredictedCluster": "CLUSTER 2",
+    "Status": "pending"
+  },
+  {
+    "DumpedAt": "2026-08-19 16:16:51",
+    "Customer": "OILTEK",
+    "ProjectCode": "A1993",
+    "DeviceId": "V621",
+    "DeviceType": "On/Off Valve",
+    "PredictedSection": "SECTION 5",
+    "PredictedCluster": "CLUSTER 2",
+    "Status": "pending"
+  },
+  {
+    "DumpedAt": "2026-08-19 16:16:51",
+    "Customer": "OILTEK",
+    "ProjectCode": "A1993",
+    "DeviceId": "TE5801",
+    "DeviceType": "Temperature Transmitter",
+    "PredictedSection": "SECTION 6",
+    "PredictedCluster": "CLUSTER 1",
+    "Status": "pending"
+  },
+  {
+    "DumpedAt": "2026-08-19 16:16:51",
+    "Customer": "OILTEK",
+    "ProjectCode": "A1993",
+    "DeviceId": "TE5802",
+    "DeviceType": "Temperature Transmitter",
+    "PredictedSection": "SECTION 6",
+    "PredictedCluster": "CLUSTER 1",
+    "Status": "pending"
+  },
+  {
+    "DumpedAt": "2026-08-19 16:16:51",
+    "Customer": "OILTEK",
+    "ProjectCode": "A1993",
+    "DeviceId": "TE5803",
+    "DeviceType": "Temperature Transmitter",
+    "PredictedSection": "SECTION 6",
+    "PredictedCluster": "CLUSTER 1",
+    "Status": "pending"
+  },
+  {
+    "DumpedAt": "2026-08-19 16:16:51",
+    "Customer": "OILTEK",
+    "ProjectCode": "A1993",
+    "DeviceId": "TE5804",
+    "DeviceType": "Temperature Transmitter",
+    "PredictedSection": "SECTION 6",
+    "PredictedCluster": "CLUSTER 1",
+    "Status": "pending"
   }
 ]

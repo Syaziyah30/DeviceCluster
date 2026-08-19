@@ -2168,5 +2168,55 @@
     "PredictedSection": "SECTION 5",
     "PredictedCluster": "UNKNOWN",
     "Status": "pending"
+  },
+  {
+    "DumpedAt": "2026-08-19 16:16:51",
+    "Customer": "OILTEK",
+    "ProjectCode": "A1993",
+    "DeviceId": "LLA073",
+    "DeviceType": "Low Level Switch",
+    "PredictedSection": "SECTION 3",
+    "PredictedCluster": "UNKNOWN",
+    "Status": "pending"
+  },
+  {
+    "DumpedAt": "2026-08-19 16:16:51",
+    "Customer": "OILTEK",
+    "ProjectCode": "A1993",
+    "DeviceId": "P073",
+    "DeviceType": "Pump",
+    "PredictedSection": "SECTION 3",
+    "PredictedCluster": "UNKNOWN",
+    "Status": "pending"
+  },
+  {
+    "DumpedAt": "2026-08-19 16:16:51",
+    "Customer": "OILTEK",
+    "ProjectCode": "A1993",
+    "DeviceId": "SIC073",
+    "DeviceType": "Variable Frequency Drive",
+    "PredictedSection": "SECTION 3",
+    "PredictedCluster": "UNKNOWN",
+    "Status": "pending"
+  },
+  {
+    "DumpedAt": "2026-08-19 16:16:51",
+    "Customer": "OILTEK",
+    "ProjectCode": "A1993",
+    "DeviceId": "FIT181",
+    "DeviceType": "Flow Transmitter",
+    "PredictedSection": "SECTION 3",
+    "PredictedCluster": "UNKNOWN",
+    "Status": "pending"
+  },
+  {
+    "DumpedAt": "2026-08-19 16:16:51",
+    "Customer": "OILTEK",
+    "ProjectCode": "A1993",
+    "DeviceId": "V7.13",
+    "DeviceType": "On/Off Valve",
+    "PredictedSection": "SECTION 4",
+    "PredictedCluster": "UNKNOWN",
+    "Status": "pending"
   }
 ]
