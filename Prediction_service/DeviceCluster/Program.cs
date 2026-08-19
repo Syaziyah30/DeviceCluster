@@ -162,18 +162,18 @@ public class Program
 			string SQL_CONN = GetConnectionString();
 			var sqlReader = new PythonSQL(SQL_CONN);
 			string sqlOutputJson = await sqlReader.QueryToJsonFileByProjectCodeAsync(
-				"SELECT * FROM DummySection2OiltekA9998", SQL_OUTPUT_DIR
+				"SELECT * FROM DummyTestingData", SQL_OUTPUT_DIR
 			);
 			Console.WriteLine($"[Step 1/6] Reference data saved → {sqlOutputJson}\n");
 
 			string requestJson = await sqlReader.QueryToJsonAsync(
-				"SELECT ProjectCode, CustomerCode, DataIds FROM DummySection2OiltekA9998"
+				"SELECT ProjectCode, CustomerCode, DataIds FROM DummyTestingData"
 			);
 
 			request = JsonSerializer.Deserialize<DevicePredictRequest>(requestJson, _jsonOpts);
 
 			if (request == null || request.data_ids == null || request.data_ids.Count == 0)
-				throw new InvalidOperationException("No project data found in DummySection2OiltekA9998 table.");
+				throw new InvalidOperationException("No project data found in DummyTestingData table.");
 
 			request.data_ids = request.data_ids
 				.Select(id => id.Replace("\uFEFF", "").Trim())

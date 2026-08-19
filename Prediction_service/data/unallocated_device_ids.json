@@ -2368,5 +2368,35 @@
     "PredictedSection": "SECTION 3",
     "PredictedCluster": "Y",
     "Status": "assigned"
+  },
+  {
+    "DumpedAt": "2026-08-19 10:47:01",
+    "Customer": "OILTEK",
+    "ProjectCode": "A9998",
+    "DeviceId": "V45CF2DA",
+    "DeviceType": "On/Off Valve",
+    "PredictedSection": "SECTION 2",
+    "PredictedCluster": "CLUSTER 3",
+    "Status": "pending"
+  },
+  {
+    "DumpedAt": "2026-08-19 10:47:01",
+    "Customer": "OILTEK",
+    "ProjectCode": "A9998",
+    "DeviceId": "V55CF2DA",
+    "DeviceType": "On/Off Valve",
+    "PredictedSection": "SECTION 2",
+    "PredictedCluster": "CLUSTER 3",
+    "Status": "pending"
+  },
+  {
+    "DumpedAt": "2026-08-19 10:47:01",
+    "Customer": "OILTEK",
+    "ProjectCode": "A9998",
+    "DeviceId": "V65CF2DA",
+    "DeviceType": "On/Off Valve",
+    "PredictedSection": "SECTION 2",
+    "PredictedCluster": "CLUSTER 3",
+    "Status": "pending"
   }
 ]
