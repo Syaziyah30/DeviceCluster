@@ -199,7 +199,7 @@ namespace Logic
 						OriginalCluster = device.Cluster
 					});
 				}
-
+				
 				int remainingDeficit = deficit - fill.Count;
 				if (remainingDeficit > 0)
 				{
