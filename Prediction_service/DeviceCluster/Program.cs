@@ -250,46 +250,7 @@ public class Program
 				Score = r.CLUSTER_CONFIDENCE ?? 0
 			}).ToList();
 
-			var quotas = new List<ClusterQuota>
-			{
-				// CLUSTER 1
-				new ClusterQuota { Section = "SECTION 2", Cluster = "CLUSTER 1", DeviceType = "Fan", TargetCount = 4 },
-				new ClusterQuota { Section = "SECTION 2", Cluster = "CLUSTER 1", DeviceType = "On/Off Valve", TargetCount = 6 },
-				new ClusterQuota { Section = "SECTION 2", Cluster = "CLUSTER 1", DeviceType = "High Level Switch", TargetCount = 6 },
-				new ClusterQuota { Section = "SECTION 2", Cluster = "CLUSTER 1", DeviceType = "Low Level Switch", TargetCount = 4 },
-				new ClusterQuota { Section = "SECTION 2", Cluster = "CLUSTER 1", DeviceType = "Control Valve", TargetCount = 4 },
-				new ClusterQuota { Section = "SECTION 2", Cluster = "CLUSTER 1", DeviceType = "Level Transmitter", TargetCount = 2 },
-				new ClusterQuota { Section = "SECTION 2", Cluster = "CLUSTER 1", DeviceType = "Pump", TargetCount = 5 },
-				new ClusterQuota { Section = "SECTION 2", Cluster = "CLUSTER 1", DeviceType = "Pressure Switch", TargetCount = 3 },
-				new ClusterQuota { Section = "SECTION 2", Cluster = "CLUSTER 1", DeviceType = "Pressure Transmitter", TargetCount = 2 },
-				new ClusterQuota { Section = "SECTION 2", Cluster = "CLUSTER 1", DeviceType = "Vibrator", TargetCount = 4 },
-
-				// CLUSTER 2
-				new ClusterQuota { Section = "SECTION 2", Cluster = "CLUSTER 2", DeviceType = "On/Off Valve", TargetCount = 5 },
-				new ClusterQuota { Section = "SECTION 2", Cluster = "CLUSTER 2", DeviceType = "Control Valve", TargetCount = 5 },
-
-				// CLUSTER 3
-				new ClusterQuota { Section = "SECTION 2", Cluster = "CLUSTER 3", DeviceType = "On/Off Valve", TargetCount = 4 },
-
-				// CLUSTER 4
-				new ClusterQuota { Section = "SECTION 2", Cluster = "CLUSTER 4", DeviceType = "On/Off Valve", TargetCount = 6 },
-
-				// CLUSTER 5
-				new ClusterQuota { Section = "SECTION 2", Cluster = "CLUSTER 5", DeviceType = "Pump", TargetCount = 4 },
-				new ClusterQuota { Section = "SECTION 2", Cluster = "CLUSTER 5", DeviceType = "Heater", TargetCount = 2 },
-				new ClusterQuota { Section = "SECTION 2", Cluster = "CLUSTER 5", DeviceType = "Temperature Transmitter", TargetCount = 3 },
-				new ClusterQuota { Section = "SECTION 2", Cluster = "CLUSTER 5", DeviceType = "Low Level Switch", TargetCount = 4 },
-
-				// CLUSTER 6
-				new ClusterQuota { Section = "SECTION 2", Cluster = "CLUSTER 6", DeviceType = "Control Valve", TargetCount = 7 },
-				new ClusterQuota { Section = "SECTION 2", Cluster = "CLUSTER 6", DeviceType = "On/Off Valve", TargetCount = 7 },
-
-				// CLUSTER 7 — this is the cluster your model currently never predicts (per your earlier report)
-				new ClusterQuota { Section = "SECTION 2", Cluster = "CLUSTER 7", DeviceType = "On/Off Valve", TargetCount = 6 },
-
-				// CLUSTER 8 — same issue, model never predicts this cluster
-				new ClusterQuota { Section = "SECTION 2", Cluster = "CLUSTER 8", DeviceType = "Control Valve", TargetCount = 7 },
-			};
+			var quotas = GetDraftQuotas();
 
 			var allocationResult = ClusterQuotaAllocator.Allocate(predictions, quotas);
 			ClusterQuotaAllocator.PrintVacancyReport(allocationResult.VacancyReport);
@@ -563,6 +524,56 @@ public class Program
 			Console.WriteLine("\nPress Enter to exit...");
 			Console.ReadLine();
 		}
+	}
+
+
+	// ⚠️ DUMMY DATA — placeholder quotas for pipeline testing only, specific to one customer's
+	// draft plant layout (SECTION 2, CLUSTER 1-8). Not real business rules.
+	// Once the real quota pattern/source is confirmed, replace this method's body (or swap the
+	// call site to a different loader, e.g. from config/DB) — nothing else needs to change, since
+	// ClusterQuotaAllocator.Allocate() only ever consumes the returned List<ClusterQuota>.
+	private static List<ClusterQuota> GetDraftQuotas()
+	{
+		return new List<ClusterQuota>
+		{
+			// CLUSTER 1
+			new ClusterQuota { Section = "SECTION 2", Cluster = "CLUSTER 1", DeviceType = "Fan", TargetCount = 4 },
+			new ClusterQuota { Section = "SECTION 2", Cluster = "CLUSTER 1", DeviceType = "On/Off Valve", TargetCount = 6 },
+			new ClusterQuota { Section = "SECTION 2", Cluster = "CLUSTER 1", DeviceType = "High Level Switch", TargetCount = 6 },
+			new ClusterQuota { Section = "SECTION 2", Cluster = "CLUSTER 1", DeviceType = "Low Level Switch", TargetCount = 4 },
+			new ClusterQuota { Section = "SECTION 2", Cluster = "CLUSTER 1", DeviceType = "Control Valve", TargetCount = 4 },
+			new ClusterQuota { Section = "SECTION 2", Cluster = "CLUSTER 1", DeviceType = "Level Transmitter", TargetCount = 2 },
+			new ClusterQuota { Section = "SECTION 2", Cluster = "CLUSTER 1", DeviceType = "Pump", TargetCount = 5 },
+			new ClusterQuota { Section = "SECTION 2", Cluster = "CLUSTER 1", DeviceType = "Pressure Switch", TargetCount = 3 },
+			new ClusterQuota { Section = "SECTION 2", Cluster = "CLUSTER 1", DeviceType = "Pressure Transmitter", TargetCount = 2 },
+			new ClusterQuota { Section = "SECTION 2", Cluster = "CLUSTER 1", DeviceType = "Vibrator", TargetCount = 4 },
+
+			// CLUSTER 2
+			new ClusterQuota { Section = "SECTION 2", Cluster = "CLUSTER 2", DeviceType = "On/Off Valve", TargetCount = 5 },
+			new ClusterQuota { Section = "SECTION 2", Cluster = "CLUSTER 2", DeviceType = "Control Valve", TargetCount = 5 },
+
+			// CLUSTER 3
+			new ClusterQuota { Section = "SECTION 2", Cluster = "CLUSTER 3", DeviceType = "On/Off Valve", TargetCount = 4 },
+
+			// CLUSTER 4
+			new ClusterQuota { Section = "SECTION 2", Cluster = "CLUSTER 4", DeviceType = "On/Off Valve", TargetCount = 6 },
+
+			// CLUSTER 5
+			new ClusterQuota { Section = "SECTION 2", Cluster = "CLUSTER 5", DeviceType = "Pump", TargetCount = 4 },
+			new ClusterQuota { Section = "SECTION 2", Cluster = "CLUSTER 5", DeviceType = "Heater", TargetCount = 2 },
+			new ClusterQuota { Section = "SECTION 2", Cluster = "CLUSTER 5", DeviceType = "Temperature Transmitter", TargetCount = 3 },
+			new ClusterQuota { Section = "SECTION 2", Cluster = "CLUSTER 5", DeviceType = "Low Level Switch", TargetCount = 4 },
+
+			// CLUSTER 6
+			new ClusterQuota { Section = "SECTION 2", Cluster = "CLUSTER 6", DeviceType = "Control Valve", TargetCount = 7 },
+			new ClusterQuota { Section = "SECTION 2", Cluster = "CLUSTER 6", DeviceType = "On/Off Valve", TargetCount = 7 },
+
+			// CLUSTER 7 — this is the cluster your model currently never predicts (per your earlier report)
+			new ClusterQuota { Section = "SECTION 2", Cluster = "CLUSTER 7", DeviceType = "On/Off Valve", TargetCount = 6 },
+
+			// CLUSTER 8 — same issue, model never predicts this cluster
+			new ClusterQuota { Section = "SECTION 2", Cluster = "CLUSTER 8", DeviceType = "Control Valve", TargetCount = 7 },
+		};
 	}
 
 	private static void PrintDeviceTypeTable(List<DeviceTypeResult> results)
