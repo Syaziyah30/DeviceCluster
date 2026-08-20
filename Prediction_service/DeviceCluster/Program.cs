@@ -268,6 +268,7 @@ public class Program
 			var quotas = await QuotaCatalog.LoadQuotasFromDbAsync(SQL_CONN, SQL_QUOTA_TABLE, request.customer_code);
 
 			var allocationResult = ClusterQuotaAllocator.Allocate(predictions, quotas);
+			ClusterQuotaAllocator.PrintFulfilledReport(quotas, allocationResult.VacancyReport);
 			ClusterQuotaAllocator.PrintVacancyReport(allocationResult.VacancyReport);
 			Console.WriteLine($"[Step 3.5/6] {allocationResult.Assigned.Count} assigned, {allocationResult.Floating.Count} floating\n");
 

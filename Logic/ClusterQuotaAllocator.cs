@@ -224,6 +224,35 @@ namespace Logic
 		}
 
 		/// <summary>
+		/// Prints every quota bucket that ended up fully satisfied — the complement of
+		/// PrintVacancyReport. A bucket is fulfilled if it doesn't appear in the final
+		/// vacancyReport (Step 1 take() and Step 3 backfill both cap assigned count at
+		/// exactly TargetCount, so a fulfilled bucket's assigned count always equals it).
+		/// </summary>
+		public static void PrintFulfilledReport(List<ClusterQuota> quotas, List<VacancyReportEntry> vacancyReport)
+		{
+			var fulfilled = quotas
+				.Where(q => !vacancyReport.Any(v =>
+					v.Section == q.Section && v.Cluster == q.Cluster && v.DeviceType == q.DeviceType))
+				.OrderBy(q => ExtractNumber(q.Section))
+				.ThenBy(q => ExtractNumber(q.Cluster))
+				.ToList();
+
+			if (fulfilled.Count == 0)
+			{
+				Console.WriteLine("⚠ No quota buckets fully filled.");
+				return;
+			}
+
+			Console.WriteLine("✅ Fulfilled Report:");
+			foreach (var q in fulfilled)
+			{
+				Console.WriteLine($"   {q.Section} {q.Cluster} - {q.TargetCount} fulfilled {q.DeviceType}");
+			}
+		}
+
+
+		/// <summary>
 		/// Convenience formatter for printing a vacancy-style report to console,
 		/// matching the style of PrintClusterTable elsewhere in Logic.dll.
 		/// Works for both InitialDeficits and VacancyReport since they share the same shape.
@@ -236,11 +265,24 @@ namespace Logic
 				return;
 			}
 
+			var sorted = report
+				.OrderBy(v => ExtractNumber(v.Section))
+				.ThenBy(v => ExtractNumber(v.Cluster))
+				.ToList();
+
 			Console.WriteLine("⚠ Vacancy Report:");
-			foreach (var entry in report)
+			foreach (var entry in sorted)
 			{
-				Console.WriteLine($"   {entry}");
+				Console.WriteLine($"   {entry.Section} {entry.Cluster} - {entry.RemainingVacant} vacant {entry.DeviceType}");
 			}
+		}
+
+		// Pulls the trailing number out of "SECTION 10" / "CLUSTER 2" so sorting is numeric,
+		// not alphabetical (alphabetical would put "SECTION 10" before "SECTION 2").
+		private static int ExtractNumber(string s)
+		{
+			string digits = new string(s.Where(char.IsDigit).ToArray());
+			return int.TryParse(digits, out int n) ? n : 0;
 		}
 	}
 }
