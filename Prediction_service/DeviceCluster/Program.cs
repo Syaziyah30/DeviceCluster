@@ -25,6 +25,7 @@ public class Program
 
 	private static readonly string PYTHON_EXE = Environment.GetEnvironmentVariable("PYTHON_EXE") ?? "python";
 	private static readonly string SQL_SOURCE_TABLE = Environment.GetEnvironmentVariable("SQL_SOURCE_TABLE") ?? "DummyTestingData";
+	private static readonly string SQL_QUOTA_TABLE = Environment.GetEnvironmentVariable("SQL_QUOTA_TABLE") ?? "dbo.PatternCluster";
 	private static readonly string SCRIPT_TYPE = Path.Combine(_projectDir, "predict_equipment.py");
 	private static readonly string SCRIPT_PIPELINE = Path.Combine(_projectDir, "predict_sectioncluster.py");
 	private static readonly string SQL_OUTPUT_DIR = Path.Combine(_serviceDir, "data");
@@ -264,7 +265,7 @@ public class Program
 				Score = r.CLUSTER_CONFIDENCE ?? 0
 			}).ToList();
 
-			var quotas = QuotaCatalog.GetDraftQuotas(request.customer_code);
+			var quotas = await QuotaCatalog.LoadQuotasFromDbAsync(SQL_CONN, SQL_QUOTA_TABLE, request.customer_code);
 
 			var allocationResult = ClusterQuotaAllocator.Allocate(predictions, quotas);
 			ClusterQuotaAllocator.PrintVacancyReport(allocationResult.VacancyReport);

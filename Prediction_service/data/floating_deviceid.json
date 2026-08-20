@@ -2218,5 +2218,45 @@
     "PredictedSection": "SECTION 4",
     "PredictedCluster": "UNKNOWN",
     "Status": "pending"
+  },
+  {
+    "DumpedAt": "2026-08-20 14:44:50",
+    "Customer": "OILTEK",
+    "ProjectCode": "A1994",
+    "DeviceId": "FIT221",
+    "DeviceType": "Flow Transmitter",
+    "PredictedSection": "SECTION 3",
+    "PredictedCluster": "UNKNOWN",
+    "Status": "pending"
+  },
+  {
+    "DumpedAt": "2026-08-20 14:44:50",
+    "Customer": "OILTEK",
+    "ProjectCode": "A1994",
+    "DeviceId": "LLA853",
+    "DeviceType": "Low Level Switch",
+    "PredictedSection": "SECTION 5",
+    "PredictedCluster": "UNKNOWN",
+    "Status": "pending"
+  },
+  {
+    "DumpedAt": "2026-08-20 14:44:50",
+    "Customer": "OILTEK",
+    "ProjectCode": "A1994",
+    "DeviceId": "SIC853",
+    "DeviceType": "Variable Frequency Drive",
+    "PredictedSection": "SECTION 5",
+    "PredictedCluster": "UNKNOWN",
+    "Status": "pending"
+  },
+  {
+    "DumpedAt": "2026-08-20 14:44:50",
+    "Customer": "OILTEK",
+    "ProjectCode": "A1994",
+    "DeviceId": "SIC853FB",
+    "DeviceType": "Variable Frequency Drive",
+    "PredictedSection": "SECTION 5",
+    "PredictedCluster": "UNKNOWN",
+    "Status": "pending"
   }
 ]
