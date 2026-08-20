@@ -90,6 +90,10 @@ namespace Logic
 			Directory.CreateDirectory(Path.GetDirectoryName(_floatingDumpFilePath)!);
 			File.WriteAllText(_floatingDumpFilePath, json);
 			Console.WriteLine($"[Logic] Dumped {unknownDevices.Count} unknown-prediction device(s) → {_floatingDumpFilePath}");
+
+			// These devices are now classified as unknown-prediction — any stale entry for the
+			// same DeviceId+ProjectCode in the OTHER file no longer reflects reality. Remove it.
+			RemoveStaleUnallocatedEntries(unknownDevices);
 		}
 
 
@@ -130,6 +134,47 @@ namespace Logic
 			Directory.CreateDirectory(Path.GetDirectoryName(_unallocatedDumpFilePath)!);
 			File.WriteAllText(_unallocatedDumpFilePath, json);
 			Console.WriteLine($"[Logic] Dumped {unallocatedDevices.Count} unallocated device(s) → {_unallocatedDumpFilePath}");
+
+			// These devices are now classified as known-but-unallocated — any stale entry for the
+			// same DeviceId+ProjectCode in the OTHER file no longer reflects reality. Remove it.
+			RemoveStaleFloatingEntries(unallocatedDevices);
+		}
+
+
+		// ── Cross-file reconciliation ───────────────────────────────────────────
+		// A device's classification can change between runs (its prediction improves, or it
+		// eventually gets a real quota placement). Without this, a stale entry from an earlier
+		// run stays in whichever file it was first written to, even after a later run adds a
+		// fresh, correct entry for the same device in the other file — so the same device could
+		// end up listed as both "unknown prediction" and "known but unallocated" at once.
+		private void RemoveStaleFloatingEntries(List<DeviceResult> devicesNoLongerUnknown)
+		{
+			List<FloatingDumpEntry> existing = LoadFloatingDumpFile();
+			int before = existing.Count;
+
+			existing.RemoveAll(e => devicesNoLongerUnknown.Any(d =>
+				d.DeviceId == e.DeviceId && d.ProjectCode == e.ProjectCode));
+
+			if (existing.Count == before) return;
+
+			string json = JsonSerializer.Serialize(existing, _jsonOpts);
+			File.WriteAllText(_floatingDumpFilePath, json);
+			Console.WriteLine($"[Logic] Removed {before - existing.Count} stale entry(ies) from {_floatingDumpFilePath}");
+		}
+
+		private void RemoveStaleUnallocatedEntries(List<DeviceResult> devicesNoLongerUnallocated)
+		{
+			List<UnallocatedDumpEntry> existing = LoadUnallocatedDumpFile();
+			int before = existing.Count;
+
+			existing.RemoveAll(e => devicesNoLongerUnallocated.Any(d =>
+				d.DeviceId == e.DeviceId && d.ProjectCode == e.ProjectCode));
+
+			if (existing.Count == before) return;
+
+			string json = JsonSerializer.Serialize(existing, _jsonOpts);
+			File.WriteAllText(_unallocatedDumpFilePath, json);
+			Console.WriteLine($"[Logic] Removed {before - existing.Count} stale entry(ies) from {_unallocatedDumpFilePath}");
 		}
 
 

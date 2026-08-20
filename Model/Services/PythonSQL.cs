@@ -10,6 +10,11 @@ namespace Model.Services
 	{
 		private readonly string _connectionString;
 
+		// Exposes the connection string so callers holding a PythonSQL instance (e.g. an
+		// orchestrator wiring together multiple SQL-backed services) can reuse it without
+		// having to also thread the raw string through separately.
+		public string ConnectionString => _connectionString;
+
 		// Constructor — pass in the connection string once, reuse for many queries
 		public PythonSQL(string connectionString)
 		{

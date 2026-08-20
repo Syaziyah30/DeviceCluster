@@ -2073,26 +2073,6 @@
     "DumpedAt": "2026-07-16 09:58:15",
     "Customer": "OILTEK",
     "ProjectCode": "A9998",
-    "DeviceId": "VP412A",
-    "DeviceType": "UNKNOWN",
-    "PredictedSection": "SECTION 2",
-    "PredictedCluster": "CLUSTER 1",
-    "Status": "pending"
-  },
-  {
-    "DumpedAt": "2026-07-16 09:58:15",
-    "Customer": "OILTEK",
-    "ProjectCode": "A9998",
-    "DeviceId": "VP552A",
-    "DeviceType": "UNKNOWN",
-    "PredictedSection": "SECTION 2",
-    "PredictedCluster": "CLUSTER 1",
-    "Status": "pending"
-  },
-  {
-    "DumpedAt": "2026-07-16 09:58:15",
-    "Customer": "OILTEK",
-    "ProjectCode": "A9998",
     "DeviceId": "CV34ST1",
     "DeviceType": "Control Valve",
     "PredictedSection": "SECTION 2",

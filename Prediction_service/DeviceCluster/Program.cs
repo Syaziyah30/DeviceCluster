@@ -147,25 +147,30 @@ public class Program
 	{
 		Console.OutputEncoding = System.Text.Encoding.UTF8;
 
-		DevicePredictRequest? request = null;
 		PythonClient? client = null;
-
-		List<DeviceTypeResult>? typeResults = null;
-		List<PipelineResult>? pipelineResults = null;
 
 		try
 		{
 			string SQL_CONN = GetConnectionString();
 			var sqlReader = new PythonSQL(SQL_CONN);
 
+			// --unattended runs with no console pauses and no manual-correction prompt — for a
+			// scheduler/task runner. Requires the ProjectCode to also be passed as an arg, since
+			// there's no one to answer an interactive prompt.
+			bool unattended = args.Any(a => a.Equals("--unattended", StringComparison.OrdinalIgnoreCase));
+
 			// ProjectCode selects which project's rows to pull from the shared SQL table —
 			// pass it as a CLI arg for automation, or leave blank to be prompted interactively.
-			string? projectCodeArg = args.Length > 0 ? args[0].Trim().ToUpper() : null;
+			string? projectCodeArg = args.FirstOrDefault(a => !a.StartsWith("--"))?.Trim().ToUpper();
 			string projectCode;
 
 			if (!string.IsNullOrWhiteSpace(projectCodeArg))
 			{
 				projectCode = projectCodeArg;
+			}
+			else if (unattended)
+			{
+				throw new InvalidOperationException("--unattended requires a ProjectCode to also be passed as an argument.");
 			}
 			else
 			{
@@ -183,179 +188,101 @@ public class Program
 			var clusterService = new ModelClusterSuggestionService(client, SCRIPT_PIPELINE);
 			var logic = new LogicAssignment(FLOATING_DUMP, UNALLOCATED_DUMP);
 
-			// ── STEP 1: SQL reads device IDs ──────────────────────────────────────────
 			Console.WriteLine($"[Step 1/6] Loading reference data for project '{projectCode}' from SQL Server...");
-			var (requestJson, sqlOutputJson) = await sqlReader.LoadProjectDataAsync(SQL_SOURCE_TABLE, projectCode, SQL_OUTPUT_DIR);
-			Console.WriteLine($"[Step 1/6] Reference data saved → {sqlOutputJson}\n");
 
-			request = JsonSerializer.Deserialize<DevicePredictRequest>(requestJson, _jsonOpts);
-
-			if (request == null || request.data_ids == null || request.data_ids.Count == 0)
-				throw new InvalidOperationException($"No project data found in '{SQL_SOURCE_TABLE}' table.");
-
-			request.data_ids = request.data_ids
-				.Select(id => id.Replace("\uFEFF", "").Trim())
-				.Where(id => !string.IsNullOrEmpty(id))
-				.ToList();
-
-			Console.WriteLine($"[Step 1/6] Project detected : {request.project_code} ({request.customer_code})");
-			Console.WriteLine($"[Step 1/6] Loaded {request.data_ids.Count} device IDs\n");
-
-
-			// ── STEP 2: Predict device type ───────────────────────────────────────────
-			Console.WriteLine("[Step 2/6] Predicting device types...");
-			var sw = Stopwatch.StartNew();
-			string typeJson = await client.RunAsync(SCRIPT_TYPE, request);
-			sw.Stop();
-
-			typeResults = JsonSerializer.Deserialize<List<DeviceTypeResult>>(typeJson, _jsonOpts);
-			PrintDeviceTypeTable(typeResults);
-			Console.WriteLine($"Time taken: {sw.Elapsed.TotalSeconds:F1} secs");
-
-			var deviceTypeLookup = typeResults
-				.GroupBy(r => r.data_id)
-				.ToDictionary(g => g.Key, g => g.Last().data_type ?? "N/A");
-
-			Console.Write("\nPress Enter to predict Section + Cluster...");
-			Console.ReadLine();
-
-
-
-			// ── STEP 3: Predict section + cluster ─────────────────────────────────────
-			Console.WriteLine("[Step 3/6] Predicting sections...");
-			var pipelineRequest = new PipelinePredictRequest
+			void PauseUnlessUnattended(string message)
 			{
-				records = typeResults.Select(r => new PipelineRecord
+				if (unattended) return;
+				Console.Write(message);
+				Console.ReadLine();
+			}
+
+			var callbacks = new DevicePipelineCallbacks
+			{
+				OnProjectLoaded = (req, outputPath) =>
 				{
-					device_id = r.data_id,
-					customer = r.customer ?? request.customer_code,
-					project = request.project_code
-				}).ToList()
+					Console.WriteLine($"[Step 1/6] Reference data saved \u2192 {outputPath}\n");
+					Console.WriteLine($"[Step 1/6] Project detected : {req.project_code} ({req.customer_code})");
+					Console.WriteLine($"[Step 1/6] Loaded {req.data_ids.Count} device IDs\n");
+				},
+				OnDeviceTypesPredicted = (results, elapsed) =>
+				{
+					Console.WriteLine("[Step 2/6] Predicting device types...");
+					PrintDeviceTypeTable(results);
+					Console.WriteLine($"Time taken: {elapsed:F1} secs");
+					PauseUnlessUnattended("\nPress Enter to predict Section + Cluster...");
+				},
+				OnSectionsPredicted = (results, lookup, elapsed) =>
+				{
+					Console.WriteLine("[Step 3/6] Predicting sections...");
+					PrintSectionTable(results, lookup);
+					Console.WriteLine($"Time taken: {elapsed:F1} secs");
+					PauseUnlessUnattended("\nPress Enter to predict Cluster...");
+				},
+				OnClustersPredicted = (results, lookup, elapsed) =>
+				{
+					Console.WriteLine("[Step 3/6] Predicting clusters...");
+					PrintClusterTable(results, lookup);
+					Console.WriteLine($"Time taken: {elapsed:F1} secs");
+					PauseUnlessUnattended("\nPress Enter to run quota allocation...");
+				},
+				OnQuotaAllocated = (quotas, allocationResult) =>
+				{
+					Console.WriteLine("\n[Step 3.5/6] Running quota-constrained cluster allocation...");
+					ClusterQuotaAllocator.PrintFulfilledReport(quotas, allocationResult.VacancyReport);
+					ClusterQuotaAllocator.PrintVacancyReport(allocationResult.VacancyReport);
+					Console.WriteLine($"[Step 3.5/6] {allocationResult.Assigned.Count} assigned, {allocationResult.Floating.Count} floating\n");
+				},
+				OnFloatingSplit = (allFloating, unknownPrediction, unallocated) =>
+				{
+					if (allFloating.Count > 0)
+					{
+					Console.WriteLine($"[Step 3.5/6] {allFloating.Count} floating device ID(s) — not claimed by any quota bucket:\n");
+						Console.WriteLine($"{"Customer",-10} | {"ProjectCode",-12} | {"DeviceId",-25} | {"DeviceType",-25} | {"PredictedSection",-15} | {"PredictedCluster",-15}");
+						Console.WriteLine(new string('-', 130));
+
+						foreach (var d in allFloating)
+						{
+							Console.WriteLine(
+								$"{d.Customer,-10} | {d.ProjectCode,-12} | {d.DeviceId,-25} | " +
+								$"{d.DeviceType,-25} | {d.Section,-15} | {d.Cluster,-15}");
+						}
+
+						Console.WriteLine();
+					}
+					else
+					{
+						Console.WriteLine("[Step 3.5/6] No floating devices — all predictions claimed by quota allocation.\n");
+					}
+
+					PauseUnlessUnattended("\nPress Enter to run Logic...");
+				},
+				OnClusterGroupsBuilt = (assignedDevices, clusterGroups) =>
+				{
+					Console.WriteLine("\n[Step 4/6] Passing results into Logic.dll...");
+					Console.WriteLine($"[Step 4/6] {assignedDevices.Count} devices passed into Logic.dll\n");
+
+					// Every device here already matched a real quota bucket (Section+Cluster+DeviceType),
+					// so it's guaranteed known — no separate known/unknown split needed at this point.
+
+					Console.WriteLine("[Step 5/6] Building cluster groups...");
+					Console.WriteLine($"[Step 5/6] {clusterGroups.Count} cluster groups built\n");
+
+					Console.WriteLine("[Step 6/6] Printing cluster grouping table...");
+					logic.PrintClusterTable(clusterGroups);
+				}
 			};
 
-			sw.Restart();
-			string pipelineJson = await client.RunAsync(SCRIPT_PIPELINE, pipelineRequest);
-			sw.Stop();
-			double step3Secs = sw.Elapsed.TotalSeconds;
-
-			pipelineResults = JsonSerializer.Deserialize<List<PipelineResult>>(pipelineJson, _jsonOpts);
-			PrintSectionTable(pipelineResults, deviceTypeLookup);
-			Console.WriteLine($"Time taken: {step3Secs:F1} secs");
-
-			Console.Write("\nPress Enter to predict Cluster...");
-			Console.ReadLine();
-
-			Console.WriteLine("[Step 3/6] Predicting clusters...");
-			PrintClusterTable(pipelineResults, deviceTypeLookup);
-			Console.WriteLine($"Time taken: {step3Secs:F1} secs");
-
-			Console.Write("\nPress Enter to run Logic...");
-			Console.ReadLine();
-
-
-			// ◄── STEP 3.5 — Quota allocation
-			Console.WriteLine("\n[Step 3.5/6] Running quota-constrained cluster allocation...");
-
-			var predictions = pipelineResults.Select(r => new DevicePrediction
-			{
-				Section = r.PREDICTED_SECTION ?? "UNKNOWN",
-				Cluster = r.PREDICTED_CLUSTER ?? "UNKNOWN",
-				DeviceId = r.DEVICE_ID,
-				DeviceType = deviceTypeLookup.TryGetValue(r.DEVICE_ID, out var predDt) ? predDt : "UNKNOWN",
-				Score = r.CLUSTER_CONFIDENCE ?? 0,
-				TopClusters = (r.TOP_CLUSTERS ?? new List<ClusterCandidate>())
-					.Select(c => new ClusterPrediction { Cluster = c.Cluster, Probability = c.Probability })
-					.ToList()
-			}).ToList();
-
-			var quotas = await QuotaCatalog.LoadQuotasFromDbAsync(SQL_CONN, SQL_QUOTA_TABLE, request.customer_code);
-
-			var allocationResult = ClusterQuotaAllocator.Allocate(predictions, quotas);
-			ClusterQuotaAllocator.PrintFulfilledReport(quotas, allocationResult.VacancyReport);
-			ClusterQuotaAllocator.PrintVacancyReport(allocationResult.VacancyReport);
-			Console.WriteLine($"[Step 3.5/6] {allocationResult.Assigned.Count} assigned, {allocationResult.Floating.Count} floating\n");
-
-			// ── Floating devices → split by cause, print + dump via Logic.dll ─────────
-			List<DeviceResult> unknownPredictionDevices = new();
-			List<DeviceResult> unallocatedDevices = new();
-
-			if (allocationResult.Floating.Count > 0)
-			{
-				var floatingDevices = allocationResult.Floating.Select(f => new DeviceResult
-				{
-					Customer = pipelineResults.FirstOrDefault(r => r.DEVICE_ID == f.DeviceId)?.CUSTOMER ?? request.customer_code,
-					ProjectCode = request.project_code,
-					DeviceId = f.DeviceId,
-					DeviceType = f.DeviceType,
-					Section = f.Section,
-					Cluster = f.Cluster,
-					Confidence = f.Score
-				}).ToList();
-
-				(unknownPredictionDevices, unallocatedDevices) = logic.SplitFloatingPool(floatingDevices);
-
-				Console.WriteLine($"[Step 3.5/6] {allocationResult.Floating.Count} floating device ID(s) — not claimed by any quota bucket:\n");
-				Console.WriteLine($"{"Customer",-10} | {"ProjectCode",-12} | {"DeviceId",-25} | {"DeviceType",-25} | {"PredictedSection",-15} | {"PredictedCluster",-15}");
-				Console.WriteLine(new string('-', 130));
-
-				foreach (var d in floatingDevices)
-				{
-					Console.WriteLine(
-						$"{d.Customer,-10} | {d.ProjectCode,-12} | {d.DeviceId,-25} | " +
-						$"{d.DeviceType,-25} | {d.Section,-15} | {d.Cluster,-15}");
-				}
-
-				Console.WriteLine();
-				logic.DumpFloating(unknownPredictionDevices);
-				logic.DumpUnallocated(unallocatedDevices);
-			}
-			else
-			{
-				Console.WriteLine("[Step 3.5/6] No floating devices — all predictions claimed by quota allocation.\n");
-			}
-
-
-			Console.Write("\nPress Enter to run Logic...");
-			Console.ReadLine();
-
-			// ── STEP 4: Pass results into Logic.dll ───────────────────────────────────
-			Console.WriteLine("\n[Step 4/6] Passing results into Logic.dll...");
-
-			// Build DeviceResult list from model outputs
-
-			// NEW : after inserting the Quota Allocation variable
-			var allDeviceResults = allocationResult.Assigned.Select(a => new DeviceResult
-			{
-				Customer = pipelineResults.FirstOrDefault(r => r.DEVICE_ID == a.DeviceId)?.CUSTOMER ?? request.customer_code,
-				ProjectCode = request.project_code,
-				DeviceId = a.DeviceId,
-				DeviceType = a.DeviceType,
-				Section = a.Section,
-				Cluster = a.Cluster,
-				Confidence = a.Score
-			}).ToList();
-
-			Console.WriteLine($"[Step 4/6] {allDeviceResults.Count} devices passed into Logic.dll\n");
-
-			// Every device here already matched a real quota bucket (Section+Cluster+DeviceType),
-			// so it's guaranteed known — no separate known/unknown split needed at this point.
-
-
-			// ── STEP 5: Placed into cluster groups ─────────────────────────────────────
-			Console.WriteLine("[Step 5/6] Building cluster groups...");
-			var clusterGroups = logic.BuildClusterGroups(allDeviceResults);
-			Console.WriteLine($"[Step 5/6] {clusterGroups.Count} cluster groups built\n");
-
-
-			// ── STEP 6: Print cluster grouping table ──────────────────────────────────
-			Console.WriteLine("[Step 6/6] Printing cluster grouping table...");
-			logic.PrintClusterTable(clusterGroups);
+			var result = await DevicePipeline.RunAsync(
+				sqlReader, client, logic,
+				SQL_SOURCE_TABLE, SQL_QUOTA_TABLE, SCRIPT_TYPE, SCRIPT_PIPELINE, SQL_OUTPUT_DIR,
+				projectCode, callbacks);
 
 
 			// ── STEP 7: Print UNALLOCATED dump table ────────────────────────────────────
 			Console.WriteLine($"\n[Step 7] Unallocated devices pending manual assignment on [Date: {DateTime.Now:yyyy-MM-dd}]:\n");
 
-			if (unallocatedDevices.Count == 0)
+			if (result.UnallocatedDevices.Count == 0)
 			{
 				Console.WriteLine("[Step 7] No unallocated devices found.\n");
 			}
@@ -364,7 +291,7 @@ public class Program
 				Console.WriteLine($"{"DumpedAt",-10} | {"Customer",-10} | {"ProjectCode",-12} | {"DeviceId",-25} | {"DeviceType",-25} | {"PredictedSection",-15} | {"PredictedCluster",-15}");
 				Console.WriteLine(new string('-', 130));
 
-				foreach (var u in unallocatedDevices)
+				foreach (var u in result.UnallocatedDevices)
 				{
 					Console.WriteLine(
 						$"{DateTime.Now.ToString("HH:mm:ss"),-10} | " +
@@ -375,12 +302,15 @@ public class Program
 						$"{u.Section,-15} | " +
 						$"{u.Cluster,-15} ");
 				}
-				Console.WriteLine($"\n[Step 7] Total unallocated: {unallocatedDevices.Count} devices → saved to {UNALLOCATED_DUMP}\n");
+				Console.WriteLine($"\n[Step 7] Total unallocated: {result.UnallocatedDevices.Count} devices → saved to {UNALLOCATED_DUMP}\n");
 			}
 
 
 
 			// ── OUTPUT RESULT: Manual Correction ─────────────────────────────────────
+			// Skipped entirely when --unattended — there's no one to answer the prompts.
+			if (!unattended)
+			{
 			string userInput = PromptYesNo("\n[OUTPUT RESULT] Correct any prediction? (y/n): ");
 
 			while (userInput == "y")
@@ -390,8 +320,8 @@ public class Program
 
 				if (!string.IsNullOrEmpty(deviceId))
 				{
-					var matchedType = typeResults?.FirstOrDefault(r => r.data_id == deviceId);
-					var matchedPipeline = pipelineResults?.FirstOrDefault(r => r.DEVICE_ID == deviceId);
+					var matchedType = result.TypeResults?.FirstOrDefault(r => r.data_id == deviceId);
+					var matchedPipeline = result.PipelineResults?.FirstOrDefault(r => r.DEVICE_ID == deviceId);
 
 					if (matchedType == null && matchedPipeline == null)
 					{
@@ -438,7 +368,7 @@ public class Program
 							if (clusterIsUnknown)
 							{
 								// Show top 3 suggested clusters (model-driven, via predict_sectioncluster.py)
-								var suggestions = await clusterService.GetTopClustersAsync(deviceId, request!.customer_code, request!.project_code);
+								var suggestions = await clusterService.GetTopClustersAsync(deviceId, result.Request.customer_code, result.Request.project_code);
 								if (suggestions.Count > 0)
 								{
 									Console.WriteLine("\n  Top 3 suggested clusters by model confidence:");
@@ -451,7 +381,7 @@ public class Program
 									}
 
 									string deviceTypeForDisplay = correctType ?? matchedType?.data_type ?? "UNKNOWN";
-									PrintSectionWithSuggestions(clusterGroups, suggestions, deviceId, deviceTypeForDisplay);
+									PrintSectionWithSuggestions(result.ClusterGroups, suggestions, deviceId, deviceTypeForDisplay);
 
 									// ◄── MODIFIED: validated cluster input, no more silent blank/spacebar acceptance
 									correctCluster = PromptClusterChoice($"\n  Enter cluster number [1-{suggestions.Count}] or type manually: ", suggestions);
@@ -479,13 +409,13 @@ public class Program
 								var assignPayload = new
 								{
 									action = "user_manual_assign",
-									project_code = request!.project_code,
-									customer = request!.customer_code,
+									project_code = result.Request.project_code,
+									customer = result.Request.customer_code,
 									assignments = new[]
 									{
 										new { data_id = deviceId, equipment = correctType }
 									},
-									batch_results = typeResults!.Select(r => new
+									batch_results = result.TypeResults.Select(r => new
 									{
 										data_id = r.data_id,
 										data_type = r.data_type
@@ -498,14 +428,14 @@ public class Program
 							}
 
 							// ── Run Logic placement for ANY correction ────────────────────────────
-							string resolvedType = correctType ?? deviceTypeLookup.GetValueOrDefault(deviceId, "UNKNOWN");
+							string resolvedType = correctType ?? result.DeviceTypeLookup.GetValueOrDefault(deviceId, "UNKNOWN");
 							string resolvedSection = correctSection ?? matchedPipeline?.PREDICTED_SECTION ?? "UNKNOWN";
 							string resolvedCluster = correctCluster ?? matchedPipeline?.PREDICTED_CLUSTER ?? "UNKNOWN";
 
 							var correctedEntry = new UnallocatedDumpEntry
 							{
-								Customer = request!.customer_code,
-								ProjectCode = request!.project_code,
+								Customer = result.Request.customer_code,
+								ProjectCode = result.Request.project_code,
 								DeviceId = deviceId,
 								DeviceType = resolvedType,
 								PredictedSection = resolvedSection,
@@ -513,13 +443,13 @@ public class Program
 								Status = "assigned"
 							};
 
-							var placed = logic.AssignByNumericSimilarity(correctedEntry, allDeviceResults);
+							var placed = logic.AssignByNumericSimilarity(correctedEntry, result.AssignedDevices);
 							if (placed != null)
 							{
-								logic.PlaceDevice(placed, clusterGroups);
-								logic.MarkAsAssigned(deviceId, request!.project_code, placed.Section, placed.Cluster);
+								logic.PlaceDevice(placed, result.ClusterGroups);
+								logic.MarkAsAssigned(deviceId, result.Request.project_code, placed.Section, placed.Cluster);
 								Console.WriteLine("\n[Logic] Updated cluster grouping after correction:");
-								logic.PrintClusterTable(clusterGroups, placed.Section);
+								logic.PrintClusterTable(result.ClusterGroups, placed.Section);
 							}
 
 							Console.WriteLine($"[OUTPUT RESULT] Correction summary for '{deviceId}':");
@@ -533,6 +463,7 @@ public class Program
 			NextCorrection:
 				userInput = PromptYesNo("\n[OUTPUT RESULT] Correct any prediction? (y/n): ");
 			}
+			}
 		}
 		catch (Exception ex)
 		{
@@ -540,8 +471,11 @@ public class Program
 		}
 		finally
 		{
-			Console.WriteLine("\nPress Enter to exit...");
-			Console.ReadLine();
+			if (!args.Any(a => a.Equals("--unattended", StringComparison.OrdinalIgnoreCase)))
+			{
+				Console.WriteLine("\nPress Enter to exit...");
+				Console.ReadLine();
+			}
 		}
 	}
 
