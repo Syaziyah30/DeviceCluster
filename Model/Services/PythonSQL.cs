@@ -148,5 +148,35 @@ namespace Model.Services
 
 			return (json, outputPath);
 		}
+
+
+		// Lists every distinct ProjectCode/CustomerCode pair currently in the table — lets a caller
+		// show "what's available" (e.g. before prompting a user to pick one) without needing SSMS.
+
+		public async Task<List<(string ProjectCode, string CustomerCode)>> ListAvailableProjectsAsync(string tableName)
+		{
+			if (string.IsNullOrWhiteSpace(tableName))
+				throw new ArgumentException("Table name cannot be empty.", nameof(tableName));
+
+			var projects = new List<(string ProjectCode, string CustomerCode)>();
+			string sql = $"SELECT DISTINCT ProjectCode, CustomerCode FROM {tableName} ORDER BY ProjectCode";
+
+			await using var connection = new SqlConnection(_connectionString);
+			await connection.OpenAsync();
+
+			await using var command = new SqlCommand(sql, connection);
+			await using var reader = await command.ExecuteReaderAsync();
+
+			while (await reader.ReadAsync())
+			{
+				string projectCode = reader["ProjectCode"]?.ToString() ?? string.Empty;
+				string customerCode = reader["CustomerCode"]?.ToString() ?? string.Empty;
+
+				if (!string.IsNullOrWhiteSpace(projectCode))
+					projects.Add((projectCode, customerCode));
+			}
+
+			return projects;
+		}
 	}
 }
