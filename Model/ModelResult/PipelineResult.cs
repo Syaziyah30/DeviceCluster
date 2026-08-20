@@ -13,6 +13,7 @@ namespace Model.ModelResult
 		public double? SECTION_CONFIDENCE { get; set; }
 		public string PREDICTED_CLUSTER { get; set; }
 		public double? CLUSTER_CONFIDENCE { get; set; }
+		public List<ClusterCandidate> TOP_CLUSTERS { get; set; } = new();
 		public string REJECTION_REASON { get; set; }
 		public string FORMAT_WARNING { get; set; }
 	}

@@ -393,6 +393,7 @@ def predict(
     pipeline: dict,
     threshold: float = UNKNOWN_THRESHOLD,
     export_csv_path: str | None = None,   # ◄── ADDED
+    top_n_clusters: int = 3,              # ◄── ADDED: how many ranked candidates to return per device
 ) -> pd.DataFrame:
     validate_records(records)
 
@@ -413,10 +414,11 @@ def predict(
     rejection_reasons, format_warnings = check_entities(base_df, pipeline)
     eligible_mask = rejection_reasons == ""
 
-    pred_section = ["UNKNOWN"] * len(base_df)
-    sec_conf     = [None]      * len(base_df)
-    pred_cluster = ["UNKNOWN"] * len(base_df)
-    clu_conf     = [None]      * len(base_df)
+    pred_section  = ["UNKNOWN"] * len(base_df)
+    sec_conf      = [None]      * len(base_df)
+    pred_cluster  = ["UNKNOWN"] * len(base_df)
+    clu_conf      = [None]      * len(base_df)
+    top_clusters  = [[] for _ in range(len(base_df))]   # ◄── ADDED: ranked candidates, not just the argmax winner
 
     if eligible_mask.any():
         elig_idx = base_df.index[eligible_mask].tolist()
@@ -481,11 +483,27 @@ def predict(
             pred_cluster[orig_idx] = clu_final[i]
             clu_conf[orig_idx]     = round(float(clu_conf_adj[i]) * 100, 2)
 
+            # ◄── ADDED: ranked cluster candidates for this device, not just the argmax winner.
+            # Reuses clu_proba_raw already computed above — no extra model call.
+            row = clu_proba_raw[i]
+            top_idx = np.argsort(row)[::-1][:top_n_clusters]
+            candidates = []
+            for idx in top_idx:
+                cluster_label = le_cluster.inverse_transform([idx])[0]
+                if cluster_label in (SafeLabelEncoder.UNKNOWN_LABEL, "__OOD__"):
+                    continue
+                candidates.append({
+                    "cluster": str(cluster_label),
+                    "probability": round(float(row[idx]) * 100, 2),
+                })
+            top_clusters[orig_idx] = candidates
+
     result = base_df[["DEVICE_ID", "CUSTOMER", "PROJECT"]].copy()
     result["PREDICTED_SECTION"]  = pred_section
     result["SECTION_CONFIDENCE"] = sec_conf
     result["PREDICTED_CLUSTER"]  = pred_cluster
     result["CLUSTER_CONFIDENCE"] = clu_conf
+    result["TOP_CLUSTERS"]       = top_clusters
     result["REJECTION_REASON"]   = rejection_reasons.values
     result["FORMAT_WARNING"]     = format_warnings.values
 

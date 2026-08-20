@@ -262,7 +262,10 @@ public class Program
 				Cluster = r.PREDICTED_CLUSTER ?? "UNKNOWN",
 				DeviceId = r.DEVICE_ID,
 				DeviceType = deviceTypeLookup.TryGetValue(r.DEVICE_ID, out var predDt) ? predDt : "UNKNOWN",
-				Score = r.CLUSTER_CONFIDENCE ?? 0
+				Score = r.CLUSTER_CONFIDENCE ?? 0,
+				TopClusters = (r.TOP_CLUSTERS ?? new List<ClusterCandidate>())
+					.Select(c => new ClusterPrediction { Cluster = c.Cluster, Probability = c.Probability })
+					.ToList()
 			}).ToList();
 
 			var quotas = await QuotaCatalog.LoadQuotasFromDbAsync(SQL_CONN, SQL_QUOTA_TABLE, request.customer_code);
