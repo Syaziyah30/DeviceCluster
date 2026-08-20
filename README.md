@@ -2,10 +2,10 @@
 
 | | |
 |---|---|
-| **Full pipeline** | Device Type → Section → Cluster → Quota Allocation → Logic Placement (cascading) |
-| **Runtime** | C# reads SQL DB → saves as JSON → Python ML scripts predict → `ClusterQuotaAllocator` fits quotas → `Logic.dll` places/groups → C# outputs to UI|
+| **Full pipeline** | SQL (per-project, filtered) → Device Type → Section → Cluster → Quota Allocation (device-centric reassignment) → Logic Placement |
+| **Runtime** | `Model.dll` reads SQL Server → JSON → Python ML scripts predict → `Logic.dll`'s `DevicePipeline` fits quotas, splits floating devices, groups clusters → `Program.cs` (or any other caller) renders output |
 
-> Last synced 31 July 2026 (previous version: 3 July 2026). Changes are marked with 🆕 where useful.
+> Last synced 20 August 2026 (previous version: 31 July 2026). Changes are marked with 🆕 where useful.
 
 ---
 
@@ -18,14 +18,16 @@
 | Device Section Prediction           | ✅ Completed |
 | Device Cluster Prediction           | ✅ Completed |
 | C# Service Integration              | ✅ Completed |
-| SQL Integration (`PythonSQL.cs`)    | ✅ Completed |
+| SQL Integration (`PythonSQL.cs`)    | ✅ Completed — per-project filtering, project listing |
 | Incremental Learning                | ✅ Completed |
-| 🆕DLL Development (`AppRegistryEditor.dll`, `Logic.dll`, `Model.dll`) | ✅ Completed |
-| 🆕Model-based Top-3 Cluster Suggestion `predict_sectioncluster.py` from XGBoost | ✅ Completed |
-| Update Model                        | ✅ Completed (Once workflow is complete,need retraining) |
-| 🆕`Logic.dll` Development             | ❗❗❗ **STUCK HERE** |
-| 🆕Raw Prediction Output ins CSV       | ❌ Not Started (this subpoint is for the analysis purpose. at this moment, using dummy data for workflow cluster logic instead of extraction from dataset) |
-| 🆕DLL Testing                         | ❌ Pending |
+| DLL Development (`AppRegistryEditor.dll`, `Logic.dll`, `Model.dll`) | ✅ Completed |
+| Model-based Top-3 Cluster Suggestion `predict_sectioncluster.py` from XGBoost | ✅ Completed |
+| Update Model                        | ✅ Completed (Once workflow is complete, need retraining) |
+| 🆕 `Logic.dll` orchestration (`DevicePipeline`) | ✅ Completed — single callable entry point, no console dependency |
+| 🆕 Quota patterns sourced from SQL (`dbo.PatternCluster`) | ✅ Completed for `SECTION 2` (real); Sections 1, 3-8 are placeholder/dummy data pending real numbers |
+| 🆕 Device-centric reassignment pool (Stage 3) | ✅ Completed — matches the flowchart design, uses per-device ranked cluster candidates |
+| 🆕 Unattended / headless mode (`--unattended`) | ✅ Completed |
+| DLL Testing | ✅ Verified via live runs against real SQL Server + trained models (no automated test suite yet) |
 
 
 ---
@@ -35,18 +37,23 @@ Script active : DeviceClusterConsoleApp [`Program.cs`]
 
 | Stage | Status |
 |-------|--------|
-| Stage 1 – Initial Cluster Assignment | ✅ Completed |
+| Stage 1 – Initial Cluster Assignment (quota-constrained top-N per bucket) | ✅ Completed |
 | Stage 2 – Exceeded & Vacancy Evaluation | ✅ Completed |
-| Stage 3 – Reassignment Pool & Allocation | ✅ Completed |
+| Stage 3 – Reassignment Pool (device-centric, ranked candidates) | ✅ Completed |
 | Model-based Top-3 Cluster Prediction | ✅ Completed |
-| UNKNOWN Device Handling | ✅ Completed |
-| Logic.dll Testing | ❌ Pending |
-| Project References Migration | ❌ Pending |
+| Floating device handling (unknown-prediction vs known-but-unallocated) | ✅ Completed, with cross-file reconciliation |
+| `DevicePipeline` orchestration entry point | ✅ Completed |
+| Logic.dll ↔ Model.dll dependency | ✅ `ProjectReference` (was previously undocumented/absent) |
+| Automated test suite | ❌ Not started — verification so far is manual, live-run based |
 
 ---
 
 ## 📍 Recent Fixes
 
+- ✅ `Logic.dll` now has a `ProjectReference` to `Model.dll` — fixes stale-DLL rebuild issues from the old `HintPath`-only setup
+- ✅ Cross-file reconciliation between `floating_deviceid.json` / `unallocated_device_ids.json` — a device that changes classification between runs no longer gets left stale in the old file
+- ✅ Quota allocator's Stage 3 rewritten from bucket-centric backfill to device-centric reassignment (matches the flowchart: each floating device tries its own ranked cluster candidates by model percentage, highest-scoring device first)
+- ✅ SQL queries are project-scoped (`WHERE ProjectCode = @ProjectCode`) — previously the whole shared table was read unfiltered
 - ✅ Fixed case-sensitivity issue (`OILTEK` vs `Oiltek`)
 - ✅ Fixed device ID formatting issue (e.g. `V001.21` preserved correctly)
 
@@ -55,14 +62,14 @@ Script active : DeviceClusterConsoleApp [`Program.cs`]
 # 🍀 Architecture Overview
 
 ```
-             Data Source DB SQL (XenCreator → DummyInput table)
+     Data Source: SQL Server (XenCreator DB → dbo.DummyTestingData table)
+     One shared table, many projects — every query filtered by ProjectCode
                     │
-                    │  PythonSQL.cs (C#): dynamic SELECT DISTINCT
-                    │  project detection, SQL → JSON
+                    │  PythonSQL.cs (Model.dll): ListAvailableProjectsAsync,
+                    │  LoadProjectDataAsync(table, projectCode, outputDir)
                     ▼
-                Input JSON
+                Input JSON  (data/{ProjectCode}_devices.json)
       (project_code, customer_code, data_ids[])
-                    │
                     │
                     │
                     ▼
@@ -72,7 +79,6 @@ Script active : DeviceClusterConsoleApp [`Program.cs`]
 │         + dict 22 equipment classes               │
 └───────────────────┬───────────────────────────────┘
                     │
-                    │
                     │  DeviceTypeResult[]
                     ▼
 ┌───────────────────────────────────────────────────┐
@@ -81,46 +87,60 @@ Script active : DeviceClusterConsoleApp [`Program.cs`]
 │       + OOD KNN penalty applied                   │
 └───────────────────┬───────────────────────────────┘
                     │
-                    │
                     │  PipelineResult[] (with PREDICTED_SECTION)
                     ▼
 ┌───────────────────────────────────────────────────┐
 │ Step 3 — Cluster [predict_sectioncluster.py]      │
 │ XGBoost chained on Predicted Section              │
 │ Confidence penalised by Section confidence        │
+│ 🆕 also returns TOP_CLUSTERS: each device's        │
+│    top-N ranked cluster candidates + % (from the  │
+│    same predict_proba() call, not discarded)      │
 └───────────────────┬───────────────────────────────┘
                     │
-                    │
-                    │  PipelineResult[] (with PREDICTED_CLUSTER)
+                    │  PipelineResult[] (PREDICTED_CLUSTER + TOP_CLUSTERS)
                     ▼
 ┌─────────────────────────────────────────────────────┐
-│ 🆕 Step 3.5 — Quota Allocation [Logic.dll, C#]      │
-│ ClusterQuotaAllocator two-pass:                     │
-│   Pass 1 — ranked assignment against quota          │
-│   Pass 2 — floating-pool backfill vs InitialDeficits│
-│ MinCascadeConfidence floor (60%) blocks bad forces  │
-│ Floating pool split by cause:                       │
-│   any UNKNOWN field   → floating_deviceid.json      │
+│ Step 3.5 — Quota Allocation [Logic.dll]             │
+│ Quotas loaded from dbo.PatternCluster, filtered by  │
+│ CustomerCode (QuotaCatalog.LoadQuotasFromDbAsync)   │
+│                                                      │
+│ ClusterQuotaAllocator.Allocate:                     │
+│  Stage 1 — per bucket, take top-N by score          │
+│  Stage 2 — build floating pool from the rest        │
+│  Stage 3 — device-centric reassignment pool:        │
+│    highest-score device first, tries its own        │
+│    TOP_CLUSTERS candidates in order, takes the      │
+│    first one with room; exhausted → stays floating  │
+│                                                      │
+│ Floating pool split by cause (SplitFloatingPool):    │
+│   any UNKNOWN field    → floating_deviceid.json     │
 │   known, no quota room → unallocated_device_ids.json│
+│ (cross-file reconciliation removes stale entries    │
+│  from the other file when a device's classification │
+│  changes between runs)                              │
 └───────────────────┬─────────────────────────────────┘
                     │
                     │  AllocationResult (Assigned / Floating /
                     │  InitialDeficits / VacancyReport)
                     ▼
 ┌───────────────────────────────────────────────────┐
-│ Step 4 — Logic Placement [Logic.dll, C#]          │
+│ Step 4/5 — Logic Placement [Logic.dll]            │
 │ Cluster grouping → ClusterGroup / ScoredDevice    │
 │ (Assigned devices are already known by construction│
 │  — no separate known/unknown split needed here)   │
-│ Unallocated devices → JSON dump + SuggestTopClusters│
 └───────────────────┬───────────────────────────────┘
                     │
-                    │
-                    │  DeviceResult[] / FloatingDumpEntry[] / UnallocatedDumpEntry[]
+                    │  DevicePipelineResult (everything above,
+                    │  bundled — Request, predictions, allocation
+                    │  result, floating splits, cluster groups)
                     ▼
-        Program.cs — print tables, prompt manual
-        correction, output DLL result to Faiz
+        Program.cs — prints tables via DevicePipelineCallbacks
+        (or --unattended: no console interaction at all),
+        prompts for manual correction, exits
 ```
+
+**Orchestration note:** the entire Step 1 → Step 5 sequence above is one callable method — `Logic.DevicePipeline.RunAsync(sqlReader, client, logic, sqlSourceTable, sqlQuotaTable, scriptType, scriptPipeline, sqlOutputDir, projectCode, callbacks)` — living in `Logic.dll`, not hardcoded into `Program.cs`. Any caller (a future UI, a scheduler, an API) can call it directly with no console dependency; `callbacks` is fully optional and the method never touches `Console` itself.
 
 ---
 
@@ -300,6 +320,7 @@ cluster_conf_final = cluster_raw_conf × section_conf   (when section_conf < 0.6
 | `SECTION_CONFIDENCE` | Adjusted confidence (0–100%) |
 | `PREDICTED_CLUSTER` | Predicted cluster label or `UNKNOWN` |
 | `CLUSTER_CONFIDENCE` | Adjusted confidence, penalised if section is weak |
+| 🆕 `TOP_CLUSTERS` | Top-N (default 3) ranked `{cluster, probability}` candidates per device, from the same `predict_proba()` call — not just the argmax winner. Used by quota allocation's Stage 3 reassignment pool. |
 | `REJECTION_REASON` | Set if device is hard-blocked |
 | `FORMAT_WARNING` | Set if numeric field width is outside training distribution |
 
@@ -311,7 +332,7 @@ cluster_conf_final = cluster_raw_conf × section_conf   (when section_conf < 0.6
 | `model_cluster.pkl` | Trained XGBoost cluster model |
 | `pipeline_config.pkl` | All label encoders, feature lists, OOD scaler/KNN, known customers, numeric width stats |
 
-> Note: the `export_raw_csv_path` field previously on `PipelinePredictRequest` (a debug-only raw `predict_proba` dump per device) has been removed from the C# request — `Program.cs` no longer sets it. `predict_sectioncluster.py` still supports it (it just always receives `None` now), and the separate `export_cluster_csv` action is untouched.
+> Note: the `export_raw_csv_path` field previously on `PipelinePredictRequest` (a debug-only raw `predict_proba` dump per device, written to a CSV file) has been removed from the C# request — `Program.cs` no longer sets it. `predict_sectioncluster.py` still supports it (it just always receives `None` now), and the separate `export_cluster_csv` action is untouched. Its role — surfacing more than just the top-1 cluster prediction — is now covered properly by `TOP_CLUSTERS`, which feeds live reassignment logic instead of a static debug file.
 
 ---
 
@@ -323,30 +344,54 @@ Allocates devices to clusters based on predefined quotas before cascading placem
 - Ensures each **Section–Cluster–DeviceType** meets its target quota.
 - Uses model predictions while respecting capacity constraints.
 
-### 📍 Allocation Flow
-**Pass 1 – Initial Allocation**
-- Assign devices to their highest-confidence cluster until the quota is reached.
+### 📍 Quota Source
+Quotas are **not** hardcoded anywhere in code. They're loaded live from SQL Server:
 
-**Pass 2 – Vacancy Backfill**
-- Redistribute remaining devices to clusters with available capacity.
+```
+QuotaCatalog.LoadQuotasFromDbAsync(connectionString, tableName, customerCode)
+  → SELECT Section, Cluster, DeviceType, TargetCount
+    FROM dbo.PatternCluster WHERE CustomerCode = @CustomerCode
+```
 
-### 📍 Confidence Threshold
-- Reassigned devices must meet the minimum confidence threshold.
-- Low-confidence predictions are routed to the **UNKNOWN** list instead of being force-assigned.
+- Table: `dbo.PatternCluster` (created/seeded via `Prediction_service/DeviceCluster/sql/PatternCluster.sql`)
+- Keyed by `CustomerCode` — the working assumption is that a client's different projects share the same physical plant layout, so every project under one customer gets the same pattern
+- **Only `SECTION 2` reflects a real, confirmed pattern** (OILTEK). `SECTION 1, 3-8` are randomly fabricated placeholder rows, clearly marked in the seed script, so the pipeline has *something* to allocate against during testing — not real capacity numbers.
 
-### 📍 UNKNOWN Handling
-- UNKNOWN devices are separated **before** quota allocation.
-- Only fully identified devices participate in quota allocation and backfill.
+### 📍 Allocation Flow (`ClusterQuotaAllocator.Allocate`)
+
+**Stage 1 – Initial quota-constrained allocation**
+- For each `(Section, Cluster, DeviceType)` quota bucket, take the top-N highest-scoring predictions that match it exactly, up to `TargetCount`.
+- Any shortfall here is recorded into `InitialDeficits`.
+
+**Stage 2 – Build the floating pool**
+- Everything not claimed in Stage 1 becomes the floating pool.
+
+**Stage 3 – Device-centric reassignment pool** 🆕
+- Floating devices are processed **highest-score first**.
+- Each device tries its own **ranked cluster candidates** (`TOP_CLUSTERS`, highest model percentage first, same Section) in order.
+- The first candidate bucket that still has room wins — the device is assigned there (`IsBackfill = true`, `OriginalCluster` records its original top-1 pick).
+- A device that exhausts all its candidates without finding room stays floating.
+- Any quota bucket still short after Stage 3 is reported into `VacancyReport`.
+
+> This replaced an earlier bucket-centric backfill (iterate deficits, pull best-scoring device matching Section+DeviceType, ignoring the device's own cluster preference). The device-centric version matches the actual hand-drawn Stage 1/2/3 flowchart design.
+
+### 📍 Floating Device Handling
+- Floating devices (didn't get placed in Stage 1 or 3) are split by `LogicAssignment.SplitFloatingPool`, **not** separated before allocation — every device is attempted in Stages 1 and 3 regardless of whether its prediction is `UNKNOWN`.
+- Split outcome: any `UNKNOWN` field (`DeviceType`/`Section`/`Cluster`) → `floating_deviceid.json`; fully known prediction but no quota room → `unallocated_device_ids.json`.
 
 ### 📍 Data Models
 
 | Model | Description |
 |--------|-------------|
-| `DevicePrediction` | Prediction result used for allocation |
-| `ClusterQuota` | Target quota for each Section–Cluster–DeviceType |
-| `AllocationResult` | Assigned devices, unassigned devices, and vacancy summary |
-| `AllocatedDevice` | Successfully allocated device |
+| `DevicePrediction` | Prediction result used for allocation — now includes `TopClusters` (ranked candidates) |
+| `ClusterQuota` | Target quota for each Section–Cluster–DeviceType (loaded from SQL, not hardcoded) |
+| `AllocationResult` | Assigned devices, floating devices, initial deficits, and vacancy report |
+| `AllocatedDevice` | Successfully allocated device (`IsBackfill`, `OriginalCluster`) |
 | `VacancyReportEntry` | Remaining quota after allocation |
+
+### 📍 Console Reports
+- `PrintFulfilledReport(quotas, vacancyReport)` — every bucket fully satisfied, sorted numerically by Section then Cluster: `SECTION X CLUSTER Y - N fulfilled DeviceType`
+- `PrintVacancyReport(vacancyReport)` — every bucket still short, same sort/format with `vacant` instead of `fulfilled`
 
 ---
 
@@ -356,18 +401,20 @@ Allocates devices to clusters based on predefined quotas before cascading placem
 Processes the prediction results after quota allocation and determines the final device placement.
 
 ### 📍 Responsibilities
-- Apply cascading placement logic.
-- Group devices into clusters.
-- Route low-confidence devices to the Unknown list.
-- Generate the final placement results for the C# application.
+- Group assigned devices into clusters.
+- Split the floating pool by cause and persist both review queues.
+- Support manual correction (numeric-similarity reassignment, cluster suggestion, placement).
+- Orchestrate the whole pipeline end-to-end (`DevicePipeline`).
 
 ### 📍 Components
 
-| Namespace | Purpose |
+| Namespace / File | Purpose |
 |-----------|---------|
-| `Logic` | Quota allocation and core allocation models |
-| `Logic.LogicAssignUser` | Device placement, cluster grouping, and Unknown handling |
-| `Logic.Models` | Shared data models for prediction and placement |
+| `Logic` (`ClusterQuotaAllocator.cs`) | Quota allocation and core allocation models |
+| `Logic` (`DevicePipeline.cs`, `DevicePipelineCallbacks.cs`, `DevicePipelineResult.cs`) 🆕 | Single-entry-point orchestration for the whole SQL → predict → allocate → group pipeline |
+| `Logic` (`QuotaCatalog.cs`) 🆕 | Loads quota patterns from `dbo.PatternCluster` |
+| `Logic.LogicAssignUser` | Device placement, cluster grouping, floating-device handling |
+| `Logic.Models` | Shared data models for prediction and placement (`DeviceResult`, `ClusterPrediction`) |
 | `Logic.SimilarityScore` | Numeric similarity used for manual device reassignment |
 
 ### 📍 Core Models
@@ -381,20 +428,22 @@ Processes the prediction results after quota allocation and determines the final
 | `UnallocatedDumpEntry` | Floating device with a known prediction but no quota room, needs manual placement |
 
 ### 📍 Processing Flow
-1. Split the quota allocator's floating pool by cause (`LogicAssignment.SplitFloatingPool`).
-2. Group assigned devices by cluster.
-3. Apply numeric similarity for manual reassignment.
-4. Export the two floating populations to `floating_deviceid.json` and `unallocated_device_ids.json`.
+1. `DevicePipeline.RunAsync` runs the whole automated sequence (SQL → predict → allocate → group), firing `DevicePipelineCallbacks` at each checkpoint.
+2. `LogicAssignment.SplitFloatingPool` splits the quota allocator's floating pool by cause.
+3. `DumpFloating` / `DumpUnallocated` persist both review queues — load-merge-dedupe (keyed on `DeviceId`+`ProjectCode`), never a plain overwrite, so they accumulate across projects and runs.
+4. 🆕 Cross-file reconciliation: after each dump, the *other* file is checked and any stale entry for the same device is removed — a device only ever lives in one of the two files at a time, reflecting its current classification.
+5. Group assigned devices by cluster (`BuildClusterGroups`).
+6. Apply numeric similarity for manual reassignment on request (`AssignByNumericSimilarity`, `PlaceDevice`, `MarkAsAssigned`).
 
 ### 📍 Floating Device Handling
 - Devices with an UNKNOWN type/section/cluster are routed to `floating_deviceid.json`.
 - Devices with a known prediction but no quota vacancy are routed to `unallocated_device_ids.json`.
-- Cluster suggestions are generated using the model-based Top-3 prediction service.
+- Cluster suggestions during manual correction are generated using the model-based Top-3 prediction service (`ModelClusterSuggestionService` / `NumericalSimilarity` — a *different* mechanism from `TOP_CLUSTERS`, based on similarity to already-known devices rather than the model's own probability output).
 ---
 
 # 5️⃣ Manual Correction Flow (C# ↔ Python)
 
-Processes user corrections for device predictions across the C# and Python layers.
+Processes user corrections for device predictions across the C# and Python layers. Only runs in interactive mode — skipped entirely when `Program.cs` is invoked with `--unattended`.
 
 ### 📍 Correction Types
 
@@ -419,33 +468,60 @@ Processes user corrections for device predictions across the C# and Python layer
 
 # 6️⃣ C# Orchestration (`Program.cs`)
 
-Steps run in order after SQL retrieval and JSON input are ready. 🆕 Updated to reflect the retired known/unknown split and the new floating-pool routing:
+`Program.cs` is now a thin caller around `Logic.DevicePipeline.RunAsync` — it owns console I/O (prompts, printing, pauses) but none of the pipeline logic itself.
+
+### 📍 Startup
 
 | Step | Description |
 |---|---|
-| 1–3 | Call Python pipeline (Device Type → Section → Cluster), collect `PipelineResult[]` |
-| 🆕 3.5 | `ClusterQuotaAllocator.Allocate(...)` — two-pass quota fitting, producing `AllocationResult` (`LogicAssignment` instantiated before this step) |
-| 🆕 3.5 (floating) | `LogicAssignment.SplitFloatingPool` splits `AllocationResult.Floating` by cause, then `DumpFloating`/`DumpUnallocated` write `floating_deviceid.json` / `unallocated_device_ids.json` |
-| 4 | Build `DeviceResult[]` from `AllocationResult.Assigned` — every entry is guaranteed known (it matched a real quota bucket), so no separate known/unknown split is needed |
-| 5 | Build `ClusterGroup`s from those devices via `Logic.dll` |
-| 6 | Print result tables (Unicode-safe console output, `PrintClusterTable`) |
-| 7 | Print unallocated devices pending manual assignment; prompt for manual correction (see Manual Correction Flow) |
+| Connection | `GetConnectionString()` reads the SQL connection string from the Windows Registry (`HKEY_CURRENT_USER\Software\XenxibleIdentifier\connectionstring`) |
+| ProjectCode | From `args` (CLI arg, e.g. `DeviceClusterConsoleApp.exe A9998`), or — if omitted and not `--unattended` — lists every available project (`ListAvailableProjectsAsync`) and prompts interactively |
+| 🆕 `--unattended` | Skips all console pauses, the manual-correction loop, and the final exit prompt. Requires `ProjectCode` to also be passed as an arg (there's no one to prompt). e.g. `DeviceClusterConsoleApp.exe A9998 --unattended` |
 
-> Note: the previous Step 5/6 (`SplitKnownUnknown` / `DumpUnknown` / `unknown_dump.json`) was retired — it only ever ran on already-`Assigned` devices, which can never be "unknown" by construction, so that path was permanently dead code. Its role is now covered by the floating-pool split above.
+### 📍 Pipeline Call
+
+| Step | Description |
+|---|---|
+| 1–5 | `DevicePipeline.RunAsync(...)` runs the full automated pipeline (SQL load → predict type → predict section/cluster → quota allocation → floating split/dump → cluster groups), firing `DevicePipelineCallbacks` at each checkpoint so `Program.cs` can print progress (and pause, unless `--unattended`) |
+| 6 | Print cluster grouping table (inside the last callback, `OnClusterGroupsBuilt`) |
+| 7 | Print unallocated devices pending manual assignment, from the returned `DevicePipelineResult.UnallocatedDevices` |
+| Manual correction | Interactive loop (see §5) — skipped when `--unattended` |
+
+### 📍 `DevicePipelineCallbacks` hooks
+
+| Hook | Fires after |
+|---|---|
+| `OnProjectLoaded` | SQL load (Step 1) |
+| `OnDeviceTypesPredicted` | Device type prediction (Step 2) |
+| `OnSectionsPredicted` | Section prediction (Step 3) |
+| `OnClustersPredicted` | Cluster prediction (Step 3) |
+| `OnQuotaAllocated` | Quota allocation (Step 3.5) |
+| `OnFloatingSplit` | Floating pool split + dump (Step 3.5) |
+| `OnClusterGroupsBuilt` | Cluster grouping (Step 4/5) |
+
+Every hook is nullable — a caller that supplies none of them gets a fully silent, non-interactive run.
 
 ---
 
-# 7️⃣ SQL Integration (`PythonSQL.cs`)
+# 7️⃣ SQL Integration (`PythonSQL.cs`, `Model.dll`)
 
-Retrieves device data from SQL Server and converts it to the JSON input format the Python pipeline expects.
+Retrieves device data from SQL Server and converts it to the JSON input format the Python pipeline expects. Lives in `Model/Services/PythonSQL.cs` — has no knowledge of table names, project codes, or quota patterns; every method takes them as parameters.
 
 | Item | Value |
 |---|---|
 | Database | `XenCreator` |
-| Table | `DummyInput` |
-| Project detection | Dynamic `SELECT DISTINCT` query (replaces old hardcoded project list) |
-| Output | JSON matching the `predict_equipment.py` input shape (`project_code`, `customer_code`, `data_ids[]`) |
-| 🆕 Methods | `QueryToJsonAsync` (returns JSON string in memory), `QueryToJsonFileAsync` (saves JSON to disk — writes `data/devices.json`, used as Step 1) |
+| Device table | configurable via `SQL_SOURCE_TABLE` env var, default `DummyTestingData` — one shared table, many projects, every query filtered `WHERE ProjectCode = @ProjectCode` |
+| Quota table | configurable via `SQL_QUOTA_TABLE` env var, default `dbo.PatternCluster` — filtered `WHERE CustomerCode = @CustomerCode` |
+| Output | JSON matching the `predict_equipment.py` input shape (`project_code`, `customer_code`, `data_ids[]`), written to `data/{ProjectCode}_devices.json` |
+
+### 📍 Methods (`PythonSQL`)
+
+| Method | Purpose |
+|---|---|
+| `ListAvailableProjectsAsync(tableName)` | `SELECT DISTINCT ProjectCode, CustomerCode` — lets `Program.cs` show a project picker without SSMS |
+| `LoadProjectDataAsync(tableName, projectCode, outputDir, suffix)` | One query, filtered by `ProjectCode`, writes `{ProjectCode}_devices.json` and returns both the JSON content and the file path |
+| `QueryToJsonAsync(sql)` / `QueryToJsonFileAsync(sql, path)` / `QueryToJsonFileByProjectCodeAsync(sql, dir, suffix)` | Lower-level generic query helpers, predate the project-scoped methods above |
+| `ConnectionString` (property) | Exposes the connection string so a caller (e.g. `DevicePipeline`) holding a `PythonSQL` instance can reuse it for other SQL-backed services without threading the raw string separately |
 
 **Registry (SQL connection string)**
 
@@ -460,7 +536,7 @@ Retrieves device data from SQL Server and converts it to the JSON input format t
 
 # 🍀 C# Subprocess Protocol
 
-C# spawns Python as a child process for each ML step via `System.Diagnostics.Process`.
+C# spawns Python as a child process for each ML step via `System.Diagnostics.Process` (`Model.Services.PythonClient`).
 
 **Paths (resolved at runtime, relative to executable)**
 
@@ -468,9 +544,7 @@ C# spawns Python as a child process for each ML step via `System.Diagnostics.Pro
 |---|---|
 | `SCRIPT_TYPE` | `predict_equipment.py` |
 | `SCRIPT_PIPELINE` | `predict_sectioncluster.py` |
-| `SQL_OUTPUT_JSON` | `DeviceCluster/Prediction_service/data/devices.json` |
-
-> 🆕 `PROJECT_JSON` (hardcoded test-file input path) has been removed — device data now sources exclusively from SQL via `PythonSQL.cs`.
+| `SQL_OUTPUT_DIR` | `Prediction_service/data/` — actual filename is `{ProjectCode}_devices.json`, not a fixed name |
 
 **Step 1 request/response:**
 ```jsonc
@@ -491,11 +565,14 @@ C# spawns Python as a child process for each ML step via `System.Diagnostics.Pro
   "DEVICE_ID": "CR1234", "CUSTOMER": "Lipico", "PROJECT": "A1825",
   "PREDICTED_SECTION": "SectionA", "SECTION_CONFIDENCE": 87.4,
   "PREDICTED_CLUSTER": "Cluster2", "CLUSTER_CONFIDENCE": 74.1,
+  "TOP_CLUSTERS": [
+    { "cluster": "Cluster2", "probability": 74.1 },
+    { "cluster": "Cluster1", "probability": 12.3 },
+    { "cluster": "Cluster5", "probability": 6.8 }
+  ],
   "REJECTION_REASON": "", "FORMAT_WARNING": ""
 }]
 ```
-
-> **TODO:** add a Step 3.5/4 entry here showing what `Program.cs` passes into `ClusterQuotaAllocator` and `Logic.dll`, and what it gets back (`AllocationResult` / `DeviceResult[]` / `FloatingDumpEntry[]` / `UnallocatedDumpEntry[]` shape), once fully stable.
 
 ---
 
@@ -507,7 +584,7 @@ C# spawns Python as a child process for each ML step via `System.Diagnostics.Pro
 | `config_sectioncluster.json` | `model_folder` path + `unknown_threshold` (0.60) |
 | `config.ini` | Runtime `MODEL_DIR`, `OUTPUT_DIR`, `UNKNOWN_THRESHOLD` |
 
-## 📍 Environment Variables (`predict_equipment.py`)
+## 📍 Environment Variables (Python — `predict_equipment.py`)
 
 | Variable | Default | Purpose |
 |---|---|---|
@@ -515,42 +592,57 @@ C# spawns Python as a child process for each ML step via `System.Diagnostics.Pro
 | `MAX_BATCH_SIZE` | `5000` | Override max prediction batch size |
 | `LOG_LEVEL` | `INFO` | Python logging level |
 
+## 📍 Environment Variables (C# — `Program.cs`) 🆕
+
+| Variable | Default | Purpose |
+|---|---|---|
+| `PYTHON_EXE` | `python` | Python executable used to launch the ML scripts |
+| `SQL_SOURCE_TABLE` | `DummyTestingData` | Device data table (see §7) |
+| `SQL_QUOTA_TABLE` | `dbo.PatternCluster` | Quota pattern table (see §3) |
+
 ---
 ## 📍 Filepath Reference
 
 | Path | Description |
 |---|---|
-| `Prediction_service/DeviceCluster/Program.cs` | C# orchestrator entry point |
-| `Prediction_service/DeviceCluster/DeviceCluster.slnx` | .NET 10 solution file |
+| `Prediction_service/DeviceCluster/Program.cs` | C# console orchestrator entry point |
+| `Prediction_service/DeviceCluster/DeviceClusterConsoleApp.csproj` / `.slnx` | Console app project + .NET 10 solution file |
 | `Prediction_service/DeviceCluster/predict_equipment.py` | Device Type inference script |
 | `Prediction_service/DeviceCluster/predict_sectioncluster.py` | Section & Cluster inference script |
-| `Prediction_service/DeviceCluster/Logic/Logic.csproj` | Logic.dll class library project (SDK-style, `net10.0`) |
-| `Prediction_service/DeviceCluster/PythonSQL.cs` | SQL Server → JSON retrieval |
-| `Prediction_service/DeviceCluster/PythonClient.cs` | Python subprocess invocation wrapper |
+| `Prediction_service/DeviceCluster/sql/PatternCluster.sql` 🆕 | Creates & seeds `dbo.PatternCluster` (real `SECTION 2` + placeholder Sections 1, 3-8) |
+| `Model/Model.csproj` | `Model.dll` class library project |
+| `Model/Services/PythonSQL.cs` | SQL Server → JSON retrieval |
+| `Model/Services/PythonClient.cs` | Python subprocess invocation wrapper |
+| `Model/ModelResult/ClusterCandidate.cs` 🆕 | `{Cluster, Probability}` shape for `TOP_CLUSTERS` |
+| `Logic/Logic.csproj` | `Logic.dll` class library project — `ProjectReference` to `Model.csproj` |
+| `Logic/DevicePipeline.cs` 🆕 | Single-entry-point pipeline orchestration |
+| `Logic/DevicePipelineCallbacks.cs` / `DevicePipelineResult.cs` 🆕 | Progress hooks / bundled output for `DevicePipeline.RunAsync` |
+| `Logic/QuotaCatalog.cs` 🆕 | Loads quota patterns from `dbo.PatternCluster` |
+| `Logic/ClusterQuotaAllocator.cs` | Quota allocation algorithm (Stages 1–3) |
+| `Logic/LogicAssignment.cs` | Floating-pool split, dump/reconcile, cluster grouping, manual correction |
 | `Prediction_service/DeviceCluster_Prediction/model_config/` | All `.pkl` model files |
 | `Prediction_service/DeviceType_Prediction/Config_devicetype.json` | Device Type config |
 | `Prediction_service/DeviceCluster_Prediction/config_sectioncluster.json` | Section/Cluster config |
-| `TestDevice/<project>.json` | Input device IDs per project (🆕 now legacy — SQL is the live source) |
-| `bin/Debug/net10.0/DeviceCluster.exe` | Debug build executable |
+| `TestDevice/<project>.json` | Input device IDs per project (now legacy — SQL is the live source) |
 | `1.training_model/Section XGB Model - Model Training.ipynb` | Training notebook |
-| 🆕 `data/{ProjectCode}_devices.json` | Raw dump of the SQL source table, named per project, written by `PythonSQL.QueryToJsonFileByProjectCodeAsync` (Step 1) |
-| 🆕 `data/floating_deviceid.json` | Floating devices with an UNKNOWN type/section/cluster prediction (Step 3.5) |
-| 🆕 `data/unallocated_device_ids.json` | Floating devices with a known prediction but no quota room — needs manual assignment (Step 3.5) |
-| 🆕 `manual_assign_sectioncluster.json` | Queued Section/Cluster corrections pending the next XGBoost retrain cycle |
-
-> **TODO:** confirm the actual `Logic.csproj` path — placeholder above assumes it sits under `DeviceCluster/Logic/`; update once the real project structure is checked.
+| `data/{ProjectCode}_devices.json` | Raw dump of the SQL source table, named per project |
+| `data/floating_deviceid.json` | Floating devices with an UNKNOWN type/section/cluster prediction — shared across all projects |
+| `data/unallocated_device_ids.json` | Floating devices with a known prediction but no quota room — shared across all projects |
+| `manual_assign_sectioncluster.json` | Queued Section/Cluster corrections pending the next XGBoost retrain cycle |
 
 ---
 
 ## 📍 Deployment Notes
 
-
-- Install **Python 3.13** and update the Python path in `Program.cs`.
+- Install **Python 3.13** and set `PYTHON_EXE` if it's not on PATH.
 - Ensure all model (`.pkl`) files are available in `DeviceCluster_Prediction/model_config/`.
-- Device input is retrieved from SQL (`XenCreator` → `DummyInput`); JSON input is for legacy/testing only.
-- Runs entirely locally; SQL is the only external dependency.
-- `Logic.dll` targets **.NET 10.0** (SDK-style project).
-- `DeviceClusterConsoleApp` currently uses **Assembly References** (known issue); **Project References** are recommended.
+- Device input is retrieved from SQL (`XenCreator` → `SQL_SOURCE_TABLE`, default `DummyTestingData`); JSON input is for legacy/testing only.
+- Quota patterns are retrieved from SQL (`SQL_QUOTA_TABLE`, default `dbo.PatternCluster`) — run `Prediction_service/DeviceCluster/sql/PatternCluster.sql` once to create/seed the table. Only `SECTION 2` is real data; other sections are placeholders.
+- Runs entirely locally; SQL Server is the only external dependency (plus a Python environment for the ML scripts).
+- `Logic.dll` and `Model.dll` both target **.NET 10.0** (SDK-style projects). `Logic.dll` has a proper `ProjectReference` to `Model.dll`.
+- `DeviceClusterConsoleApp` still references `Model.dll`/`Logic.dll` via `HintPath` to prebuilt binaries, not `ProjectReference` — remember to rebuild `Model.dll` → `Logic.dll` → the console app in that order after any library change, or switch this to `ProjectReference` too.
+- For unattended/scheduled runs, use `DeviceClusterConsoleApp.exe <ProjectCode> --unattended` — no console interaction, no manual-correction prompt.
+- For a UI or other non-console caller, reference `Model.dll` + `Logic.dll` directly and call `Logic.DevicePipeline.RunAsync(...)` — it has no console dependency of its own.
 - Use `dotnet publish` for production deployment.
 
 ---
