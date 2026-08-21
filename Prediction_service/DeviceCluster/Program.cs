@@ -26,11 +26,10 @@ public class Program
 	private static readonly string PYTHON_EXE = Environment.GetEnvironmentVariable("PYTHON_EXE") ?? "python";
 	private static readonly string SQL_SOURCE_TABLE = Environment.GetEnvironmentVariable("SQL_SOURCE_TABLE") ?? "DummyTestingData";
 	private static readonly string SQL_QUOTA_TABLE = Environment.GetEnvironmentVariable("SQL_QUOTA_TABLE") ?? "dbo.PatternCluster";
+	private static readonly string SQL_REVIEW_QUEUE_TABLE = Environment.GetEnvironmentVariable("SQL_REVIEW_QUEUE_TABLE") ?? "dbo.DeviceReviewQueue";
 	private static readonly string SCRIPT_TYPE = Path.Combine(_projectDir, "predict_equipment.py");
 	private static readonly string SCRIPT_PIPELINE = Path.Combine(_projectDir, "predict_sectioncluster.py");
 	private static readonly string SQL_OUTPUT_DIR = Path.Combine(_serviceDir, "data");
-	private static readonly string FLOATING_DUMP = Path.Combine(_serviceDir, "data", "floating_deviceid.json");
-	private static readonly string UNALLOCATED_DUMP = Path.Combine(_serviceDir, "data", "unallocated_device_ids.json");
 	private static readonly JsonSerializerOptions _jsonOpts = new() { PropertyNameCaseInsensitive = true };
 
 	private const string PROJECT_NAME = "XenxibleIdentifier";
@@ -186,7 +185,7 @@ public class Program
 
 			client = new PythonClient(PYTHON_EXE);
 			var clusterService = new ModelClusterSuggestionService(client, SCRIPT_PIPELINE);
-			var logic = new LogicAssignment(FLOATING_DUMP, UNALLOCATED_DUMP);
+			var logic = new LogicAssignment(SQL_CONN, SQL_REVIEW_QUEUE_TABLE);
 
 			Console.WriteLine($"[Step 1/6] Loading reference data for project '{projectCode}' from SQL Server...");
 
@@ -302,7 +301,7 @@ public class Program
 						$"{u.Section,-15} | " +
 						$"{u.Cluster,-15} ");
 				}
-				Console.WriteLine($"\n[Step 7] Total unallocated: {result.UnallocatedDevices.Count} devices → saved to {UNALLOCATED_DUMP}\n");
+				Console.WriteLine($"\n[Step 7] Total unallocated: {result.UnallocatedDevices.Count} devices → saved to {SQL_REVIEW_QUEUE_TABLE}\n");
 			}
 
 
@@ -447,7 +446,7 @@ public class Program
 							if (placed != null)
 							{
 								logic.PlaceDevice(placed, result.ClusterGroups);
-								logic.MarkAsAssigned(deviceId, result.Request.project_code, placed.Section, placed.Cluster);
+								await logic.MarkAsAssigned(deviceId, result.Request.project_code, placed.Section, placed.Cluster);
 								Console.WriteLine("\n[Logic] Updated cluster grouping after correction:");
 								logic.PrintClusterTable(result.ClusterGroups, placed.Section);
 							}

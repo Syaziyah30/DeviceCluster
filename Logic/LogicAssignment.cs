@@ -1,9 +1,9 @@
 ﻿using System;
 using System.Collections.Generic;
-using System.IO;
 using System.Linq;
-using System.Text.Json;
 using System.Text.RegularExpressions;
+using System.Threading.Tasks;
+using Microsoft.Data.SqlClient;
 using Logic.Models;
 using Logic.LogicAssignUser;
 using Logic.SimilarityScore;
@@ -21,18 +21,13 @@ namespace Logic
 
 	public class LogicAssignment
 	{
-		private readonly string _floatingDumpFilePath;
-		private readonly string _unallocatedDumpFilePath;
-		private readonly JsonSerializerOptions _jsonOpts = new()
-		{
-			WriteIndented = true,
-			PropertyNameCaseInsensitive = true
-		};
+		private readonly string _connectionString;
+		private readonly string _reviewQueueTable;
 
-		public LogicAssignment(string floatingDumpFilePath, string unallocatedDumpFilePath)
+		public LogicAssignment(string connectionString, string reviewQueueTable = "dbo.DeviceReviewQueue")
 		{
-			_floatingDumpFilePath = floatingDumpFilePath;
-			_unallocatedDumpFilePath = unallocatedDumpFilePath;
+			_connectionString = connectionString;
+			_reviewQueueTable = reviewQueueTable;
 		}
 
 		// ── STEP 3.5a: Split the FLOATING pool by cause ────────────────────────
@@ -53,128 +48,61 @@ namespace Logic
 			!string.IsNullOrEmpty(r.Cluster) && r.Cluster != "UNKNOWN";
 
 
-		// ── STEP 3.5b: Dump devices with an UNKNOWN prediction to JSON ─────────
-		public void DumpFloating(List<DeviceResult> unknownDevices)
+		// ── STEP 3.5b: Upsert devices with an UNKNOWN prediction into dbo.DeviceReviewQueue ──
+		public async Task DumpFloating(List<DeviceResult> unknownDevices)
 		{
-			if (unknownDevices.Count == 0)
+			await UpsertReviewQueueAsync(unknownDevices, "UnknownPrediction");
+		}
+
+
+		// ── STEP 3.5c: Upsert devices with a known prediction that quota allocation couldn't place ──
+		public async Task DumpUnallocated(List<DeviceResult> unallocatedDevices)
+		{
+			await UpsertReviewQueueAsync(unallocatedDevices, "Unallocated");
+		}
+
+
+		// Shared upsert for both categories. A MERGE keyed on (DeviceId, ProjectCode) means a
+		// device that changes classification between runs just gets its Category column updated
+		// on the same row — no cross-file reconciliation needed, unlike the old JSON-file design.
+		private async Task UpsertReviewQueueAsync(List<DeviceResult> devices, string category)
+		{
+			if (devices.Count == 0)
 			{
-				Console.WriteLine("[Logic] No unknown-prediction devices to dump.");
+				Console.WriteLine($"[Logic] No {category} devices to dump.");
 				return;
 			}
 
-			List<FloatingDumpEntry> existing = LoadFloatingDumpFile();
-			string now = DateTime.Now.ToString("yyyy-MM-dd HH:mm:ss");
+			await using var connection = new SqlConnection(_connectionString);
+			await connection.OpenAsync();
 
-			foreach (var d in unknownDevices)
+			string sql = $@"
+				MERGE {_reviewQueueTable} AS target
+				USING (SELECT @DeviceId AS DeviceId, @ProjectCode AS ProjectCode) AS src
+				  ON target.DeviceId = src.DeviceId AND target.ProjectCode = src.ProjectCode
+				WHEN MATCHED THEN
+					UPDATE SET Category = @Category, DeviceType = @DeviceType,
+							   PredictedSection = @PredictedSection, PredictedCluster = @PredictedCluster
+				WHEN NOT MATCHED THEN
+					INSERT (Category, DumpedAt, Customer, ProjectCode, DeviceId, DeviceType, PredictedSection, PredictedCluster, Status)
+					VALUES (@Category, @DumpedAt, @Customer, @ProjectCode, @DeviceId, @DeviceType, @PredictedSection, @PredictedCluster, 'pending');";
+
+			foreach (var d in devices)
 			{
-				bool alreadyExists = existing.Any(e =>
-					e.DeviceId == d.DeviceId && e.ProjectCode == d.ProjectCode);
+				await using var command = new SqlCommand(sql, connection);
+				command.Parameters.AddWithValue("@Category", category);
+				command.Parameters.AddWithValue("@DumpedAt", DateTime.Now);
+				command.Parameters.AddWithValue("@Customer", d.Customer);
+				command.Parameters.AddWithValue("@ProjectCode", d.ProjectCode);
+				command.Parameters.AddWithValue("@DeviceId", d.DeviceId);
+				command.Parameters.AddWithValue("@DeviceType", d.DeviceType);
+				command.Parameters.AddWithValue("@PredictedSection", d.Section);
+				command.Parameters.AddWithValue("@PredictedCluster", d.Cluster);
 
-				if (!alreadyExists)
-				{
-					existing.Add(new FloatingDumpEntry
-					{
-						DumpedAt = now,
-						Customer = d.Customer,
-						ProjectCode = d.ProjectCode,
-						DeviceId = d.DeviceId,
-						DeviceType = d.DeviceType,
-						PredictedSection = d.Section,
-						PredictedCluster = d.Cluster,
-						Status = "pending"
-					});
-				}
+				await command.ExecuteNonQueryAsync();
 			}
 
-			string json = JsonSerializer.Serialize(existing, _jsonOpts);
-			Directory.CreateDirectory(Path.GetDirectoryName(_floatingDumpFilePath)!);
-			File.WriteAllText(_floatingDumpFilePath, json);
-			Console.WriteLine($"[Logic] Dumped {unknownDevices.Count} unknown-prediction device(s) → {_floatingDumpFilePath}");
-
-			// These devices are now classified as unknown-prediction — any stale entry for the
-			// same DeviceId+ProjectCode in the OTHER file no longer reflects reality. Remove it.
-			RemoveStaleUnallocatedEntries(unknownDevices);
-		}
-
-
-		// ── STEP 3.5c: Dump devices with a known prediction that quota allocation couldn't place ──
-		public void DumpUnallocated(List<DeviceResult> unallocatedDevices)
-		{
-			if (unallocatedDevices.Count == 0)
-			{
-				Console.WriteLine("[Logic] No unallocated devices to dump.");
-				return;
-			}
-
-			List<UnallocatedDumpEntry> existing = LoadUnallocatedDumpFile();
-			string now = DateTime.Now.ToString("yyyy-MM-dd HH:mm:ss");
-
-			foreach (var d in unallocatedDevices)
-			{
-				bool alreadyExists = existing.Any(e =>
-					e.DeviceId == d.DeviceId && e.ProjectCode == d.ProjectCode);
-
-				if (!alreadyExists)
-				{
-					existing.Add(new UnallocatedDumpEntry
-					{
-						DumpedAt = now,
-						Customer = d.Customer,
-						ProjectCode = d.ProjectCode,
-						DeviceId = d.DeviceId,
-						DeviceType = d.DeviceType,
-						PredictedSection = d.Section,
-						PredictedCluster = d.Cluster,
-						Status = "pending"
-					});
-				}
-			}
-
-			string json = JsonSerializer.Serialize(existing, _jsonOpts);
-			Directory.CreateDirectory(Path.GetDirectoryName(_unallocatedDumpFilePath)!);
-			File.WriteAllText(_unallocatedDumpFilePath, json);
-			Console.WriteLine($"[Logic] Dumped {unallocatedDevices.Count} unallocated device(s) → {_unallocatedDumpFilePath}");
-
-			// These devices are now classified as known-but-unallocated — any stale entry for the
-			// same DeviceId+ProjectCode in the OTHER file no longer reflects reality. Remove it.
-			RemoveStaleFloatingEntries(unallocatedDevices);
-		}
-
-
-		// ── Cross-file reconciliation ───────────────────────────────────────────
-		// A device's classification can change between runs (its prediction improves, or it
-		// eventually gets a real quota placement). Without this, a stale entry from an earlier
-		// run stays in whichever file it was first written to, even after a later run adds a
-		// fresh, correct entry for the same device in the other file — so the same device could
-		// end up listed as both "unknown prediction" and "known but unallocated" at once.
-		private void RemoveStaleFloatingEntries(List<DeviceResult> devicesNoLongerUnknown)
-		{
-			List<FloatingDumpEntry> existing = LoadFloatingDumpFile();
-			int before = existing.Count;
-
-			existing.RemoveAll(e => devicesNoLongerUnknown.Any(d =>
-				d.DeviceId == e.DeviceId && d.ProjectCode == e.ProjectCode));
-
-			if (existing.Count == before) return;
-
-			string json = JsonSerializer.Serialize(existing, _jsonOpts);
-			File.WriteAllText(_floatingDumpFilePath, json);
-			Console.WriteLine($"[Logic] Removed {before - existing.Count} stale entry(ies) from {_floatingDumpFilePath}");
-		}
-
-		private void RemoveStaleUnallocatedEntries(List<DeviceResult> devicesNoLongerUnallocated)
-		{
-			List<UnallocatedDumpEntry> existing = LoadUnallocatedDumpFile();
-			int before = existing.Count;
-
-			existing.RemoveAll(e => devicesNoLongerUnallocated.Any(d =>
-				d.DeviceId == e.DeviceId && d.ProjectCode == e.ProjectCode));
-
-			if (existing.Count == before) return;
-
-			string json = JsonSerializer.Serialize(existing, _jsonOpts);
-			File.WriteAllText(_unallocatedDumpFilePath, json);
-			Console.WriteLine($"[Logic] Removed {before - existing.Count} stale entry(ies) from {_unallocatedDumpFilePath}");
+			Console.WriteLine($"[Logic] Upserted {devices.Count} {category} device(s) into {_reviewQueueTable}");
 		}
 
 
@@ -337,23 +265,26 @@ namespace Logic
 
 
 		// ── UPDATE dump status after user assigns ─────────────────────────────  // ◄── NEW
-		public void MarkAsAssigned(string deviceId, string projectCode, string resolvedSection, string resolvedCluster)
+		public async Task MarkAsAssigned(string deviceId, string projectCode, string resolvedSection, string resolvedCluster)
 		{
-			List<UnallocatedDumpEntry> existing = LoadUnallocatedDumpFile();
+			await using var connection = new SqlConnection(_connectionString);
+			await connection.OpenAsync();
 
-			var entry = existing.FirstOrDefault(e =>
-				e.DeviceId == deviceId && e.ProjectCode == projectCode);
+			string sql = $@"
+				UPDATE {_reviewQueueTable}
+				SET Status = 'assigned', PredictedSection = @Section, PredictedCluster = @Cluster
+				WHERE DeviceId = @DeviceId AND ProjectCode = @ProjectCode";
 
-			if (entry != null)
-			{
-				entry.Status = "assigned";
-				entry.PredictedSection = resolvedSection;
-				entry.PredictedCluster = resolvedCluster;
-			}
+			await using var command = new SqlCommand(sql, connection);
+			command.Parameters.AddWithValue("@Section", resolvedSection);
+			command.Parameters.AddWithValue("@Cluster", resolvedCluster);
+			command.Parameters.AddWithValue("@DeviceId", deviceId);
+			command.Parameters.AddWithValue("@ProjectCode", projectCode);
 
-			string json = JsonSerializer.Serialize(existing, _jsonOpts);
-			File.WriteAllText(_unallocatedDumpFilePath, json);
-			Console.WriteLine($"[Logic] '{deviceId}' marked as assigned → {_unallocatedDumpFilePath}");
+			int rows = await command.ExecuteNonQueryAsync();
+			Console.WriteLine(rows > 0
+				? $"[Logic] '{deviceId}' marked as assigned in {_reviewQueueTable}"
+				: $"[Logic] '{deviceId}' not found in {_reviewQueueTable} — nothing to mark");
 		}
 
 
@@ -362,22 +293,6 @@ namespace Logic
 		{
 			foreach (var sd in group.Devices)
 				sd.Score = sd.Device.Confidence;
-		}
-
-		private List<UnallocatedDumpEntry> LoadUnallocatedDumpFile()
-		{
-			if (!File.Exists(_unallocatedDumpFilePath)) return new List<UnallocatedDumpEntry>();
-			string json = File.ReadAllText(_unallocatedDumpFilePath);
-			return JsonSerializer.Deserialize<List<UnallocatedDumpEntry>>(json, _jsonOpts)
-				   ?? new List<UnallocatedDumpEntry>();
-		}
-
-		private List<FloatingDumpEntry> LoadFloatingDumpFile()
-		{
-			if (!File.Exists(_floatingDumpFilePath)) return new List<FloatingDumpEntry>();
-			string json = File.ReadAllText(_floatingDumpFilePath);
-			return JsonSerializer.Deserialize<List<FloatingDumpEntry>>(json, _jsonOpts)
-				   ?? new List<FloatingDumpEntry>();
 		}
 
 

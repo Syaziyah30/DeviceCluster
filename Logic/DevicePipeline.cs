@@ -126,8 +126,8 @@ namespace Logic
 
 				(unknownPredictionDevices, unallocatedDevices) = logic.SplitFloatingPool(floatingDevices);
 
-				logic.DumpFloating(unknownPredictionDevices);
-				logic.DumpUnallocated(unallocatedDevices);
+				await logic.DumpFloating(unknownPredictionDevices);
+				await logic.DumpUnallocated(unallocatedDevices);
 			}
 
 			callbacks.OnFloatingSplit?.Invoke(floatingDevices, unknownPredictionDevices, unallocatedDevices);
