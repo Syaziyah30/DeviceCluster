@@ -5,7 +5,7 @@
 | **Full pipeline** | SQL (per-project, filtered) → Device Type → Section → Cluster → Quota Allocation (device-centric reassignment) → Logic Placement |
 | **Runtime** | `Model.dll` reads SQL Server → JSON → Python ML scripts predict → `Logic.dll`'s `DevicePipeline` fits quotas, splits floating devices, groups clusters → `Program.cs` (or any other caller) renders output |
 
-> Last synced 21 August 2026 (previous version: 20 August 2026). Changes are marked with 🆕 where useful.
+> Last synced 21 August 2026 (previous version: 20 August 2026, same day). Changes are marked with 🆕 where useful.
 
 ---
 
@@ -27,7 +27,8 @@
 | 🆕 Quota patterns sourced from SQL (`dbo.PatternCluster`) | ✅ Completed for `SECTION 2` (real); Sections 1, 3-8 are placeholder/dummy data pending real numbers |
 | 🆕 Device-centric reassignment pool (Stage 3) | ✅ Completed — matches the flowchart design, uses per-device ranked cluster candidates |
 | Unattended / headless mode (`--unattended`) | ✅ Completed |
-| 🆕 Floating device output (`dbo.DeviceReviewQueue`) | ✅ Completed — replaces `floating_deviceid.json` / `unallocated_device_ids.json`, single SQL table with `Category` column, reclassification via `MERGE` |
+| Floating device output (`dbo.DeviceReviewQueue`) | ✅ Completed — replaces `floating_deviceid.json` / `unallocated_device_ids.json`, single SQL table with `Category` column, reclassification via `MERGE` |
+| 🆕 Assigned device output (`dbo.OutputDeviceAssignment`) | ✅ Completed — successfully placed devices are now persisted to SQL too, not just returned in-memory to the caller |
 | DLL Testing | ✅ Verified via live runs against real SQL Server + trained models (no automated test suite yet) |
 
 
@@ -132,6 +133,10 @@ Script active : DeviceClusterConsoleApp [`Program.cs`]
 │ Cluster grouping → ClusterGroup / ScoredDevice    │
 │ (Assigned devices are already known by construction│
 │  — no separate known/unknown split needed here)   │
+│                                                     │
+│ 🆕 Upserted into dbo.OutputDeviceAssignment (MERGE │
+│    on DeviceId+ProjectCode) — Section, Cluster,    │
+│    Confidence, IsBackfill, OriginalCluster         │
 └───────────────────┬───────────────────────────────┘
                     │
                     │  DevicePipelineResult (everything above,
@@ -404,7 +409,7 @@ QuotaCatalog.LoadQuotasFromDbAsync(connectionString, tableName, customerCode)
 Processes the prediction results after quota allocation and determines the final device placement.
 
 ### 📍 Responsibilities
-- Group assigned devices into clusters.
+- Group assigned devices into clusters, and upsert them into `dbo.OutputDeviceAssignment`.
 - Split the floating pool by cause and upsert into `dbo.DeviceReviewQueue`.
 - Support manual correction (numeric-similarity reassignment, cluster suggestion, placement).
 - Orchestrate the whole pipeline end-to-end (`DevicePipeline`).
@@ -434,7 +439,8 @@ Processes the prediction results after quota allocation and determines the final
 2. `LogicAssignment.SplitFloatingPool` splits the quota allocator's floating pool by cause.
 3. `DumpFloating` / `DumpUnallocated` upsert into `dbo.DeviceReviewQueue` via a per-device SQL `MERGE` (keyed on `DeviceId`+`ProjectCode`) — insert if new, update `Category`/prediction/`DumpedAt` if the device already exists, so a reclassified device is a plain update, not a delete-from-one-table-insert-into-another.
 4. Group assigned devices by cluster (`BuildClusterGroups`).
-5. Apply numeric similarity for manual reassignment on request (`AssignByNumericSimilarity`, `PlaceDevice`, `MarkAsAssigned` — the latter sets `Status='assigned'` in `dbo.DeviceReviewQueue`).
+5. 🆕 `DumpAssigned` upserts the same assigned devices into `dbo.OutputDeviceAssignment` via `MERGE` (keyed on `DeviceId`+`ProjectCode`) — joins back `IsBackfill`/`OriginalCluster` from the allocator's `AllocatedDevice` list, since that detail is dropped once devices are mapped to the generic `DeviceResult` shape used for grouping.
+6. Apply numeric similarity for manual reassignment on request (`AssignByNumericSimilarity`, `PlaceDevice`, `MarkAsAssigned` — the latter sets `Status='assigned'` in `dbo.DeviceReviewQueue`).
 
 ### 📍 Floating Device Handling
 - Devices with an UNKNOWN type/section/cluster are routed to `dbo.DeviceReviewQueue` with `Category='UnknownPrediction'`.
@@ -620,14 +626,15 @@ C# spawns Python as a child process for each ML step via `System.Diagnostics.Pro
 | `Logic/DevicePipelineCallbacks.cs` / `DevicePipelineResult.cs` 🆕 | Progress hooks / bundled output for `DevicePipeline.RunAsync` |
 | `Logic/QuotaCatalog.cs` 🆕 | Loads quota patterns from `dbo.PatternCluster` |
 | `Logic/ClusterQuotaAllocator.cs` | Quota allocation algorithm (Stages 1–3) |
-| `Logic/LogicAssignment.cs` | Floating-pool split, `dbo.DeviceReviewQueue` upsert (SQL `MERGE`), cluster grouping, manual correction |
+| `Logic/LogicAssignment.cs` | Floating-pool split, `dbo.DeviceReviewQueue` upsert, cluster grouping, `dbo.OutputDeviceAssignment` upsert (both via SQL `MERGE`), manual correction |
 | `Prediction_service/DeviceCluster_Prediction/model_config/` | All `.pkl` model files |
 | `Prediction_service/DeviceType_Prediction/Config_devicetype.json` | Device Type config |
 | `Prediction_service/DeviceCluster_Prediction/config_sectioncluster.json` | Section/Cluster config |
 | `TestDevice/<project>.json` | Input device IDs per project (now legacy — SQL is the live source) |
 | `1.training_model/Section XGB Model - Model Training.ipynb` | Training notebook |
 | `data/{ProjectCode}_devices.json` | Raw dump of the SQL source table, named per project (redundant local copy of SQL data, kept for quick inspection) |
-| `Prediction_service/DeviceCluster/sql/DeviceReviewQueue.sql` 🆕 | Creates `dbo.DeviceReviewQueue` — replaces `floating_deviceid.json` / `unallocated_device_ids.json`, one table with `Category` (`UnknownPrediction` / `Unallocated`) and `Status` (`pending` / `assigned`) columns, unique on `(DeviceId, ProjectCode)` |
+| `Prediction_service/DeviceCluster/sql/DeviceReviewQueue.sql` | Creates `dbo.DeviceReviewQueue` — replaces `floating_deviceid.json` / `unallocated_device_ids.json`, one table with `Category` (`UnknownPrediction` / `Unallocated`) and `Status` (`pending` / `assigned`) columns, unique on `(DeviceId, ProjectCode)` |
+| `Prediction_service/DeviceCluster/sql/OutputDeviceAssignment.sql` 🆕 | Creates `dbo.OutputDeviceAssignment` — persists successfully assigned devices (previously only returned in-memory to the caller), includes `IsBackfill`/`OriginalCluster` diagnostics, unique on `(DeviceId, ProjectCode)` |
 | `manual_assign_sectioncluster.json` | Queued Section/Cluster corrections pending the next XGBoost retrain cycle |
 
 ---

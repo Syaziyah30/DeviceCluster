@@ -27,6 +27,7 @@ public class Program
 	private static readonly string SQL_SOURCE_TABLE = Environment.GetEnvironmentVariable("SQL_SOURCE_TABLE") ?? "DummyTestingData";
 	private static readonly string SQL_QUOTA_TABLE = Environment.GetEnvironmentVariable("SQL_QUOTA_TABLE") ?? "dbo.PatternCluster";
 	private static readonly string SQL_REVIEW_QUEUE_TABLE = Environment.GetEnvironmentVariable("SQL_REVIEW_QUEUE_TABLE") ?? "dbo.DeviceReviewQueue";
+	private static readonly string SQL_ASSIGNMENT_TABLE = Environment.GetEnvironmentVariable("SQL_ASSIGNMENT_TABLE") ?? "dbo.OutputDeviceAssignment";
 	private static readonly string SCRIPT_TYPE = Path.Combine(_projectDir, "predict_equipment.py");
 	private static readonly string SCRIPT_PIPELINE = Path.Combine(_projectDir, "predict_sectioncluster.py");
 	private static readonly string SQL_OUTPUT_DIR = Path.Combine(_serviceDir, "data");
@@ -185,7 +186,7 @@ public class Program
 
 			client = new PythonClient(PYTHON_EXE);
 			var clusterService = new ModelClusterSuggestionService(client, SCRIPT_PIPELINE);
-			var logic = new LogicAssignment(SQL_CONN, SQL_REVIEW_QUEUE_TABLE);
+			var logic = new LogicAssignment(SQL_CONN, SQL_REVIEW_QUEUE_TABLE, SQL_ASSIGNMENT_TABLE);
 
 			Console.WriteLine($"[Step 1/6] Loading reference data for project '{projectCode}' from SQL Server...");
 

@@ -146,6 +146,8 @@ namespace Logic
 
 			var clusterGroups = logic.BuildClusterGroups(assignedDevices);
 
+			await logic.DumpAssigned(assignedDevices, allocationResult.Assigned);
+
 			callbacks.OnClusterGroupsBuilt?.Invoke(assignedDevices, clusterGroups);
 
 			return new DevicePipelineResult

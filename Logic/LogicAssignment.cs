@@ -23,11 +23,13 @@ namespace Logic
 	{
 		private readonly string _connectionString;
 		private readonly string _reviewQueueTable;
+		private readonly string _assignmentTable;
 
-		public LogicAssignment(string connectionString, string reviewQueueTable = "dbo.DeviceReviewQueue")
+		public LogicAssignment(string connectionString, string reviewQueueTable = "dbo.DeviceReviewQueue", string assignmentTable = "dbo.OutputDeviceAssignment")
 		{
 			_connectionString = connectionString;
 			_reviewQueueTable = reviewQueueTable;
+			_assignmentTable = assignmentTable;
 		}
 
 		// ── STEP 3.5a: Split the FLOATING pool by cause ────────────────────────
@@ -103,6 +105,59 @@ namespace Logic
 			}
 
 			Console.WriteLine($"[Logic] Upserted {devices.Count} {category} device(s) into {_reviewQueueTable}");
+		}
+
+
+		// ── STEP 4b: Upsert successfully assigned devices into dbo.OutputDeviceAssignment ──
+		// allocated carries IsBackfill/OriginalCluster (lost once devices are mapped to
+		// DeviceResult for cluster grouping) — joined back in here by DeviceId.
+		public async Task DumpAssigned(List<DeviceResult> devices, List<AllocatedDevice> allocated)
+		{
+			if (devices.Count == 0)
+			{
+				Console.WriteLine("[Logic] No assigned devices to dump.");
+				return;
+			}
+
+			var allocLookup = allocated
+				.GroupBy(a => a.DeviceId)
+				.ToDictionary(g => g.Key, g => g.Last());
+
+			await using var connection = new SqlConnection(_connectionString);
+			await connection.OpenAsync();
+
+			string sql = $@"
+				MERGE {_assignmentTable} AS target
+				USING (SELECT @DeviceId AS DeviceId, @ProjectCode AS ProjectCode) AS src
+				  ON target.DeviceId = src.DeviceId AND target.ProjectCode = src.ProjectCode
+				WHEN MATCHED THEN
+					UPDATE SET AssignedAt = @AssignedAt, Customer = @Customer, DeviceType = @DeviceType,
+							   Section = @Section, Cluster = @Cluster, Confidence = @Confidence,
+							   IsBackfill = @IsBackfill, OriginalCluster = @OriginalCluster
+				WHEN NOT MATCHED THEN
+					INSERT (AssignedAt, Customer, ProjectCode, DeviceId, DeviceType, Section, Cluster, Confidence, IsBackfill, OriginalCluster)
+					VALUES (@AssignedAt, @Customer, @ProjectCode, @DeviceId, @DeviceType, @Section, @Cluster, @Confidence, @IsBackfill, @OriginalCluster);";
+
+			foreach (var d in devices)
+			{
+				allocLookup.TryGetValue(d.DeviceId, out var alloc);
+
+				await using var command = new SqlCommand(sql, connection);
+				command.Parameters.AddWithValue("@AssignedAt", DateTime.Now);
+				command.Parameters.AddWithValue("@Customer", d.Customer);
+				command.Parameters.AddWithValue("@ProjectCode", d.ProjectCode);
+				command.Parameters.AddWithValue("@DeviceId", d.DeviceId);
+				command.Parameters.AddWithValue("@DeviceType", d.DeviceType);
+				command.Parameters.AddWithValue("@Section", d.Section);
+				command.Parameters.AddWithValue("@Cluster", d.Cluster);
+				command.Parameters.AddWithValue("@Confidence", d.Confidence);
+				command.Parameters.AddWithValue("@IsBackfill", alloc?.IsBackfill ?? false);
+				command.Parameters.AddWithValue("@OriginalCluster", (object?)alloc?.OriginalCluster ?? DBNull.Value);
+
+				await command.ExecuteNonQueryAsync();
+			}
+
+			Console.WriteLine($"[Logic] Upserted {devices.Count} assigned device(s) into {_assignmentTable}");
 		}
 
 
