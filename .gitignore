@@ -365,3 +365,4 @@ FodyWeavers.xsd
 
 # Published DLL bundle for developer handoff (build output)
 handoff/
+DeviceCluster-handoff.zip
