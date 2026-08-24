@@ -54,6 +54,7 @@ Script active : DeviceClusterConsoleApp [`Program.cs`]
 
 - ✅ `Logic.dll` now has a `ProjectReference` to `Model.dll` — fixes stale-DLL rebuild issues from the old `HintPath`-only setup
 - 🆕 `floating_deviceid.json` / `unallocated_device_ids.json` replaced by a single SQL table (`dbo.DeviceReviewQueue`, `Category` column) — reclassification is now a plain SQL `MERGE` (UPDATE on conflict), eliminating the cross-file reconciliation logic entirely
+- 🆕 Cross-**table** reconciliation between `dbo.OutputDeviceAssignment` and `dbo.DeviceReviewQueue` — a device that flips outcome between runs (assigned → floating, or floating → assigned) has its stale row deleted from the other table in the same statement, so a device is never recorded in both at once
 - ✅ Quota allocator's Stage 3 rewritten from bucket-centric backfill to device-centric reassignment (matches the flowchart: each floating device tries its own ranked cluster candidates by model percentage, highest-scoring device first)
 - ✅ SQL queries are project-scoped (`WHERE ProjectCode = @ProjectCode`) — previously the whole shared table was read unfiltered
 - ✅ Fixed case-sensitivity issue (`OILTEK` vs `Oiltek`)
@@ -440,7 +441,8 @@ Processes the prediction results after quota allocation and determines the final
 3. `DumpFloating` / `DumpUnallocated` upsert into `dbo.DeviceReviewQueue` via a per-device SQL `MERGE` (keyed on `DeviceId`+`ProjectCode`) — insert if new, update `Category`/prediction/`DumpedAt` if the device already exists, so a reclassified device is a plain update, not a delete-from-one-table-insert-into-another.
 4. Group assigned devices by cluster (`BuildClusterGroups`).
 5. 🆕 `DumpAssigned` upserts the same assigned devices into `dbo.OutputDeviceAssignment` via `MERGE` (keyed on `DeviceId`+`ProjectCode`) — joins back `IsBackfill`/`OriginalCluster` from the allocator's `AllocatedDevice` list, since that detail is dropped once devices are mapped to the generic `DeviceResult` shape used for grouping.
-6. Apply numeric similarity for manual reassignment on request (`AssignByNumericSimilarity`, `PlaceDevice`, `MarkAsAssigned` — the latter sets `Status='assigned'` in `dbo.DeviceReviewQueue`).
+6. 🆕 Both dump paths end with a `DELETE` against the *other* output table for the same `DeviceId`+`ProjectCode`, in the same round trip — so a device that changes outcome between runs (assigned ↔ floating) never lingers as a stale row in the table it left. Verified by planting stale rows in both directions and confirming a single run cleared both.
+7. Apply numeric similarity for manual reassignment on request (`AssignByNumericSimilarity`, `PlaceDevice`, `MarkAsAssigned` — the latter sets `Status='assigned'` in `dbo.DeviceReviewQueue`).
 
 ### 📍 Floating Device Handling
 - Devices with an UNKNOWN type/section/cluster are routed to `dbo.DeviceReviewQueue` with `Category='UnknownPrediction'`.

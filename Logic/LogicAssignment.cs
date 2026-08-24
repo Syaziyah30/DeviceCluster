@@ -67,6 +67,11 @@ namespace Logic
 		// Shared upsert for both categories. A MERGE keyed on (DeviceId, ProjectCode) means a
 		// device that changes classification between runs just gets its Category column updated
 		// on the same row — no cross-file reconciliation needed, unlike the old JSON-file design.
+		//
+		// The trailing DELETE handles the cross-TABLE case: a device that was assigned on a previous
+		// run but is floating now would otherwise leave a stale row behind in the assignment table,
+		// making it appear in both places at once. Same statement, same round trip, so the device's
+		// current outcome is always recorded in exactly one of the two tables.
 		private async Task UpsertReviewQueueAsync(List<DeviceResult> devices, string category)
 		{
 			if (devices.Count == 0)
@@ -87,7 +92,14 @@ namespace Logic
 							   PredictedSection = @PredictedSection, PredictedCluster = @PredictedCluster
 				WHEN NOT MATCHED THEN
 					INSERT (Category, DumpedAt, Customer, ProjectCode, DeviceId, DeviceType, PredictedSection, PredictedCluster, Status)
-					VALUES (@Category, @DumpedAt, @Customer, @ProjectCode, @DeviceId, @DeviceType, @PredictedSection, @PredictedCluster, 'pending');";
+					VALUES (@Category, @DumpedAt, @Customer, @ProjectCode, @DeviceId, @DeviceType, @PredictedSection, @PredictedCluster, 'pending');
+
+				DELETE FROM {_assignmentTable}
+				WHERE DeviceId = @DeviceId AND ProjectCode = @ProjectCode;
+
+				SELECT @@ROWCOUNT;";
+
+			int reclassified = 0;
 
 			foreach (var d in devices)
 			{
@@ -101,16 +113,23 @@ namespace Logic
 				command.Parameters.AddWithValue("@PredictedSection", d.Section);
 				command.Parameters.AddWithValue("@PredictedCluster", d.Cluster);
 
-				await command.ExecuteNonQueryAsync();
+				reclassified += Convert.ToInt32(await command.ExecuteScalarAsync());
 			}
 
 			Console.WriteLine($"[Logic] Upserted {devices.Count} {category} device(s) into {_reviewQueueTable}");
+
+			if (reclassified > 0)
+				Console.WriteLine($"[Logic] Cleared {reclassified} stale row(s) from {_assignmentTable} (assigned → floating)");
 		}
 
 
 		// ── STEP 4b: Upsert successfully assigned devices into dbo.OutputDeviceAssignment ──
 		// allocated carries IsBackfill/OriginalCluster (lost once devices are mapped to
 		// DeviceResult for cluster grouping) — joined back in here by DeviceId.
+		//
+		// Mirror of UpsertReviewQueueAsync's trailing DELETE: a device that was floating on a
+		// previous run but is assigned now gets its stale review-queue row removed, so it never
+		// shows up as both assigned and pending-review at the same time.
 		public async Task DumpAssigned(List<DeviceResult> devices, List<AllocatedDevice> allocated)
 		{
 			if (devices.Count == 0)
@@ -136,7 +155,14 @@ namespace Logic
 							   IsBackfill = @IsBackfill, OriginalCluster = @OriginalCluster
 				WHEN NOT MATCHED THEN
 					INSERT (AssignedAt, Customer, ProjectCode, DeviceId, DeviceType, Section, Cluster, Confidence, IsBackfill, OriginalCluster)
-					VALUES (@AssignedAt, @Customer, @ProjectCode, @DeviceId, @DeviceType, @Section, @Cluster, @Confidence, @IsBackfill, @OriginalCluster);";
+					VALUES (@AssignedAt, @Customer, @ProjectCode, @DeviceId, @DeviceType, @Section, @Cluster, @Confidence, @IsBackfill, @OriginalCluster);
+
+				DELETE FROM {_reviewQueueTable}
+				WHERE DeviceId = @DeviceId AND ProjectCode = @ProjectCode;
+
+				SELECT @@ROWCOUNT;";
+
+			int reconciled = 0;
 
 			foreach (var d in devices)
 			{
@@ -154,10 +180,13 @@ namespace Logic
 				command.Parameters.AddWithValue("@IsBackfill", alloc?.IsBackfill ?? false);
 				command.Parameters.AddWithValue("@OriginalCluster", (object?)alloc?.OriginalCluster ?? DBNull.Value);
 
-				await command.ExecuteNonQueryAsync();
+				reconciled += Convert.ToInt32(await command.ExecuteScalarAsync());
 			}
 
 			Console.WriteLine($"[Logic] Upserted {devices.Count} assigned device(s) into {_assignmentTable}");
+
+			if (reconciled > 0)
+				Console.WriteLine($"[Logic] Cleared {reconciled} stale row(s) from {_reviewQueueTable} (floating → assigned)");
 		}
 
 
