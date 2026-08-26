@@ -1,0 +1,11 @@
+# Extra packages needed to run service.py.
+# These are ON TOP OF the ML packages the prediction scripts already need
+# (scikit-learn, xgboost, pandas, numpy, scipy, joblib — see the handoff
+# requirements.txt for the pinned versions those models were trained under).
+#
+# Versions below are the ones this service was actually tested against.
+# Installing them does NOT touch the ML package versions.
+
+fastapi==0.141.1
+uvicorn[standard]==0.52.4
+pydantic==2.13.4
