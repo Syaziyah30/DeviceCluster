@@ -1,0 +1,311 @@
+<!doctype html>
+<html lang="en">
+<head>
+<meta charset="utf-8">
+<meta name="viewport" content="width=device-width, initial-scale=1">
+<title>DeviceCluster Build Checklist</title>
+<link rel="preconnect" href="https://fonts.googleapis.com">
+<link rel="preconnect" href="https://fonts.gstatic.com" crossorigin>
+<link rel="stylesheet" href="https://fonts.googleapis.com/css2?family=Archivo:wght@400;500;600;700&family=IBM+Plex+Mono:wght@400;500;600&display=swap">
+
+<style>
+  :root {
+    --paper:#F5F6F7; --surface:#FFFFFF; --sunken:#EAECEE;
+    --ink:#171A1D; --slate:#5A646F; --faint:#8B949D; --hairline:#DCE0E4;
+    --signal:#A9541C; --verified:#2C6A57; --risk:#96332A;
+    --chip-block:#FAECE9; --chip-next:#FBF0E6; --chip-later:#EEF0F2; --chip-new:#E7F1ED;
+    --display:'Archivo', system-ui, sans-serif;
+    --mono:'IBM Plex Mono', ui-monospace, monospace;
+  }
+  @media (prefers-color-scheme: dark) {
+    :root:not([data-theme="light"]) {
+      --paper:#14171A; --surface:#1B1F23; --sunken:#23282D;
+      --ink:#E8EAEC; --slate:#98A2AC; --faint:#6E7880; --hairline:#2D3339;
+      --signal:#DB8C50; --verified:#6CB99F; --risk:#DA8175;
+      --chip-block:#2B1815; --chip-next:#2A1E14; --chip-later:#23282D; --chip-new:#152622;
+    }
+  }
+  :root[data-theme="dark"] {
+    --paper:#14171A; --surface:#1B1F23; --sunken:#23282D;
+    --ink:#E8EAEC; --slate:#98A2AC; --faint:#6E7880; --hairline:#2D3339;
+    --signal:#DB8C50; --verified:#6CB99F; --risk:#DA8175;
+    --chip-block:#2B1815; --chip-next:#2A1E14; --chip-later:#23282D; --chip-new:#152622;
+  }
+
+  * { box-sizing:border-box; }
+  body {
+    background:var(--paper); color:var(--ink);
+    font-family:var(--display); font-size:15px; line-height:1.5;
+    margin:0; padding:0 20px 70px; -webkit-font-smoothing:antialiased;
+  }
+  .wrap { max-width:900px; margin:0 auto; }
+
+  header { padding:52px 0 22px; border-bottom:2px solid var(--ink); }
+  .eyebrow {
+    font-family:var(--mono); font-size:11px; font-weight:500;
+    letter-spacing:.13em; text-transform:uppercase; color:var(--signal); margin:0 0 12px;
+  }
+  h1 {
+    font-size:clamp(28px,5vw,40px); font-weight:700; letter-spacing:-.022em;
+    line-height:1.05; margin:0 0 10px; text-wrap:balance;
+  }
+  .sub { color:var(--slate); margin:0; font-size:16px; max-width:62ch; }
+
+  .banner {
+    margin:24px 0 0; padding:16px 18px; border-radius:12px;
+    background:var(--chip-new); border:1px solid var(--verified);
+    font-size:14.5px; line-height:1.55;
+  }
+  .banner b { color:var(--verified); }
+
+  .meter { margin:24px 0 8px; }
+  .meter-top {
+    display:flex; justify-content:space-between; align-items:baseline;
+    font-family:var(--mono); font-size:12px; color:var(--slate);
+    letter-spacing:.04em; margin-bottom:8px;
+  }
+  .meter-top b { color:var(--ink); font-size:22px; font-weight:600; font-variant-numeric:tabular-nums; }
+  .track { height:8px; background:var(--sunken); border-radius:99px; overflow:hidden; }
+  .fill { height:100%; background:var(--verified); width:0; transition:width .3s ease; }
+
+  h2 {
+    font-size:12px; font-weight:600; font-family:var(--mono);
+    letter-spacing:.13em; text-transform:uppercase; color:var(--slate);
+    margin:38px 0 0; padding-bottom:8px; border-bottom:1px solid var(--hairline);
+  }
+  h2 .n { color:var(--faint); font-weight:400; }
+
+  ul { list-style:none; margin:0; padding:0; }
+  li {
+    display:grid; grid-template-columns:auto 1fr auto; gap:12px;
+    align-items:start; padding:11px 2px; border-bottom:1px solid var(--hairline);
+  }
+  li:last-child { border-bottom:none; }
+
+  input[type=checkbox] {
+    appearance:none; width:17px; height:17px; margin:2px 0 0;
+    border:1.5px solid var(--faint); border-radius:4px;
+    background:var(--surface); cursor:pointer; flex:none; position:relative;
+  }
+  input[type=checkbox]:hover { border-color:var(--verified); }
+  input[type=checkbox]:focus-visible { outline:2px solid var(--signal); outline-offset:2px; }
+  input[type=checkbox]:checked { background:var(--verified); border-color:var(--verified); }
+  input[type=checkbox]:checked::after {
+    content:''; position:absolute; left:5px; top:1.5px;
+    width:4px; height:9px; border:solid #fff; border-width:0 2px 2px 0;
+    transform:rotate(42deg);
+  }
+
+  .txt { min-width:0; }
+  .txt b { font-weight:500; display:block; }
+  .txt span { color:var(--slate); font-size:13.5px; display:block; margin-top:2px; }
+  code {
+    font-family:var(--mono); font-size:.85em;
+    background:var(--sunken); padding:1px 5px; border-radius:3px;
+  }
+  li.done .txt b { color:var(--faint); text-decoration:line-through; text-decoration-thickness:1px; }
+  li.done .txt span { color:var(--faint); }
+
+  .chip {
+    font-family:var(--mono); font-size:9.5px; font-weight:600;
+    letter-spacing:.08em; text-transform:uppercase;
+    padding:3px 8px; border-radius:99px; white-space:nowrap; margin-top:2px;
+  }
+  .chip.block { background:var(--chip-block); color:var(--risk); }
+  .chip.next  { background:var(--chip-next);  color:var(--signal); }
+  .chip.later { background:var(--chip-later); color:var(--slate); }
+  .chip.new   { background:var(--chip-new);   color:var(--verified); }
+
+  .note {
+    margin:14px 0 0; padding:13px 16px; background:var(--surface);
+    border:1px solid var(--hairline); border-radius:10px;
+    font-size:13.5px; color:var(--slate); line-height:1.55;
+  }
+  .note b { color:var(--ink); font-weight:600; }
+
+  footer {
+    margin-top:44px; padding-top:16px; border-top:1px solid var(--hairline);
+    font-family:var(--mono); font-size:11px; color:var(--faint); letter-spacing:.04em;
+  }
+  .reset {
+    font-family:var(--mono); font-size:11px; letter-spacing:.05em;
+    background:none; border:1px solid var(--hairline); color:var(--slate);
+    padding:5px 11px; border-radius:6px; cursor:pointer; margin-top:12px;
+  }
+  .reset:hover { border-color:var(--slate); color:var(--ink); }
+
+  @media (max-width:620px) {
+    li { grid-template-columns:auto 1fr; }
+    .chip { grid-column:2; justify-self:start; margin-top:5px; }
+  }
+</style>
+</head>
+<body>
+
+
+<div class="wrap">
+<header>
+  <p class="eyebrow">DeviceCluster · Build status</p>
+  <h1>Everything done, and everything left</h1>
+  <p class="sub">The full picture across models, libraries, database, service and deployment. Tick items as you finish them — your progress is saved in this browser.</p>
+</header>
+
+<div class="banner">
+  <b>Since the last update:</b> the ML server is live. Python and the models now run on <code>128.100.8.213</code>, your PC calls it over the network, and the distributed run returned <b>90 / 28 / 240 — MATCH</b>. The architecture is proven across two machines, not just described.
+</div>
+
+<div class="meter">
+  <div class="meter-top"><span><b id="pct">0</b>% complete</span><span id="count">0 of 0</span></div>
+  <div class="track"><div class="fill" id="fill"></div></div>
+</div>
+
+<h2>Machine learning <span class="n">— done</span></h2>
+<ul>
+  <li><input type="checkbox" checked><div class="txt"><b>Device type model trained</b><span>SGD classifier, reads tag naming patterns</span></div></li>
+  <li><input type="checkbox" checked><div class="txt"><b>Section and cluster model trained</b><span>XGBoost, returns ranked candidates with confidence</span></div></li>
+  <li><input type="checkbox" checked><div class="txt"><b>Prediction scripts working</b><span><code>predict_equipment.py</code> and <code>predict_sectioncluster.py</code></span></div></li>
+</ul>
+
+<h2>C# libraries <span class="n">— done</span></h2>
+<ul>
+  <li><input type="checkbox" checked><div class="txt"><b>Model.dll</b><span>SQL reads, Python invocation, no hardcoded paths</span></div></li>
+  <li><input type="checkbox" checked><div class="txt"><b>Logic.dll</b><span>Quota allocation across three stages, floating split, cluster grouping</span></div></li>
+  <li><input type="checkbox" checked><div class="txt"><b>Single entry point</b><span><code>DevicePipeline.RunAsync</code> — one call runs the whole pipeline</span></div></li>
+  <li><input type="checkbox" checked><div class="txt"><b>Progress callbacks</b><span>Optional hooks so a UI can show stage-by-stage progress</span></div></li>
+  <li><input type="checkbox" checked><div class="txt"><b>Headless mode</b><span><code>--unattended</code> for scheduled runs with no prompts</span></div></li>
+  <li><input type="checkbox" checked><div class="txt"><b>Nothing hardcoded</b><span>Table names, paths and connection strings all supplied by the caller</span></div></li>
+</ul>
+
+<h2>Database <span class="n">— done</span></h2>
+<ul>
+  <li><input type="checkbox" checked><div class="txt"><b>Quota patterns moved to SQL</b><span><code>dbo.PatternCluster</code> — an engineer can edit rules without a developer</span></div></li>
+  <li><input type="checkbox" checked><div class="txt"><b>Review queue table</b><span><code>dbo.DeviceReviewQueue</code> — replaced the old JSON files</span></div></li>
+  <li><input type="checkbox" checked><div class="txt"><b>Assignment output table</b><span><code>dbo.OutputDeviceAssignment</code> — assigned devices now persisted</span></div></li>
+  <li><input type="checkbox" checked><div class="txt"><b>Cross-table reconciliation fixed</b><span>A device that flips outcome no longer appears in both tables — reproduced, fixed, verified</span></div></li>
+</ul>
+
+<h2>Python service <span class="n">— done</span></h2>
+<ul>
+  <li><input type="checkbox" checked><div class="txt"><b>FastAPI service written</b><span><code>service.py</code> — six endpoints, models load once at startup</span></div></li>
+  <li><input type="checkbox" checked><div class="txt"><b>Pickle compatibility shim</b><span><code>SafeLabelEncoder</code> registered on <code>__main__</code> so existing models load under uvicorn</span></div></li>
+  <li><input type="checkbox" checked><div class="txt"><b>Proven identical to subprocess</b><span>Same 90 / 28 / 240, and roughly ten times faster per call</span></div></li>
+  <li><input type="checkbox" checked><div class="txt"><b>Status endpoint</b><span><code>/ml-device-identifier</code> reports which model folders are loaded</span></div></li>
+</ul>
+
+<h2>Server deployment <span class="n">— nearly done</span></h2>
+<ul>
+  <li><input type="checkbox" checked><div class="txt"><b>Server access obtained</b><span>Logged in as RNDAdmin on <code>128.100.8.213</code></span></div></li>
+  <li><input type="checkbox" checked><div class="txt"><b>Python 3.13 installed on the server</b><span>Added to PATH</span></div><span class="chip new">New</span></li>
+  <li><input type="checkbox" checked><div class="txt"><b>Git installed on the server</b><span>So the repo can be pulled rather than copied</span></div><span class="chip new">New</span></li>
+  <li><input type="checkbox" checked><div class="txt"><b>Repository cloned to the server</b><span><code>C:\Users\RNDAdmin\source\repos\DeviceIdentifier</code></span></div><span class="chip new">New</span></li>
+  <li><input type="checkbox" checked><div class="txt"><b>ML and service packages installed</b><span>Both <code>requirements.txt</code> and <code>requirements-service.txt</code></span></div><span class="chip new">New</span></li>
+  <li><input type="checkbox" checked><div class="txt"><b>Firewall port 8000 opened</b><span>Inbound rule created, persists across reboots</span></div><span class="chip new">New</span></li>
+  <li><input type="checkbox" checked><div class="txt"><b>Service running on the server</b><span>Bound to <code>0.0.0.0</code>, models loaded successfully</span></div><span class="chip new">New</span></li>
+  <li><input type="checkbox" checked><div class="txt"><b>Reachable from your PC</b><span>Browser test confirmed, returning the server's own paths</span></div><span class="chip new">New</span></li>
+  <li><input type="checkbox" checked><div class="txt"><b>Distributed run verified</b><span>DLLs on your PC, models on the server — 90 / 28 / 240 MATCH</span></div><span class="chip new">New</span></li>
+  <li><input type="checkbox"><div class="txt"><b>Register the service with NSSM</b><span>It currently stops when you close the PowerShell window and will not survive a reboot. This is the last step before anyone else can rely on it.</span></div><span class="chip next">Next</span></li>
+</ul>
+
+<h2>Console apps <span class="n">— done</span></h2>
+<ul>
+  <li><input type="checkbox" checked><div class="txt"><b>Original app — local Python</b><span><code>DeviceClusterConsoleApp</code>, subprocess predictions</span></div></li>
+  <li><input type="checkbox" checked><div class="txt"><b>Service app — predictions over HTTP</b><span><code>DeviceClusterServiceApp</code>, same reports and project picker</span></div><span class="chip new">New</span></li>
+  <li><input type="checkbox" checked><div class="txt"><b>Missing requirements.txt fixed</b><span>The ML package list only existed in the gitignored handoff folder, so a fresh clone could not install anything</span></div><span class="chip new">New</span></li>
+</ul>
+
+<h2>Documentation <span class="n">— done</span></h2>
+<ul>
+  <li><input type="checkbox" checked><div class="txt"><b>API reference</b><span>15 pages, every class and method</span></div></li>
+  <li><input type="checkbox" checked><div class="txt"><b>Quick reference</b><span>2 pages of tables for daily use</span></div></li>
+  <li><input type="checkbox" checked><div class="txt"><b>Briefing script and slide deck</b><span>For the management presentation</span></div></li>
+  <li><input type="checkbox" checked><div class="txt"><b>Handoff bundle built</b><span>DLLs, Python, SQL scripts, docs — 6.1 MB zip</span></div></li>
+  <li><input type="checkbox" checked><div class="txt"><b>Committed and pushed</b><span>Everything in Azure DevOps</span></div></li>
+</ul>
+
+<h2>Project blockers <span class="n">— not started</span></h2>
+<ul>
+  <li><input type="checkbox"><div class="txt"><b>Get real quota patterns for sections 1 and 3–8</b><span>Only Section 2 holds real numbers. This is why just 25% of devices get assigned — it is missing data, not model accuracy. Needs engineering, not development time.</span></div><span class="chip block">Blocker</span></li>
+  <li><input type="checkbox"><div class="txt"><b>Hand over to the software developer</b><span>Give him the bundle, the entry point <code>DevicePipeline.RunAsync</code>, and the service URL <code>http://128.100.8.213:8000</code></span></div><span class="chip block">Blocker</span></li>
+  <li><input type="checkbox"><div class="txt"><b>Validation run on a completed real project</b><span>The only way to get a defensible accuracy figure. Depends on the quota patterns above.</span></div><span class="chip block">Blocker</span></li>
+  <li><input type="checkbox"><div class="txt"><b>Present to management</b><span>Deck and script are ready — rehearse the 25% explanation on slide 6</span></div><span class="chip next">Next</span></li>
+</ul>
+
+<h2>Code improvements <span class="n">— not started</span></h2>
+<ul>
+  <li><input type="checkbox"><div class="txt"><b>Make PythonClient an interface</b><span>Without it, <code>DevicePipeline.RunAsync</code> cannot use the HTTP service — which is why the service console app had to replicate the pipeline steps. About an hour, and it means the developer's code never changes when you switch him to the server.</span></div><span class="chip next">Next</span></li>
+  <li><input type="checkbox"><div class="txt"><b>Package the DLLs as NuGet</b><span>Publish to Azure Artifacts instead of sending a zip — roughly 30 minutes</span></div><span class="chip later">Later</span></li>
+  <li><input type="checkbox"><div class="txt"><b>Automated test suite</b><span>Every check so far has been manual. Matters once the developer starts changing things.</span></div><span class="chip later">Later</span></li>
+  <li><input type="checkbox"><div class="txt"><b>Fix case-sensitive ID comparisons</b><span>DeviceId and ProjectCode are compared case-sensitively in some paths</span></div><span class="chip later">Later</span></li>
+  <li><input type="checkbox"><div class="txt"><b>Add a landing page at <code>/</code></b><span>The service returns 404 at its root, which reads as broken to anyone who visits it</span></div><span class="chip later">Later</span></li>
+</ul>
+
+<h2>Model management <span class="n">— not started</span></h2>
+<ul>
+  <li><input type="checkbox"><div class="txt"><b>Decide where .pkl files live long term</b><span>Git keeps every version of a binary forever — the repo will grow with each retrain</span></div><span class="chip later">Later</span></li>
+  <li><input type="checkbox"><div class="txt"><b>Fix the pickle root cause at next retrain</b><span>Define <code>SafeLabelEncoder</code> in an importable module, then the shim can be removed</span></div><span class="chip later">Later</span></li>
+  <li><input type="checkbox"><div class="txt"><b>Version model folders with the library version</b><span>e.g. <code>models/2026-09-01_sklearn-1.7.2/</code> — a model is only valid with the packages it was trained under</span></div><span class="chip later">Later</span></li>
+</ul>
+
+<h2>Housekeeping <span class="n">— small</span></h2>
+<ul>
+  <li><input type="checkbox"><div class="txt"><b>Delete the dead JSON files</b><span><code>floating_deviceid.json</code> and <code>unallocated_device_ids.json</code> — nothing reads them since the SQL migration</span></div><span class="chip later">Later</span></li>
+  <li><input type="checkbox"><div class="txt"><b>Delete <code>C:\dv</code></b><span>Throwaway environment used to build the documents</span></div><span class="chip later">Later</span></li>
+  <li><input type="checkbox"><div class="txt"><b>Save the document generator scripts</b><span>They live in a temporary folder and will be lost — needed to regenerate the Word and PowerPoint files</span></div><span class="chip later">Later</span></li>
+</ul>
+
+<div class="note">
+  <b>The one item that matters most:</b> real quota patterns for sections 1 and 3–8. Everything else on this list is work you or the developer can do. That one needs domain knowledge from engineering, it takes the longest to obtain, and until it lands the system can only place a quarter of the devices.
+  <br><br>
+  <b>The one item that is urgent:</b> registering the service with NSSM. Right now it dies when you close that PowerShell window — so anyone you hand the URL to could find it broken with no warning.
+</div>
+
+<button class="reset" id="reset">Reset all ticks</button>
+
+<footer>Updated after the server deployment · progress saved in this browser only</footer>
+</div>
+
+<script>
+(function () {
+  var KEY = 'devicecluster-checklist-v2';
+  var boxes = Array.prototype.slice.call(document.querySelectorAll('input[type=checkbox]'));
+
+  var saved = null;
+  try { saved = JSON.parse(localStorage.getItem(KEY) || 'null'); } catch (e) {}
+
+  if (saved && saved.length === boxes.length) {
+    boxes.forEach(function (b, i) { b.checked = !!saved[i]; });
+  }
+
+  function paint() {
+    var done = 0;
+    boxes.forEach(function (b) {
+      var li = b.closest('li');
+      if (b.checked) { done++; li.classList.add('done'); }
+      else { li.classList.remove('done'); }
+    });
+    var pct = boxes.length ? Math.round(done / boxes.length * 100) : 0;
+    document.getElementById('pct').textContent = pct;
+    document.getElementById('count').textContent = done + ' of ' + boxes.length + ' done';
+    document.getElementById('fill').style.width = pct + '%';
+  }
+
+  function save() {
+    try { localStorage.setItem(KEY, JSON.stringify(boxes.map(function (b) { return b.checked; }))); }
+    catch (e) {}
+  }
+
+  boxes.forEach(function (b) {
+    b.addEventListener('change', function () { paint(); save(); });
+  });
+
+  document.getElementById('reset').addEventListener('click', function () {
+    try { localStorage.removeItem(KEY); } catch (e) {}
+    location.reload();
+  });
+
+  paint();
+})();
+</script>
+
+</body>
+</html>
