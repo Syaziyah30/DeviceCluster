@@ -1,20 +1,21 @@
 // ============================================================
 // DeviceClusterServiceApp
 // ============================================================
-// Same inputs and same expected outputs as DeviceClusterConsoleApp, but the
-// predictions come from the FastAPI service over HTTP instead of launching
-// python.exe as a subprocess.
+// Same inputs, same reports and same expected output as the original
+// DeviceClusterConsoleApp — but the predictions come from the FastAPI
+// service over HTTP instead of launching python.exe as a subprocess.
 //
-// Purpose: prove that separating the DLLs from Python changes nothing about
-// the result. Everything below the prediction step — quota allocation,
-// floating split, cluster grouping, and both SQL writes — runs on the exact
-// same Logic.dll code the original app uses.
+// Everything below the prediction step (quota allocation, floating split,
+// cluster grouping, both SQL writes) runs on the exact same Logic.dll code
+// the original app uses. Only the transport changed.
 //
-// Run the service first:
-//     python -m uvicorn service:app --host 127.0.0.1 --port 8000
+// Start the service first (on this PC or a server):
+//     python -m uvicorn service:app --host 0.0.0.0 --port 8000
 //
-// Then:
+// Point at it and run:
+//     $env:ML_SERVICE_URL = "http://128.100.8.213:8000"
 //     DeviceClusterServiceApp.exe A9998
+//     DeviceClusterServiceApp.exe A9998 --unattended     (no prompts)
 // ============================================================
 
 using System.Diagnostics;
@@ -22,6 +23,7 @@ using System.Net.Http.Json;
 using System.Text.Json;
 using Microsoft.Win32;
 using Logic;
+using Logic.LogicAssignUser;
 using Logic.Models;
 using Model.ModelRequest;
 using Model.ModelResult;
@@ -54,25 +56,27 @@ internal static class Program
     private static readonly HttpClient Http = new()
     {
         BaseAddress = new Uri(SERVICE_URL),
-        Timeout = TimeSpan.FromMinutes(10)   // large batches take a while
+        Timeout = TimeSpan.FromMinutes(10)
     };
+
+    private static bool _unattended;
 
     private static async Task<int> Main(string[] args)
     {
-        string projectCode = args.Length > 0 ? args[0].Trim() : "A9998";
+        _unattended = args.Any(a => a.Equals("--unattended", StringComparison.OrdinalIgnoreCase));
+        string projectCode = args.FirstOrDefault(a => !a.StartsWith("--"))?.Trim() ?? "A9998";
 
         Console.WriteLine("============================================================");
-        Console.WriteLine(" DeviceCluster — via HTTP service (no python.exe subprocess)");
+        Console.WriteLine(" DeviceCluster — predictions via HTTP service");
         Console.WriteLine("============================================================");
-        Console.WriteLine($" Service    : {SERVICE_URL}");
-        Console.WriteLine($" Project    : {projectCode}");
+        Console.WriteLine($" Service : {SERVICE_URL}");
+        Console.WriteLine($" Project : {projectCode}");
+        Console.WriteLine($" Mode    : {(_unattended ? "unattended" : "interactive")}");
         Console.WriteLine();
 
         try
         {
-            // ── STEP 0: is the service actually up? ───────────────────────
-            if (!await ServiceIsReachableAsync())
-                return 1;
+            if (!await ServiceIsReachableAsync()) return 1;
 
             string sqlConn = GetConnectionString();
             var sqlReader = new PythonSQL(sqlConn);
@@ -80,8 +84,8 @@ internal static class Program
 
             var total = Stopwatch.StartNew();
 
-            // ── STEP 1: read the project's devices from SQL (Model.dll) ───
-            var (requestJson, _) = await sqlReader.LoadProjectDataAsync(
+            // ── STEP 1/6: read the project's devices from SQL ─────────────
+            var (requestJson, outputPath) = await sqlReader.LoadProjectDataAsync(
                 SQL_SOURCE_TABLE, projectCode, SQL_OUTPUT_DIR);
 
             var request = JsonSerializer.Deserialize<DevicePredictRequest>(requestJson, JsonOpts);
@@ -91,16 +95,17 @@ internal static class Program
                 return 1;
             }
 
-            // Same cleaning DevicePipeline does — strip BOM, drop blanks.
             request.data_ids = request.data_ids
                 .Select(id => id.Replace("﻿", "").Trim())
                 .Where(id => !string.IsNullOrEmpty(id))
                 .ToList();
 
-            Console.WriteLine($"[Step 1] SQL      : {request.data_ids.Count} devices  " +
-                              $"(customer {request.customer_code})");
+            Console.WriteLine($"[Step 1/6] Reference data saved → {outputPath}\n");
+            Console.WriteLine($"[Step 1/6] Project detected : {request.project_code} ({request.customer_code})");
+            Console.WriteLine($"[Step 1/6] Loaded {request.data_ids.Count} device IDs\n");
 
-            // ── STEP 2: device type — HTTP instead of subprocess ──────────
+            // ── STEP 2/6: device type — over HTTP ─────────────────────────
+            Console.WriteLine("[Step 2/6] Predicting device types...");
             var sw = Stopwatch.StartNew();
             var typeResults = await PostAsync<List<DeviceTypeResult>>(
                 "/predict/device-type",
@@ -116,10 +121,11 @@ internal static class Program
                 .GroupBy(r => r.data_id)
                 .ToDictionary(g => g.Key, g => g.Last().data_type ?? "N/A");
 
-            Console.WriteLine($"[Step 2] Type    : {typeResults.Count} predicted   " +
-                              $"({sw.Elapsed.TotalSeconds:F2}s via HTTP)");
+            PrintDeviceTypeTable(typeResults);
+            Console.WriteLine($"Time taken: {sw.Elapsed.TotalSeconds:F2} secs  (HTTP)");
+            Pause("\nPress Enter to predict Section + Cluster...");
 
-            // ── STEP 3: section + cluster — HTTP instead of subprocess ────
+            // ── STEP 3/6: section + cluster — over HTTP ───────────────────
             var pipelineRequest = new PipelinePredictRequest
             {
                 records = typeResults.Select(r => new PipelineRecord
@@ -134,14 +140,20 @@ internal static class Program
             var pipelineResults = await PostAsync<List<PipelineResult>>(
                 "/predict/section-cluster", pipelineRequest) ?? new();
             sw.Stop();
+            double predictSecs = sw.Elapsed.TotalSeconds;
 
-            Console.WriteLine($"[Step 3] Cluster : {pipelineResults.Count} predicted   " +
-                              $"({sw.Elapsed.TotalSeconds:F2}s via HTTP)");
-            Console.WriteLine();
+            Console.WriteLine("[Step 3/6] Predicting sections...");
+            PrintSectionTable(pipelineResults, deviceTypeLookup);
+            Console.WriteLine($"Time taken: {predictSecs:F2} secs  (HTTP)");
+            Pause("\nPress Enter to predict Cluster...");
+
+            Console.WriteLine("[Step 3/6] Predicting clusters...");
+            PrintClusterTable(pipelineResults, deviceTypeLookup);
+            Console.WriteLine($"Time taken: {predictSecs:F2} secs  (HTTP)");
+            Pause("\nPress Enter to run quota allocation...");
 
             // ══════════════════════════════════════════════════════════════
-            // Everything from here down is UNCHANGED Logic.dll / Model.dll —
-            // identical to what DevicePipeline.RunAsync does internally.
+            // From here down: unchanged Logic.dll / Model.dll
             // ══════════════════════════════════════════════════════════════
 
             var predictions = pipelineResults.Select(r => new DevicePrediction
@@ -159,15 +171,21 @@ internal static class Program
             var quotas = await QuotaCatalog.LoadQuotasFromDbAsync(
                 sqlReader.ConnectionString, SQL_QUOTA_TABLE, request.customer_code);
 
+            // ── STEP 3.5/6: quota allocation ──────────────────────────────
+            Console.WriteLine("\n[Step 3.5/6] Running quota-constrained cluster allocation...");
             var allocation = ClusterQuotaAllocator.Allocate(predictions, quotas);
+            ClusterQuotaAllocator.PrintFulfilledReport(quotas, allocation.VacancyReport);
+            ClusterQuotaAllocator.PrintVacancyReport(allocation.VacancyReport);
+            Console.WriteLine($"[Step 3.5/6] {allocation.Assigned.Count} assigned, {allocation.Floating.Count} floating\n");
 
-            // Floating pool → split by cause → SQL review queue
+            // ── Floating pool → split by cause → SQL review queue ─────────
             var unknownPrediction = new List<DeviceResult>();
             var unallocated = new List<DeviceResult>();
+            var floating = new List<DeviceResult>();
 
             if (allocation.Floating.Count > 0)
             {
-                var floating = allocation.Floating.Select(f => new DeviceResult
+                floating = allocation.Floating.Select(f => new DeviceResult
                 {
                     Customer = pipelineResults.FirstOrDefault(r => r.DEVICE_ID == f.DeviceId)?.CUSTOMER
                                ?? request.customer_code,
@@ -179,12 +197,26 @@ internal static class Program
                     Confidence = f.Score
                 }).ToList();
 
+                Console.WriteLine($"[Step 3.5/6] {floating.Count} floating device ID(s) — not claimed by any quota bucket:\n");
+                Console.WriteLine($"{"Customer",-10} | {"ProjectCode",-12} | {"DeviceId",-25} | {"DeviceType",-25} | {"PredictedSection",-15} | {"PredictedCluster",-15}");
+                Console.WriteLine(new string('-', 130));
+                foreach (var d in floating)
+                    Console.WriteLine($"{d.Customer,-10} | {d.ProjectCode,-12} | {d.DeviceId,-25} | " +
+                                      $"{d.DeviceType,-25} | {d.Section,-15} | {d.Cluster,-15}");
+                Console.WriteLine();
+
                 (unknownPrediction, unallocated) = logic.SplitFloatingPool(floating);
                 await logic.DumpFloating(unknownPrediction);
                 await logic.DumpUnallocated(unallocated);
             }
+            else
+            {
+                Console.WriteLine("[Step 3.5/6] No floating devices — all predictions claimed by quota allocation.\n");
+            }
 
-            // Assigned → cluster groups → SQL assignment table
+            Pause("\nPress Enter to run Logic...");
+
+            // ── STEP 4-6/6: cluster groups ────────────────────────────────
             var assigned = allocation.Assigned.Select(a => new DeviceResult
             {
                 Customer = pipelineResults.FirstOrDefault(r => r.DEVICE_ID == a.DeviceId)?.CUSTOMER
@@ -197,16 +229,41 @@ internal static class Program
                 Confidence = a.Score
             }).ToList();
 
+            Console.WriteLine("\n[Step 4/6] Passing results into Logic.dll...");
+            Console.WriteLine($"[Step 4/6] {assigned.Count} devices passed into Logic.dll\n");
+
+            Console.WriteLine("[Step 5/6] Building cluster groups...");
             var clusterGroups = logic.BuildClusterGroups(assigned);
+            Console.WriteLine($"[Step 5/6] {clusterGroups.Count} cluster groups built\n");
+
             await logic.DumpAssigned(assigned, allocation.Assigned);
+
+            Console.WriteLine("[Step 6/6] Printing cluster grouping table...");
+            logic.PrintClusterTable(clusterGroups);
+
+            // ── STEP 7: unallocated dump table ────────────────────────────
+            Console.WriteLine($"\n[Step 7] Unallocated devices pending manual assignment on [Date: {DateTime.Now:yyyy-MM-dd}]:\n");
+            if (unallocated.Count == 0)
+            {
+                Console.WriteLine("[Step 7] No unallocated devices found.\n");
+            }
+            else
+            {
+                Console.WriteLine($"{"DumpedAt",-10} | {"Customer",-10} | {"ProjectCode",-12} | {"DeviceId",-25} | {"DeviceType",-25} | {"PredictedSection",-15} | {"PredictedCluster",-15}");
+                Console.WriteLine(new string('-', 130));
+                foreach (var u in unallocated)
+                    Console.WriteLine($"{DateTime.Now:HH:mm:ss,-10} | {u.Customer,-10} | {u.ProjectCode,-12} | " +
+                                      $"{u.DeviceId,-25} | {u.DeviceType,-25} | {u.Section,-15} | {u.Cluster,-15}");
+                Console.WriteLine($"\n[Step 7] Total unallocated: {unallocated.Count} devices → saved to {SQL_REVIEW_QUEUE_TABLE}\n");
+            }
 
             total.Stop();
 
-            // ── RESULT ────────────────────────────────────────────────────
-            Console.WriteLine();
+            // ── SUMMARY + verification ────────────────────────────────────
             Console.WriteLine("============================================================");
             Console.WriteLine(" RESULT");
             Console.WriteLine("============================================================");
+            Console.WriteLine($"  Predictions from : {SERVICE_URL}");
             Console.WriteLine($"  Total devices    : {predictions.Count}");
             Console.WriteLine($"  Assigned         : {assigned.Count}");
             Console.WriteLine($"  Unknown          : {unknownPrediction.Count}");
@@ -224,7 +281,7 @@ internal static class Program
             Console.WriteLine($"[!] Cannot reach the prediction service at {SERVICE_URL}");
             Console.WriteLine($"    {ex.Message}");
             Console.WriteLine("    Start it with:");
-            Console.WriteLine("      python -m uvicorn service:app --host 127.0.0.1 --port 8000");
+            Console.WriteLine("      python -m uvicorn service:app --host 0.0.0.0 --port 8000");
             return 1;
         }
         catch (Exception ex)
@@ -235,7 +292,53 @@ internal static class Program
         }
     }
 
-    // ── Compare against the known-good numbers from the subprocess app ────
+    // ── PRINT HELPERS — same formats as the original console app ─────────
+
+    private static void PrintDeviceTypeTable(List<DeviceTypeResult> results)
+    {
+        Console.WriteLine("\n===== STEP 2: DEVICE TYPE =====\n");
+        Console.WriteLine($"{"Customer",-12} | {"Device ID",-25} | {"Device Type",-25} | {"Confidence",10}");
+        Console.WriteLine(new string('-', 80));
+        foreach (var r in results)
+        {
+            string conf = r.confidence.HasValue ? r.confidence.Value.ToString("F3") : "N/A";
+            Console.WriteLine($"{r.customer,-12} | {r.data_id,-25} | {r.data_type,-25} | {conf,10}");
+        }
+    }
+
+    private static void PrintSectionTable(List<PipelineResult> results, Dictionary<string, string> lookup)
+    {
+        Console.WriteLine("\n===== STEP 3: SECTION =====\n");
+        Console.WriteLine($"{"Customer",-12} | {"Device ID",-25} | {"Device Type",-25} | {"Section",-20} | {"Confidence %",12}");
+        Console.WriteLine(new string('-', 110));
+        foreach (var r in results)
+        {
+            string devType = lookup.TryGetValue(r.DEVICE_ID, out var dt) ? dt : "N/A";
+            string conf = r.SECTION_CONFIDENCE.HasValue ? r.SECTION_CONFIDENCE.Value.ToString("F2") + "%" : "N/A";
+            Console.WriteLine($"{r.CUSTOMER,-12} | {r.DEVICE_ID,-25} | {devType,-25} | {r.PREDICTED_SECTION,-20} | {conf,12}");
+        }
+    }
+
+    private static void PrintClusterTable(List<PipelineResult> results, Dictionary<string, string> lookup)
+    {
+        Console.WriteLine("\n===== STEP 3: CLUSTER =====\n");
+        Console.WriteLine($"{"Customer",-12} | {"Device ID",-25} | {"Device Type",-25} | {"Section",-20} | {"Cluster",-20} | {"Confidence %",12}");
+        Console.WriteLine(new string('-', 130));
+        foreach (var r in results)
+        {
+            string devType = lookup.TryGetValue(r.DEVICE_ID, out var dt) ? dt : "N/A";
+            string conf = r.CLUSTER_CONFIDENCE.HasValue ? r.CLUSTER_CONFIDENCE.Value.ToString("F2") + "%" : "N/A";
+            Console.WriteLine($"{r.CUSTOMER,-12} | {r.DEVICE_ID,-25} | {devType,-25} | {r.PREDICTED_SECTION,-20} | {r.PREDICTED_CLUSTER,-20} | {conf,12}");
+        }
+    }
+
+    private static void Pause(string message)
+    {
+        if (_unattended) return;
+        Console.WriteLine(message);
+        Console.ReadLine();
+    }
+
     private static void Compare(string projectCode, int assigned, int unknown, int unallocated)
     {
         if (!projectCode.Equals("A9998", StringComparison.OrdinalIgnoreCase))
@@ -278,16 +381,16 @@ internal static class Program
 
             using var doc = JsonDocument.Parse(await resp.Content.ReadAsStringAsync());
             bool loaded = doc.RootElement.TryGetProperty("pipeline_loaded", out var p) && p.GetBoolean();
-            Console.WriteLine($"[Step 0] Service : reachable, models loaded = {loaded}");
+            Console.WriteLine($"[Step 0/6] Service : reachable, models loaded = {loaded}\n");
             if (!loaded)
-                Console.WriteLine("         (models not loaded — predictions will fail)");
+                Console.WriteLine("           (models not loaded — predictions will fail)");
             return true;
         }
         catch (Exception ex)
         {
             Console.WriteLine($"[!] Service not reachable at {SERVICE_URL} — {ex.Message}");
             Console.WriteLine("    Start it with:");
-            Console.WriteLine("      python -m uvicorn service:app --host 127.0.0.1 --port 8000");
+            Console.WriteLine("      python -m uvicorn service:app --host 0.0.0.0 --port 8000");
             return false;
         }
     }
@@ -304,10 +407,8 @@ internal static class Program
         return JsonSerializer.Deserialize<T>(body, JsonOpts);
     }
 
-    private static string Truncate(string s, int max) =>
-        s.Length <= max ? s : s[..max] + "…";
+    private static string Truncate(string s, int max) => s.Length <= max ? s : s[..max] + "…";
 
-    // Same connection string the original console app uses.
     private static string GetConnectionString()
     {
         string? fromEnv = Environment.GetEnvironmentVariable("SQL_CONN");
