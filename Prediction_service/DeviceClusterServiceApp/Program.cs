@@ -64,13 +64,12 @@ internal static class Program
     private static async Task<int> Main(string[] args)
     {
         _unattended = args.Any(a => a.Equals("--unattended", StringComparison.OrdinalIgnoreCase));
-        string projectCode = args.FirstOrDefault(a => !a.StartsWith("--"))?.Trim() ?? "A9998";
+        string? projectCodeArg = args.FirstOrDefault(a => !a.StartsWith("--"))?.Trim().ToUpper();
 
         Console.WriteLine("============================================================");
         Console.WriteLine(" DeviceCluster — predictions via HTTP service");
         Console.WriteLine("============================================================");
         Console.WriteLine($" Service : {SERVICE_URL}");
-        Console.WriteLine($" Project : {projectCode}");
         Console.WriteLine($" Mode    : {(_unattended ? "unattended" : "interactive")}");
         Console.WriteLine();
 
@@ -81,6 +80,33 @@ internal static class Program
             string sqlConn = GetConnectionString();
             var sqlReader = new PythonSQL(sqlConn);
             var logic = new LogicAssignment(sqlConn, SQL_REVIEW_QUEUE_TABLE, SQL_ASSIGNMENT_TABLE);
+
+            // ProjectCode picks which project's rows to pull from the shared SQL table.
+            // Pass it as an argument for automation, or leave it off to choose from a list.
+            string projectCode;
+
+            if (!string.IsNullOrWhiteSpace(projectCodeArg))
+            {
+                projectCode = projectCodeArg;
+            }
+            else if (_unattended)
+            {
+                throw new InvalidOperationException(
+                    "--unattended requires a ProjectCode to also be passed as an argument.");
+            }
+            else
+            {
+                var availableProjects = await sqlReader.ListAvailableProjectsAsync(SQL_SOURCE_TABLE);
+                Console.WriteLine("Project Available:");
+                foreach (var (code, customer) in availableProjects)
+                    Console.WriteLine($"  {code} ({customer})");
+                Console.WriteLine();
+
+                projectCode = PromptRequiredText("Enter Project Code to process: ")
+                    ?? throw new InvalidOperationException("Project Code is required.");
+            }
+
+            Console.WriteLine($"[Step 1/6] Loading reference data for project '{projectCode}' from SQL Server...");
 
             var total = Stopwatch.StartNew();
 
@@ -335,8 +361,26 @@ internal static class Program
     private static void Pause(string message)
     {
         if (_unattended) return;
-        Console.WriteLine(message);
+        Console.Write(message);
         Console.ReadLine();
+    }
+
+    // Keeps asking until non-blank input, or returns null if the user types "E" to exit.
+    private static string? PromptRequiredText(string prompt)
+    {
+        while (true)
+        {
+            Console.Write(prompt);
+            string? input = Console.ReadLine()?.Trim();
+
+            if (!string.IsNullOrWhiteSpace(input))
+            {
+                if (input.Equals("E", StringComparison.OrdinalIgnoreCase)) return null;
+                return input.ToUpper();
+            }
+
+            Console.WriteLine("[OUTPUT RESULT] Invalid input. Project Code cannot be blank. (Type E to exit)\n");
+        }
     }
 
     private static void Compare(string projectCode, int assigned, int unknown, int unallocated)
