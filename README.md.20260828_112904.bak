@@ -3,7 +3,7 @@
 | | |
 |---|---|
 | **Full pipeline** | SQL (per-project, filtered) → Device Type → Section → Cluster → Quota Allocation (device-centric reassignment) → Logic Placement |
-| **Runtime** | `Model.dll` reads SQL Server → JSON → Python scripts resolve device type (rule) and predict section/cluster (XGBoost) → `Logic.dll`'s `DevicePipeline` fits quotas, splits floating devices, groups clusters → `Program.cs` (or any other caller) renders output |
+| **Runtime** | `Model.dll` reads SQL Server → JSON → Python ML scripts predict → `Logic.dll`'s `DevicePipeline` fits quotas, splits floating devices, groups clusters → `Program.cs` (or any other caller) renders output |
 
 > Last synced 28 August 2026 (previous version: 21 August 2026). Changes are marked with 🆕 where useful.
 >
@@ -158,180 +158,138 @@ Script active : DeviceClusterConsoleApp [`Program.cs`]
 
 # 1️⃣ Device Type (`predict_equipment.py`)
 
-## 📍 Model Approach: none — this stage is rule-based 🆕
+## 📍 Model Approach: SGD Classifier
 
-> **The SGD classifier was removed.** Device type is now a deterministic prefix dictionary
-> lookup. `predict_equipment.py` imports no scikit-learn at all — there is no model, no
-> vectoriser, no similarity search, and no threshold to tune. Its only third-party imports
-> are `joblib`, `scipy.sparse` and `pandas`.
+Hybrid classifier combining four sources, resolved in strict priority order:
 
 ```
-1. Clean the tag, take the leading letters       (HT778 -> HT)
-2. Prefix found in initial_map  -> equipment type,  confidence = 1.0
-3. Prefix not found             -> "UNKNOWN",       confidence = 0.0
+1. All-letters                         → UNKNOWN
+2. Exact match from training dataset   → label from reference_df, confidence = 1.0
+3. SGD confidence >= 0.60              → SGD label
+4. Composite similarity >= 0.60        → Nearest-neighbour cosine label
+5. Dictionary match (initial_map)      → dict label, confidence = 0.75
+6. None of the above                   → UNKNOWN [confidence = max(composite, sgd)]
 ```
 
-Confidence is binary by design. Under the customer's naming standard a tag prefix has
-exactly one correct answer, so a probabilistic reply added uncertainty to a settled
-question — and could not be corrected by an engineer without retraining.
+## 📍 Configuration Thresholds
 
-### Artefacts that are no longer loaded
-
-`model_config_devicetype/` still holds files from the previous hybrid model. **None are read
-by `predict_equipment.py`** (~1.8 MB):
-
-`sgd_model.pkl` · `sgd_calibrated.pkl` · `classifier_pipeline.pkl` · `tfidf_vectorizer.pkl` ·
-`tfidf_vectorizer_sgd.pkl` · `tfidf_vectorizer_similarity.pkl` · `nn.pkl` ·
-`nn_reference_cosine.pkl` · `centroids.pkl` · `X_reference.pkl` · `X_reference.npz` ·
-`reference_index.pkl` · `reference_index_map.pkl` · `ref_row_map.pkl` · `ref_id_set.pkl` ·
-`label_encoder.pkl` · `composite_config.pkl` · `unknown_df.pkl`
-
-> ⚠️ **Before deleting them**, note two things:
->
-> 1. `Config_devicetype.json` still lists every one of these files. The current script reads
->    only `config["model_folder"]` from it, so deletion is safe — but the config is
->    misleading and should be trimmed to just `model_folder` at the same time.
-> 2. `obs_predict_equipment.py` (the obsolete previous version, kept for reference) *does*
->    load them and would stop working. Delete that script too, or keep both together.
-
-## 📍 Files actually loaded at startup
-
-| File | Role |
-|---|---|
-| `initial_map.pkl` | **The dictionary.** Prefix → equipment type. Currently 93 prefixes, 23 distinct types |
-| `reference_df.pkl` / `master_df.pkl` | Known device ids; feeds the strict prefix count on manual assignment |
-| `customer_project_map.pkl` | Project code → customer, used when `customer_code` is omitted |
-| `customer_initial_map.pkl` / `customer_specific_map.pkl` | Loaded, but not read at predict time |
-| `class_index_map.json` / `class_prefix_map.pkl` | Vestigial bookkeeping — see note |
-| `frequency_equipment.json` | Prefix → `{equipment, count, last_updated, source}`; defaults to `{}` if absent |
-
-> **Why `class_index_map` still exists.** It assigns each equipment type a "classifier class
-> index" that no classifier reads any more. `manual_assign_equipment` keeps maintaining it so
-> the files stay internally consistent. This is why it holds **22** entries while
-> `initial_map` holds **23** distinct types — one type was added after the classifier went.
-
-## 📍 Configuration
-
-| Item | Value |
-|---|---|
-| Config file | `predict_equipment_folder/Config_devicetype.json` — override with `DEVICE_CLUSTER_CONFIG` |
-| Model folder | `config["model_folder"]`, resolved relative to the config file |
-| `MAX_BATCH_SIZE` | `5000` (env `MAX_BATCH_SIZE`) — max `data_ids` per call |
-| `LOG_LEVEL` | `INFO` (env `LOG_LEVEL`) |
-| `INITIAL_DICT_CONF` | `1.0` — the confidence a dictionary match returns |
-
-> There are no longer any `SGD_STRONG_THRESHOLD`, `COSINE_THRESHOLD`, `ALPHA_PREFIX_WEIGHT`,
-> `top_k_default`, `BATCH_ADD_SIZE` or `ref_epoch_rebuild` constants.
-
-## 📍 Prefix extraction and matching
-
-**`clean_device_id(device_id)`** — uppercase, trim, replace `_` and `-` with spaces, collapse
-runs of whitespace. Non-strings become `""`.
-
-**`extract_prefix_id(device_id)`** — split the cleaned tag on spaces, **drop any token equal
-to `SP`**, join the remainder, then take the leading `[A-Z]+` run.
-
-| Input | Prefix | Note |
+| Constant | Value | Purpose |
 |---|---|---|
-| `HT778` | `HT` | |
-| `ht-778` | `HT` | separators normalised first |
-| `SP CR1234` | `CR` | a standalone `SP` token is dropped |
-| `SPD100` | `SPD` | only a *standalone* `SP` is dropped, never a `SP` prefix |
-| `1234` | `""` | no leading letters → `UNKNOWN` |
+| `SGD_STRONG_THRESHOLD`  | `0.60` | Minimum SGD confidence to accept SGD label |
+| `COSINE_THRESHOLD`      | `0.60` | Minimum composite score to accept NN/cosine label |
+| `INITIAL_DICT_CONF`     | `0.75` | Fixed confidence assigned for dictionary-only match |
+| `ALPHA_PREFIX_WEIGHT`   | `0.65` (from `composite_config`) | Prefix weight in composite formula |
+| `top_k_default` | `10` (from `composite_config`) | Nearest neighbours retrieved per query |
 
-**`matches_prefix_strict(data_id, prefix)`** — used only for **counting** devices that share a
-prefix, never for prediction. Strips to `[A-Z0-9]`, then requires the remainder after the
-prefix to be empty or digits only.
+**Composite similarity formula:**
+```
+composite_scores  = (ALPHA_PREFIX_WEIGHT * prefix_scores) + ((1 - ALPHA_PREFIX_WEIGHT) * sims)
+composite_score   = (0.65 × prefix_score)                 + (0.35 × cosine_similarity)
+```
 
-- `CR` and `CR1234` match prefix `CR`
-- `CR123ABC` does **not** match `CR`
+## 📍 Batch & Buffer Settings
 
-## 📍 Output columns (Device Type)
+| Constant | Value | Purpose |
+|---|---|---|
+| `MAX_BATCH_SIZE` | `5000` (env: `MAX_BATCH_SIZE`) | Max `data_ids` per call |
+| `BATCH_ADD_SIZE` | `50` | Incremental learning flush buffer |
+| `ref_epoch_rebuild` | `50` | NN re-fit trigger (rows added) |
 
-Matches the C# `DeviceTypeResult` contract exactly:
+> Flush happens when `len(PENDING_NEW_ROWS) >= flush_batch_size`.
+
+## 📍 Dictionary / Prefix Matching Rules
+Dictionary Name = `initial_map`
+
+➡️ A prefix is valid only IF the remaining characters are:
+- Empty (exact match) - (e.g. `CR` matches key `CR`)
+- Digits only         -  (e.g. `CR1234` matches key `CR`)
+
+➡️ Rejected if remainder contains any letters (`CR123ABC` does **not** match `CR`). 
+
+➡️ Special case: inputs starting with `SP` also probe the stripped version (`probe[2:]`).
+
+### Batch prefix counting — `matches_prefix_strict()`
+
+- Counts devices sharing the same prefix across a batch of `data_ids`.
+- Applies the same strict matching rule: the remaining characters must be empty or digits only.
+- Prevents false matches caused by alphabetic suffixes.
+- Used for dictionary confidence scoring and candidate grouping.
+- **TODO:** confirm exact call sites (`predict_equipment.py` function names/line refs) once finalized, so this section can point directly to them.
+
+## 📍 Output Columns (Device Type)
 
 | Column | Description |
 |---|---|
-| `customer` | From `customer_code`, else `customer_project_map[project_code]`, else `"UNKNOWN"` |
-| `data_id` | Device id exactly as supplied (not the cleaned form) |
-| `manual_check` | Always `""` — placeholder for a UI review flag |
-| `data_type` | Equipment type, or `"UNKNOWN"` |
-| `confidence` | `1.0` or `0.0` |
-| `reason` | `initial_dict_match` or `no_confident_source` |
+| `customer` | OILTEK/LIPICO                 |
+| `data_id` | Cleaned Device ID                        |
+| `manual_check` | Empty placeholder for UI review flag |
+| `data_type` | Predicted equipment type                |
+| `confidence` | Final confidence (0.0–1.0)             |
+| `sgd_conf` | Raw SGD confidence (may differ from final) |
+| `reason` | Internal decision reason |
 
-> **Removed:** the `sgd_conf` and `source` columns, and the `all_letters`, `exact_match`,
-> `sgd_strong`, `cosine_prefix_accepted` and `initial_dict_only` reason values.
+## 📍 `reason` Values
 
-## 📍 CLI actions
+| `reason` | Trigger |
+|---|---|
+| `all_letters`             | Input is purely alphabetic — hard blocked |
+| `exact_match`             | Found exactly similar in reference set |
+| `sgd_strong`              | SGD confidence >= 0.60 |
+| `cosine_prefix_accepted` | Composite similarity >= 0.60 |
+| `initial_dict_only` | Dictionary match, no other confident source |
+| `no_confident_source` | Fallback — returns UNKNOWN |
 
-| `action` | Aliases | Description | Changes saved? |
-|---|---|---|---|
-| `predict` | default when omitted; `score` | Predict device types for `data_ids` | No |
-| `user_manual_assign` | `manual_assign` | Assign equipment to one or more device ids | ✅ Yes — full persist |
+## 📍 `source` Values
 
-> `import_equipment` no longer exists.
+| `source` | Meaning |
+|---|---|
+| `exact_match` | Verbatim match in reference |
+| `sgd` | SGD was confident |
+| `composite similarity` | NN + prefix composite was confident |
+| `initial_dict` | Dictionary/prefix only |
+| `unknown` | No confident source |
 
-**JSON payloads** (stdin → stdout):
+## 📍 CLI Actions (`predict_equipment.py`)
+
+| `action` | Description | Changes Saved? |
+|---|---|---|
+| `predict` (default) | Predict device types for `data_ids` | No |
+| `user_manual_assign` | Manually assign labels + incremental learn | ✅ Yes (full persist) |
+| `import_equipment` | Bulk import authoritative list + incremental learn | ❌ No |
+
+**JSON payloads:**
 
 ```jsonc
-// predict  — "action" may be omitted entirely
-{ "project_code": "A1825", "customer_code": "Lipico",
-  "data_ids": ["HT778", "CR1234"] }
-
-// -> [ { "customer": "Lipico", "data_id": "HT778", "manual_check": "",
-//        "data_type": "Heater", "confidence": 1.0,
-//        "reason": "initial_dict_match" }, ... ]
+// predict
+{ "action": "predict", "project_code": "A1825", "customer_code": "Lipico",
+  "data_ids": ["CR1234", "PU001"] }
 
 // user_manual_assign
 { "action": "user_manual_assign", "project_code": "A1825", "customer": "Lipico",
-  "assignments":   [ { "data_id": "KK101", "equipment": "Fan" } ],
-  "batch_results": [ { "data_id": "...", "data_type": "..." } ] }
+  "assignments": [{ "data_id": "CR1234", "equipment": "Control Room" }] }
 
-// -> { "status": "ok", "applied_count": 1, "applied": [ { ... } ] }
+// import_equipment
+{ "action": "import_equipment", "project_code": "A1825", "customer": "Lipico",
+  "equipment_list": [{ "data_id": "CR1234", "equipment": "Control Room" }] }
 ```
 
-Accepted legacy keys: `device_ids` for `data_ids`; `device_id` and `equipment_type` inside an
-assignment; `customer_code` for `customer`.
+## 📍 Incremental Learning Notes
 
-Errors print a traceback to stderr, `ERROR: <message>` to stderr, and exit `1`.
+- Uses `partial_fit` for live model updates.
+- Changes are saved every 50 records.
+- `user_manual_assign` saves immediately.
+- `import_equipment` updates the model in memory only.
+- `initial_map.pkl` should not be edited directly, as it may cause SGD class mismatch errors.
 
-## 📍 Manual assignment — what it changes
+## 📍 Features
 
-`manual_assign_equipment(data_id, equipment, project_code, customer, batch_results)` mutates
-in-memory state, then `persist_light_state()` writes it out:
-
-1. **`initial_map[prefix] = equipment`** — always. On an overlapping prefix the newer
-   assignment wins and the older mapping is overwritten.
-2. **`class_index_map` / `class_prefix_map`** — touched only when the equipment type is new
-   (`is_new_class`); the type gets the next free index and the prefix is recorded once.
-3. **`frequency_equipment[prefix]`** — count of devices sharing the prefix, taken from
-   `batch_results` when supplied, otherwise from `reference_df`, both via
-   `matches_prefix_strict`.
-4. **`reference_df` / `master_df`** — a row `(data_id, data_type, initial, customer)` is
-   appended if the device id is not already present.
-
-Returns a record: `data_id`, `prefix`, `equipment`, `previous_equipment`, `is_new_class`,
-`count`, `assigned_at`.
-
-## 📍 Persistence
-
-`persist_light_state()` runs on `user_manual_assign` only, and **takes a timestamped `.bak`
-copy of each file before overwriting it**:
-
-| File | Written by |
+| Variable | Role |
 |---|---|
-| `initial_map.pkl`, `class_prefix_map.pkl`, `master_df.pkl`, `reference_df.pkl` | `joblib.dump` |
-| `class_index_map.json`, `frequency_equipment.json` | atomic write — temp file then `os.replace` |
-
-## 📍 Incremental learning 🆕
-
-There is no model to update, so incremental learning here means **editing the dictionary**:
-
-- A manual assignment is applied and persisted immediately.
-- There is **no `partial_fit`**, no 50-record flush buffer, and no nearest-neighbour re-fit.
-- The old warning that editing `initial_map.pkl` causes SGD class-mismatch errors no longer
-  applies. Prefer the `user_manual_assign` action anyway, so `class_index_map.json`,
-  `frequency_equipment.json` and the reference frames stay consistent with it.
+| `sgd_model` | Main classifier |
+| `tfidf_sgd` / `tfidf_similarity` | Text vectorisers |
+| `nn` | Nearest neighbour (k=10, cosine) |
+| `initial_map` | Prefix → equipment type |
+| `reference_df` / `ref_id_set` | Ground-truth reference |
 
 ---
 
@@ -509,10 +467,8 @@ Processes user corrections for device predictions across the C# and Python layer
 ### 📍 Processing Flow
 
 - **Device Type**
-  - Updates the prefix dictionary (`initial_map.pkl`) and its companion files, each with a
-    timestamped `.bak` taken first.
-  - 🆕 There is no model to retrain — this stage is a rule, so the correction *is* the update
-    and takes effect on the next call.
+  - Updates the prefix dictionary (`initial_map.pkl`).
+  - Does not retrain the SGD model.
 
 - **Device Section/Cluster**
   - Stores corrections for the next XGBoost retraining cycle.
@@ -592,7 +548,7 @@ Retrieves device data from SQL Server and converts it to the JSON input format t
 
 # 🍀 C# Subprocess Protocol
 
-C# spawns Python as a child process for each prediction step via `System.Diagnostics.Process` (`Model.Services.PythonClient`).
+C# spawns Python as a child process for each ML step via `System.Diagnostics.Process` (`Model.Services.PythonClient`).
 
 **Paths (resolved at runtime, relative to executable)**
 
@@ -607,11 +563,8 @@ C# spawns Python as a child process for each prediction step via `System.Diagnos
 // stdin → predict_equipment.py
 { "project_code": "A1825", "customer_code": "Lipico", "data_ids": ["CR1234", "PU001"] }
 
-// stdout ← predict_equipment.py  (🆕 confidence is 1.0 or 0.0 — see §1️⃣)
-[{ "customer": "Lipico", "data_id": "CR1234", "manual_check": "",
-   "data_type": "Control Valve", "confidence": 1.0, "reason": "initial_dict_match" },
- { "customer": "Lipico", "data_id": "PU001", "manual_check": "",
-   "data_type": "Pump", "confidence": 1.0, "reason": "initial_dict_match" }]
+// stdout ← predict_equipment.py
+[{ "data_id": "CR1234", "data_type": "COOLER", "confidence": 0.92, "reason": "sgd_strong" }]
 ```
 
 **Step 2 & 3 request/response:**
@@ -666,8 +619,7 @@ C# spawns Python as a child process for each prediction step via `System.Diagnos
 |---|---|
 | `Prediction_service/DeviceCluster/Program.cs` | C# console orchestrator entry point |
 | `Prediction_service/DeviceCluster/DeviceClusterConsoleApp.csproj` / `.slnx` | Console app project + .NET 10 solution file |
-| `Prediction_service/DeviceCluster/predict_equipment.py` | Device Type resolver — 🆕 rule-based prefix lookup, no ML |
-| `Prediction_service/DeviceCluster/obs_predict_equipment.py` | 🆕 Obsolete previous version (the SGD hybrid). Kept for reference only; not called by anything |
+| `Prediction_service/DeviceCluster/predict_equipment.py` | Device Type inference script |
 | `Prediction_service/DeviceCluster/predict_sectioncluster.py` | Section & Cluster inference script |
 | `Prediction_service/DeviceCluster/sql/PatternCluster.sql` 🆕 | Creates & seeds `dbo.PatternCluster` (real `SECTION 2` + placeholder Sections 1, 3-8) |
 | `Model/Model.csproj` | `Model.dll` class library project |
