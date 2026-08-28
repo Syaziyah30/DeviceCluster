@@ -7,7 +7,7 @@
 
 > Last synced 28 August 2026 (previous version: 21 August 2026). Changes are marked with 🆕 where useful.
 >
-> 🆕 **Device Type is no longer a machine learning stage.** The SGD classifier, TF-IDF vectorisers and cosine similarity search were removed; it is now a deterministic prefix dictionary lookup. Section 1️⃣ has been rewritten to match the code.
+> 🆕 Device Type is using binary ruled methode
 
 ---
 
@@ -16,22 +16,22 @@
 
 | Component | Status |
 |------------|--------|
-| Device Type Assignment              | ✅ Completed — 🆕 rule-based; SGD classifier removed |
+| Device Type Assignment              | ✅ Completed — 🆕 rule-based methode |
 | Device Section Prediction           | ✅ Completed |
 | Device Cluster Prediction           | ✅ Completed |
 | C# Service Integration              | ✅ Completed |
-| SQL Integration (`PythonSQL.cs`)    | ✅ Completed — per-project filtering, project listing |
-| Incremental Learning                | ✅ Completed — 🆕 dictionary edit, not `partial_fit` |
+| SQL Integration (`PythonSQL.cs`)    | ✅ Completed — filter by project code |
+| Correction Feedback Loop            | ✅ Completed — 🆕 dictionary edit (device type); queued for retrain (section/cluster). Not incremental learning |
 | DLL Development (`AppRegistryEditor.dll`, `Logic.dll`, `Model.dll`) | ✅ Completed |
 | Model-based Top-3 Cluster Suggestion `predict_sectioncluster.py` from XGBoost | ✅ Completed |
-| Update Model                        | ✅ Completed (Once workflow is complete, need retraining) |
-| 🆕 `Logic.dll` orchestration (`DevicePipeline`) | ✅ Completed — single callable entry point, no console dependency |
-| 🆕 Quota patterns sourced from SQL (`dbo.PatternCluster`) | ✅ Completed for `SECTION 2` (real); Sections 1, 3-8 are placeholder/dummy data pending real numbers |
-| 🆕 Device-centric reassignment pool (Stage 3) | ✅ Completed — matches the flowchart design, uses per-device ranked cluster candidates |
-| Unattended / headless mode (`--unattended`) | ✅ Completed |
-| Floating device output (`dbo.DeviceReviewQueue`) | ✅ Completed — replaces `floating_deviceid.json` / `unallocated_device_ids.json`, single SQL table with `Category` column, reclassification via `MERGE` |
-| 🆕 Assigned device output (`dbo.OutputDeviceAssignment`) | ✅ Completed — successfully placed devices are now persisted to SQL too, not just returned in-memory to the caller |
-| DLL Testing | ✅ Verified via live runs against real SQL Server + trained models (no automated test suite yet) |
+| Update Model                        | ✅ Completed [Need retraining after received real data] |
+| 🆕 `Logic.dll` (`DevicePipeline`) | ✅ Completed — single callable entry point |
+| 🆕 Quota patterns from SQL (`dbo.PatternCluster`) | ✅ Completed - [All used DUMMY DATA] |
+| 🆕 Device-centric reassignment pool (Stage 3) | ✅ Completed  |
+| Unattended / headless mode (`--unattended`) | ✅ Completed - [unattended turn on will auto load all the result without require the user to click enter to move the next]|
+| Floating device output (`dbo.DeviceReviewQueue`) | ✅ Completed — saved in database SQL |
+| 🆕 Assigned device output (`dbo.OutputDeviceAssignment`) | ✅ Completed — return in database SQL |
+| DLL Testing | ✅ Completed Verificationstil via live runs against real SQL Server + trained models  |
 
 
 ---
@@ -47,19 +47,19 @@ Script active : DeviceClusterConsoleApp [`Program.cs`]
 | Model-based Top-3 Cluster Prediction | ✅ Completed |
 | Floating device handling (unknown-prediction vs known-but-unallocated) | ✅ Completed — persisted to `dbo.DeviceReviewQueue`, reclassification via SQL `MERGE` |
 | `DevicePipeline` orchestration entry point | ✅ Completed |
-| Logic.dll ↔ Model.dll dependency | ✅ `ProjectReference` (was previously undocumented/absent) |
+| Logic.dll ↔ Model.dll dependency | ✅ `ProjectReference`  |
 | Automated test suite | ❌ Not started — verification so far is manual, live-run based |
 
 ---
 
-## 📍 Recent Fixes
+## 📍 Recent Fixes [as in 28/08/2026]
 
-- 🆕 **Device Type reduced from a hybrid ML model to a prefix rule.** `predict_equipment.py` no longer imports scikit-learn at all. A prefix either resolves to an equipment type (confidence `1.0`) or it does not (`UNKNOWN`, `0.0`). The old `.pkl` model artefacts are still present in `model_config_devicetype/` but are never loaded — see §1️⃣ for the deletable list.
-- ✅ `Logic.dll` now has a `ProjectReference` to `Model.dll` — fixes stale-DLL rebuild issues from the old `HintPath`-only setup
-- 🆕 `floating_deviceid.json` / `unallocated_device_ids.json` replaced by a single SQL table (`dbo.DeviceReviewQueue`, `Category` column) — reclassification is now a plain SQL `MERGE` (UPDATE on conflict), eliminating the cross-file reconciliation logic entirely
-- 🆕 Cross-**table** reconciliation between `dbo.OutputDeviceAssignment` and `dbo.DeviceReviewQueue` — a device that flips outcome between runs (assigned → floating, or floating → assigned) has its stale row deleted from the other table in the same statement, so a device is never recorded in both at once
+- ✅ `Device Type` using binary ruled based model
+- ✅ `Logic.dll` now has a `ProjectReference` to `Model.dll` 
+- 🆕 `floating_deviceid.json` / `unallocated_device_ids.json` replaced by a single SQL table (`dbo.DeviceReviewQueue`, `Category` column) 
+- 🆕 Cross-**table** reconciliation between `dbo.OutputDeviceAssignment` and `dbo.DeviceReviewQueue` 
 - ✅ Quota allocator's Stage 3 rewritten from bucket-centric backfill to device-centric reassignment (matches the flowchart: each floating device tries its own ranked cluster candidates by model percentage, highest-scoring device first)
-- ✅ SQL queries are project-scoped (`WHERE ProjectCode = @ProjectCode`) — previously the whole shared table was read unfiltered
+- ✅ SQL queries are project-scoped (`WHERE ProjectCode = @ProjectCode`) 
 - ✅ Fixed case-sensitivity issue (`OILTEK` vs `Oiltek`)
 - ✅ Fixed device ID formatting issue (e.g. `V001.21` preserved correctly)
 
@@ -152,49 +152,29 @@ Script active : DeviceClusterConsoleApp [`Program.cs`]
         prompts for manual correction, exits
 ```
 
-**Orchestration note:** the entire Step 1 → Step 5 sequence above is one callable method — `Logic.DevicePipeline.RunAsync(sqlReader, client, logic, sqlSourceTable, sqlQuotaTable, scriptType, scriptPipeline, sqlOutputDir, projectCode, callbacks)` — living in `Logic.dll`, not hardcoded into `Program.cs`. Any caller (a future UI, a scheduler, an API) can call it directly with no console dependency; `callbacks` is fully optional and the method never touches `Console` itself.
+**Orchestration note:** <br> 
+the entire Step 1 → Step 5 sequence above is one callable method — `Logic.DevicePipeline.RunAsync(sqlReader, client, logic, sqlSourceTable, sqlQuotaTable, scriptType, scriptPipeline, sqlOutputDir, projectCode, callbacks)` — living in `Logic.dll`, not hardcoded into `Program.cs`. Any caller (a future UI, a scheduler, an API) can call it directly with no console dependency; `callbacks` is fully optional and the method never touches `Console` itself.
 
 ---
 
 # 1️⃣ Device Type (`predict_equipment.py`)
 
-## 📍 Model Approach: none — this stage is rule-based 🆕
+## 📍 Model Approach: none — this stage is rule-based 
 
-> **The SGD classifier was removed.** Device type is now a deterministic prefix dictionary
-> lookup. `predict_equipment.py` imports no scikit-learn at all — there is no model, no
-> vectoriser, no similarity search, and no threshold to tune. Its only third-party imports
-> are `joblib`, `scipy.sparse` and `pandas`.
+**The SGD classifier (the initial suggestion) was removed.** <br>
+Device type is now a deterministic prefix dictionary lookup. <br>
+`predict_equipment.py` Free from  scikit-learn at all <br> 
+Its only third-party imports> are `joblib`, `scipy.sparse` and `pandas`.
 
 ```
+Methode: Binary ruled based prediction
 1. Clean the tag, take the leading letters       (HT778 -> HT)
 2. Prefix found in initial_map  -> equipment type,  confidence = 1.0
 3. Prefix not found             -> "UNKNOWN",       confidence = 0.0
 ```
 
-Confidence is binary by design. Under the customer's naming standard a tag prefix has
-exactly one correct answer, so a probabilistic reply added uncertainty to a settled
-question — and could not be corrected by an engineer without retraining.
 
-### Artefacts that are no longer loaded
-
-`model_config_devicetype/` still holds files from the previous hybrid model. **None are read
-by `predict_equipment.py`** (~1.8 MB):
-
-`sgd_model.pkl` · `sgd_calibrated.pkl` · `classifier_pipeline.pkl` · `tfidf_vectorizer.pkl` ·
-`tfidf_vectorizer_sgd.pkl` · `tfidf_vectorizer_similarity.pkl` · `nn.pkl` ·
-`nn_reference_cosine.pkl` · `centroids.pkl` · `X_reference.pkl` · `X_reference.npz` ·
-`reference_index.pkl` · `reference_index_map.pkl` · `ref_row_map.pkl` · `ref_id_set.pkl` ·
-`label_encoder.pkl` · `composite_config.pkl` · `unknown_df.pkl`
-
-> ⚠️ **Before deleting them**, note two things:
->
-> 1. `Config_devicetype.json` still lists every one of these files. The current script reads
->    only `config["model_folder"]` from it, so deletion is safe — but the config is
->    misleading and should be trimmed to just `model_folder` at the same time.
-> 2. `obs_predict_equipment.py` (the obsolete previous version, kept for reference) *does*
->    load them and would stop working. Delete that script too, or keep both together.
-
-## 📍 Files actually loaded at startup
+## 📍 Files loaded at startup Device Type
 
 | File | Role |
 |---|---|
@@ -220,8 +200,6 @@ by `predict_equipment.py`** (~1.8 MB):
 | `LOG_LEVEL` | `INFO` (env `LOG_LEVEL`) |
 | `INITIAL_DICT_CONF` | `1.0` — the confidence a dictionary match returns |
 
-> There are no longer any `SGD_STRONG_THRESHOLD`, `COSINE_THRESHOLD`, `ALPHA_PREFIX_WEIGHT`,
-> `top_k_default`, `BATCH_ADD_SIZE` or `ref_epoch_rebuild` constants.
 
 ## 📍 Prefix extraction and matching
 
@@ -230,21 +208,6 @@ runs of whitespace. Non-strings become `""`.
 
 **`extract_prefix_id(device_id)`** — split the cleaned tag on spaces, **drop any token equal
 to `SP`**, join the remainder, then take the leading `[A-Z]+` run.
-
-| Input | Prefix | Note |
-|---|---|---|
-| `HT778` | `HT` | |
-| `ht-778` | `HT` | separators normalised first |
-| `SP CR1234` | `CR` | a standalone `SP` token is dropped |
-| `SPD100` | `SPD` | only a *standalone* `SP` is dropped, never a `SP` prefix |
-| `1234` | `""` | no leading letters → `UNKNOWN` |
-
-**`matches_prefix_strict(data_id, prefix)`** — used only for **counting** devices that share a
-prefix, never for prediction. Strips to `[A-Z0-9]`, then requires the remainder after the
-prefix to be empty or digits only.
-
-- `CR` and `CR1234` match prefix `CR`
-- `CR123ABC` does **not** match `CR`
 
 ## 📍 Output columns (Device Type)
 
@@ -258,9 +221,6 @@ Matches the C# `DeviceTypeResult` contract exactly:
 | `data_type` | Equipment type, or `"UNKNOWN"` |
 | `confidence` | `1.0` or `0.0` |
 | `reason` | `initial_dict_match` or `no_confident_source` |
-
-> **Removed:** the `sgd_conf` and `source` columns, and the `all_letters`, `exact_match`,
-> `sgd_strong`, `cosine_prefix_accepted` and `initial_dict_only` reason values.
 
 ## 📍 CLI actions
 
@@ -313,7 +273,7 @@ in-memory state, then `persist_light_state()` writes it out:
 Returns a record: `data_id`, `prefix`, `equipment`, `previous_equipment`, `is_new_class`,
 `count`, `assigned_at`.
 
-## 📍 Persistence
+## 📍 Persistence (timestamped)
 
 `persist_light_state()` runs on `user_manual_assign` only, and **takes a timestamped `.bak`
 copy of each file before overwriting it**:
@@ -323,15 +283,13 @@ copy of each file before overwriting it**:
 | `initial_map.pkl`, `class_prefix_map.pkl`, `master_df.pkl`, `reference_df.pkl` | `joblib.dump` |
 | `class_index_map.json`, `frequency_equipment.json` | atomic write — temp file then `os.replace` |
 
-## 📍 Incremental learning 🆕
+## 📍 Correction handling 
 
-There is no model to update, so incremental learning here means **editing the dictionary**:
+There is no model in this stage, so there are no parameters to update. A correction **edits
+reference data**, which is a different thing:
 
 - A manual assignment is applied and persisted immediately.
-- There is **no `partial_fit`**, no 50-record flush buffer, and no nearest-neighbour re-fit.
-- The old warning that editing `initial_map.pkl` causes SGD class-mismatch errors no longer
-  applies. Prefer the `user_manual_assign` action anyway, so `class_index_map.json`,
-  `frequency_equipment.json` and the reference frames stay consistent with it.
+
 
 ---
 
@@ -374,7 +332,7 @@ cluster_conf_final = cluster_raw_conf × section_conf   (when section_conf < 0.6
 | `SECTION_CONFIDENCE` | Adjusted confidence (0–100%) |
 | `PREDICTED_CLUSTER` | Predicted cluster label or `UNKNOWN` |
 | `CLUSTER_CONFIDENCE` | Adjusted confidence, penalised if section is weak |
-| 🆕 `TOP_CLUSTERS` | Top-N (default 3) ranked `{cluster, probability}` candidates per device, from the same `predict_proba()` call — not just the argmax winner. Used by quota allocation's Stage 3 reassignment pool. |
+|  `TOP_CLUSTERS` | Top-N (default 3) ranked `{cluster, probability}` candidates per device, from the same `predict_proba()` call — not just the argmax winner. Used by quota allocation's Stage 3 reassignment pool. |
 | `REJECTION_REASON` | Set if device is hard-blocked |
 | `FORMAT_WARNING` | Set if numeric field width is outside training distribution |
 
@@ -386,11 +344,9 @@ cluster_conf_final = cluster_raw_conf × section_conf   (when section_conf < 0.6
 | `model_cluster.pkl` | Trained XGBoost cluster model |
 | `pipeline_config.pkl` | All label encoders, feature lists, OOD scaler/KNN, known customers, numeric width stats |
 
-> Note: the `export_raw_csv_path` field previously on `PipelinePredictRequest` (a debug-only raw `predict_proba` dump per device, written to a CSV file) has been removed from the C# request — `Program.cs` no longer sets it. `predict_sectioncluster.py` still supports it (it just always receives `None` now), and the separate `export_cluster_csv` action is untouched. Its role — surfacing more than just the top-1 cluster prediction — is now covered properly by `TOP_CLUSTERS`, which feeds live reassignment logic instead of a static debug file.
-
 ---
 
-# 🆕 3. Quota Allocation (`ClusterQuotaAllocator`, `Logic.dll`)
+# 3. Quota Allocation (`ClusterQuotaAllocator`, `Logic.dll`)
 
 Allocates devices to clusters based on predefined quotas before cascading placement.
 
@@ -399,7 +355,7 @@ Allocates devices to clusters based on predefined quotas before cascading placem
 - Uses model predictions while respecting capacity constraints.
 
 ### 📍 Quota Source
-Quotas are **not** hardcoded anywhere in code. They're loaded live from SQL Server:
+Quotas are **not** hardcoded anywhere in code. They're **loaded live from SQL Server**:
 
 ```
 QuotaCatalog.LoadQuotasFromDbAsync(connectionString, tableName, customerCode)
@@ -409,7 +365,7 @@ QuotaCatalog.LoadQuotasFromDbAsync(connectionString, tableName, customerCode)
 
 - Table: `dbo.PatternCluster` (created/seeded via `Prediction_service/DeviceCluster/sql/PatternCluster.sql`)
 - Keyed by `CustomerCode` — the working assumption is that a client's different projects share the same physical plant layout, so every project under one customer gets the same pattern
-- **Only `SECTION 2` reflects a real, confirmed pattern** (OILTEK). `SECTION 1, 3-8` are randomly fabricated placeholder rows, clearly marked in the seed script, so the pipeline has *something* to allocate against during testing — not real capacity numbers.
+- Currently using the dummy quota cluster pattern. Need to update once received the actual data.
 
 ### 📍 Allocation Flow (`ClusterQuotaAllocator.Allocate`)
 
@@ -420,7 +376,7 @@ QuotaCatalog.LoadQuotasFromDbAsync(connectionString, tableName, customerCode)
 **Stage 2 – Build the floating pool**
 - Everything not claimed in Stage 1 becomes the floating pool.
 
-**Stage 3 – Device-centric reassignment pool** 🆕
+**Stage 3 – Device-centric reassignment pool** 
 - Floating devices are processed **highest-score first**.
 - Each device tries its own **ranked cluster candidates** (`TOP_CLUSTERS`, highest model percentage first, same Section) in order.
 - The first candidate bucket that still has room wins — the device is assigned there (`IsBackfill = true`, `OriginalCluster` records its original top-1 pick).
@@ -449,7 +405,7 @@ QuotaCatalog.LoadQuotasFromDbAsync(connectionString, tableName, customerCode)
 
 ---
 
-# 4️⃣ Logic Placement (`Logic.dll`, C#)
+#  Logic Placement (`Logic.dll`, C#)
 
 
 Processes the prediction results after quota allocation and determines the final device placement.
@@ -651,7 +607,7 @@ C# spawns Python as a child process for each prediction step via `System.Diagnos
 | `MAX_BATCH_SIZE` | `5000` | Override max prediction batch size |
 | `LOG_LEVEL` | `INFO` | Python logging level |
 
-## 📍 Environment Variables (C# — `Program.cs`) 🆕
+## 📍 Environment Variables (C# — `Program.cs`) 
 
 | Variable | Default | Purpose |
 |---|---|---|
