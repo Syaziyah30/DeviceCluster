@@ -1,0 +1,10 @@
+<Solution>
+  <Folder Name="/Libraries/">
+    <Project Path="Model/Model.csproj" />
+    <Project Path="Logic/Logic.csproj" />
+  </Folder>
+  <Folder Name="/Apps/">
+    <Project Path="Prediction_service/DeviceCluster/DeviceClusterConsoleApp.csproj" />
+    <Project Path="Prediction_service/DeviceClusterServiceApp/DeviceClusterServiceApp.csproj" />
+  </Folder>
+</Solution>
