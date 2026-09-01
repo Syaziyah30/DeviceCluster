@@ -365,13 +365,29 @@ internal static class Program
         Console.ReadLine();
     }
 
+    // Console.ReadLine() returns null at end-of-stream - no console attached, stdin
+    // redirected from an empty source, or a closed pipe. The loop below re-prompts on
+    // blank input, and IsNullOrWhiteSpace cannot tell null (no input will ever arrive)
+    // from "" (the user pressed Enter), so at end-of-stream it would spin forever.
+    private static string ReadLineOrFail()
+    {
+        string? line = Console.ReadLine();
+
+        if (line is null)
+            throw new InvalidOperationException(
+                "No console input is available while prompting for a Project Code. " +
+                "Pass it as a command-line argument, or run with --unattended and a ProjectCode.");
+
+        return line;
+    }
+
     // Keeps asking until non-blank input, or returns null if the user types "E" to exit.
     private static string? PromptRequiredText(string prompt)
     {
         while (true)
         {
             Console.Write(prompt);
-            string? input = Console.ReadLine()?.Trim();
+            string? input = ReadLineOrFail().Trim();
 
             if (!string.IsNullOrWhiteSpace(input))
             {
