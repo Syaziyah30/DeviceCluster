@@ -60,7 +60,7 @@ Script active : DeviceClusterConsoleApp [`Program.cs`]
 - 🆕 Cross-**table** reconciliation between `dbo.OutputDeviceAssignment` and `dbo.DeviceReviewQueue` 
 - ✅ Quota allocator's Stage 3 rewritten from bucket-centric backfill to device-centric reassignment (matches the flowchart: each floating device tries its own ranked cluster candidates by model percentage, highest-scoring device first)
 - ✅ SQL queries are project-scoped (`WHERE ProjectCode = @ProjectCode`) 
-- ✅ Fixed case-sensitivity issue (`OILTEK` vs `Oiltek`)
+- ✅ Fixed case-sensitivity issue (`OILTEK` vs `Oiltek`) — normalised in the Python layer, where `clean_device_id()` uppercases and trims before matching. Note this does **not** cover the C# side: `DeviceId` and `ProjectCode` are still compared with the default ordinal comparer in `ClusterQuotaAllocator` and `LogicAssignment`, so `V001.21` and `v001.21` would be treated as two devices. Tracked as an open item on the build checklist.
 - ✅ Fixed device ID formatting issue (e.g. `V001.21` preserved correctly)
 
 ---
