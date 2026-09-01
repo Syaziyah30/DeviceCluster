@@ -18,8 +18,10 @@ Everything needed to call the device-clustering pipeline from a UI.
 ## Prerequisites
 
 - **.NET 10 runtime**, **Windows x64**. `Model.dll` is built with `RuntimeIdentifier=win-x64` and `SelfContained=false`, so the runtime must be installed on the machine — it isn't embedded. This is a Windows-only library.
-- **Python 3.13** with `pip install -r requirements.txt`. The `.pkl` model files are version-sensitive — scikit-learn especially will warn or fail to unpickle across major versions, so use the pinned versions.
-- **SQL Server** access to the `XenCreator` database.
+- **SQL Server** access to the `XenCreator` database on **Neptune** (`128.100.20.33`).
+- **One of two prediction sources** — see *Choosing a prediction client* below:
+  - *Recommended* — network access to the **ML service** at `http://128.100.8.213:8000` (SSSBPD01). Nothing to install: no Python, no packages, no model files.
+  - *Or* — **Python 3.13** with `pip install -r requirements.txt`, plus the `python/` folder from this bundle. The `.pkl` files are version-sensitive; scikit-learn in particular will warn or fail to unpickle across major versions, so use the pinned versions.
 
 ---
 
@@ -35,9 +37,9 @@ Everything needed to call the device-clustering pipeline from a UI.
 
 The source table (`dbo.DummyTestingData` by default) is expected to already exist.
 
-**2. Keep the `python/` folder structure intact.** Both scripts resolve their model paths relative to their own file location, so `predict_equipment.py` must stay next to `predict_equipment_folder/`, and likewise for `predict_sectioncluster.py`. Moving a script away from its folder breaks it.
+**2. Only if you are running predictions locally — keep the `python/` folder structure intact.** Both scripts resolve their model paths relative to their own file location, so `predict_equipment.py` must stay next to `predict_equipment_folder/`, and likewise for `predict_sectioncluster.py`. Moving a script away from its folder breaks it. If you use the ML service you can ignore the `python/` folder entirely.
 
-**3. Reference `lib/Logic.dll`** from your project. It pulls in `Model.dll` automatically.
+**3. Reference `lib/Logic.dll`** from your project. It pulls in `Model.dll` automatically. Keep the whole `lib/` folder together — including `runtimes/`, which holds the native SQL Server networking library. Without it, connections fail at run time with an error that does not name the cause.
 
 ---
 
@@ -50,8 +52,10 @@ using Logic;
 using Model.Services;
 
 var sqlReader = new PythonSQL(connectionString);
-var client    = new PythonClient(pythonExePath);   // e.g. "python" or a full path
 var logic     = new LogicAssignment(connectionString);
+
+// Where predictions come from. See "Choosing a prediction client" below.
+IPredictionClient client = new HttpPredictionClient("http://128.100.8.213:8000");
 
 var result = await DevicePipeline.RunAsync(
     sqlReader:       sqlReader,
@@ -59,12 +63,35 @@ var result = await DevicePipeline.RunAsync(
     logic:           logic,
     sqlSourceTable:  "dbo.DummyTestingData",
     sqlQuotaTable:   "dbo.PatternCluster",
-    scriptType:      @"...\python\predict_equipment.py",
-    scriptPipeline:  @"...\python\predict_sectioncluster.py",
     sqlOutputDir:    @"...\data",          // scratch folder for intermediate JSON
     projectCode:     "A9998",
     callbacks:       null);                 // optional — see below
 ```
+
+### Choosing a prediction client
+
+`RunAsync` takes an `IPredictionClient`. Two implementations ship in `Model.dll`, and
+everything else about the call is identical either way.
+
+```csharp
+// Predictions from the ML service — nothing to install locally.
+IPredictionClient client = new HttpPredictionClient("http://128.100.8.213:8000");
+
+// Or predictions from local Python — needs Python 3.13, the packages,
+// and the python/ folder from this bundle on every machine that runs it.
+IPredictionClient client = new PythonClient(
+    pythonExe:            "python",
+    scriptDeviceType:     @"...\python\predict_equipment.py",
+    scriptSectionCluster: @"...\python\predict_sectioncluster.py");
+```
+
+Prefer `HttpPredictionClient`. The service holds the models in memory, so a call costs
+a request rather than an interpreter start plus a model load, and no client machine
+needs Python or the `.pkl` files. Use `PythonClient` only where the service is
+unreachable.
+
+`HttpPredictionClient` is disposable; if you construct it yourself, dispose it, or pass
+in an `HttpClient` you already own and manage.
 
 ### What you get back
 
