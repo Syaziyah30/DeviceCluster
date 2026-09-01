@@ -363,6 +363,12 @@ MigrationBackup/
 # Fody - auto-generated XML schema
 FodyWeavers.xsd
 
-# Published DLL bundle for developer handoff (build output)
-handoff/
+# Published DLL bundle for developer handoff (build output).
+# The DLLs, models and zip are ignored, but the generated documents are
+# tracked: they are handover deliverables and the scripts that produced
+# them no longer exist, so these files cannot be regenerated.
+handoff/*
+!handoff/*.docx
+!handoff/*.pptx
+!handoff/HANDOFF.md
 DeviceCluster-handoff.zip
