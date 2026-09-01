@@ -22,7 +22,9 @@
 | C# Service Integration              | ✅ Completed |
 | SQL Integration (`PythonSQL.cs`)    | ✅ Completed — filter by project code |
 | Correction Feedback Loop            | ✅ Completed — 🆕 dictionary edit (device type); queued for retrain (section/cluster). Not incremental learning |
-| DLL Development (`AppRegistryEditor.dll`, `Logic.dll`, `Model.dll`) | ✅ Completed |
+| DLL Development (`Logic.dll`, `Model.dll`) | ✅ Completed — 🆕 `AppRegistryEditor.dll` dependency removed; the registry read now uses `Microsoft.Win32.Registry` directly |
+| 🆕 ML prediction service (`service.py`, FastAPI) | ✅ Completed — running on `SSSBPD01:8000`, models held in memory. ⚠️ Not yet registered as a Windows service, so it stops when its PowerShell window closes |
+| 🆕 Prediction transport (`IPredictionClient`) | ✅ Completed — `DevicePipeline.RunAsync` works against the ML service or local Python |
 | Model-based Top-3 Cluster Suggestion `predict_sectioncluster.py` from XGBoost | ✅ Completed |
 | Update Model                        | ✅ Completed [Need retraining after received real data] |
 | 🆕 `Logic.dll` (`DevicePipeline`) | ✅ Completed — single callable entry point |
@@ -47,8 +49,26 @@ Script active : DeviceClusterConsoleApp [`Program.cs`]
 | Model-based Top-3 Cluster Prediction | ✅ Completed |
 | Floating device handling (unknown-prediction vs known-but-unallocated) | ✅ Completed — persisted to `dbo.DeviceReviewQueue`, reclassification via SQL `MERGE` |
 | `DevicePipeline` orchestration entry point | ✅ Completed |
-| Logic.dll ↔ Model.dll dependency | ✅ `ProjectReference`  |
+| Logic.dll ↔ Model.dll dependency | ✅ `ProjectReference` |
+| 🆕 Prediction source abstraction (`IPredictionClient`) | ✅ Completed — `RunAsync` no longer binds to local Python |
 | Automated test suite | ❌ Not started — verification so far is manual, live-run based |
+
+---
+
+## 📍 Recent Fixes [as in 01/09/2026]
+
+- 🆕 **Models now run on the server.** Python and the trained `.pkl` files run as a FastAPI service on `SSSBPD01` (`http://128.100.8.213:8000`), holding the models in memory instead of starting a Python process per batch. `DeviceClusterServiceApp` calls it over HTTP.
+- 🆕 **`DevicePipeline.RunAsync` can reach the ML service.** It previously took a concrete `PythonClient`, so the documented single entry point could only ever run Python locally — any UI built on it would have needed Python and the model files on every machine. It now takes `IPredictionClient`, with two implementations in `Model.dll`: `PythonClient` (local scripts) and `HttpPredictionClient` (the service). **The `scriptType` and `scriptPipeline` parameters are gone** — the client owns those now.
+- ✅ `DeviceClusterServiceApp` deleted its hand-written copy of steps 1–3 and calls `DevicePipeline.RunAsync` like the console app does. One copy of the sequence instead of two (487 → 411 lines).
+- ✅ **`DeviceClusterConsoleApp` builds from any clone.** It referenced `Logic` and `Model` by file path with `Debug` hardcoded, and referenced `AppRegistryEditor.dll` from a path five directories outside the repository — so it built only on the original machine. Now `ProjectReference` for both libraries, and the `AppRegistryEditor` dependency is removed entirely: the registry read uses `Microsoft.Win32.Registry` directly, as `DeviceClusterServiceApp` already did.
+- ✅ Converting to `ProjectReference` surfaced a version conflict the file references had hidden: the console app pinned `Microsoft.Data.SqlClient` 7.0.0 while `Logic` and `Model` require 7.0.1. Aligned to 7.0.1.
+- ✅ **Prompts no longer loop forever without a console.** `Console.ReadLine()` returns `null` at end-of-stream, and `IsNullOrWhiteSpace` could not tell that from an empty line, so every prompt re-prompted at full CPU under a scheduler or redirected stdin. Fixed in both apps.
+- 🆕 Single root solution `DeviceCluster.slnx` covering `Model`, `Logic` and both console apps — previously no solution opened the whole codebase, and `Model/Model.slnx` referenced a project that no longer existed.
+- 🆕 `run-service-app.cmd` — double-clickable launcher that sets `ML_SERVICE_URL` before starting the service app, so it reaches the server instead of falling back to `127.0.0.1`.
+- ✅ Deleted `floating_deviceid.json` and `unallocated_device_ids.json`. Nothing had read or written them since the SQL migration — both dump methods go to `dbo.DeviceReviewQueue`, and `Logic.dll` contains no file-writing call at all.
+- ✅ Handover bundle rebuilt from the current Release build. It had been a week stale, and `HANDOFF.md` still documented the old `RunAsync` signature — its example would not have compiled.
+
+**Verified on project A9998, both prediction paths, full pipeline including SQL writes:** 90 assigned, 28 unknown, 240 unallocated, 9 cluster groups — identical via the ML service and via local Python, matching the recorded baseline.
 
 ---
 
@@ -494,6 +514,7 @@ Processes user corrections for device predictions across the C# and Python layer
 
 | Step | Description |
 |---|---|
+| 🆕 Prediction client | `RunAsync` takes an `IPredictionClient`: `HttpPredictionClient("http://128.100.8.213:8000")` for the ML service, or `new PythonClient(pythonExe, scriptDeviceType, scriptSectionCluster)` for local scripts. The old `scriptType` / `scriptPipeline` parameters no longer exist |
 | 1–5 | `DevicePipeline.RunAsync(...)` runs the full automated pipeline (SQL load → predict type → predict section/cluster → quota allocation → floating split/dump → cluster groups), firing `DevicePipelineCallbacks` at each checkpoint so `Program.cs` can print progress (and pause, unless `--unattended`) |
 | 6 | Print cluster grouping table (inside the last callback, `OnClusterGroupsBuilt`) |
 | 7 | Print unallocated devices pending manual assignment, from the returned `DevicePipelineResult.UnallocatedDevices` |
