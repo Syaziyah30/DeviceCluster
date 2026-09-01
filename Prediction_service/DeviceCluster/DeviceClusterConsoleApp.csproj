@@ -8,18 +8,21 @@
   </PropertyGroup>
 
   <ItemGroup>
-    <PackageReference Include="Microsoft.Data.SqlClient" Version="7.0.0" />
+    <PackageReference Include="Microsoft.Data.SqlClient" Version="7.0.1" />
   </ItemGroup>
 
+  <!-- ProjectReference, not HintPath - a stale DLL can never be picked up,
+       and the configuration (Debug/Release) is no longer hardcoded. -->
+  <ItemGroup>
+    <ProjectReference Include="..\..\Logic\Logic.csproj" />
+    <ProjectReference Include="..\..\Model\Model.csproj" />
+  </ItemGroup>
+
+  <!-- Internal utility, kept in the repository so the build works from any
+       clone location. See lib/README.md. -->
   <ItemGroup>
     <Reference Include="AppRegistryEditor">
-      <HintPath>..\..\..\..\..\Documents\AppRegistryEditor.dll</HintPath>
-    </Reference>
-    <Reference Include="Logic">
-      <HintPath>..\..\Logic\bin\Debug\net10.0\Logic.dll</HintPath>
-    </Reference>
-    <Reference Include="Model">
-      <HintPath>..\..\Model\bin\Debug\net10.0\win-x64\Model.dll</HintPath>
+      <HintPath>..\..\lib\AppRegistryEditor.dll</HintPath>
     </Reference>
   </ItemGroup>
 
