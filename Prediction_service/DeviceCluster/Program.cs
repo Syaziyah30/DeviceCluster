@@ -54,14 +54,32 @@ public class Program
 
 
 
-	// PromptYesNo : keeps asking until the user enters a valid y/n 
+	// ReadLineOrFail : Console.ReadLine() returns null at end-of-stream — no console
+	// attached, stdin redirected from an empty source, or the pipe closed. Every prompt
+	// below loops until it gets valid input, so treating null as "blank, ask again"
+	// spins forever at full CPU. That never happens interactively, but it is exactly
+	// what a scheduled task or a service wrapper does. Fail with a usable message instead.
+	private static string ReadLineOrFail(string fieldLabel)
+	{
+		string? line = Console.ReadLine();
+
+		if (line is null)
+			throw new InvalidOperationException(
+				$"No console input is available while prompting for {fieldLabel}. " +
+				"Pass the value as a command-line argument, or run with --unattended " +
+				"and a ProjectCode.");
+
+		return line;
+	}
+
+	// PromptYesNo : keeps asking until the user enters a valid y/n
 	private static string PromptYesNo(string prompt)
 	{
 		string? input;
 		while (true)
 		{
 			Console.Write(prompt);
-			input = Console.ReadLine()?.Trim().ToLower();
+			input = ReadLineOrFail("a yes/no answer").Trim().ToLower();
 
 			if (input == "y" || input == "n")
 				return input;
@@ -77,7 +95,7 @@ public class Program
 		while (true)
 		{
 			Console.Write(prompt);
-			input = Console.ReadLine()?.Trim();
+			input = ReadLineOrFail(fieldLabel).Trim();
 
 			if (!string.IsNullOrWhiteSpace(input))
 			{
@@ -98,7 +116,7 @@ public class Program
 		while (true)
 		{
 			Console.Write(prompt);
-			input = Console.ReadLine()?.Trim();
+			input = ReadLineOrFail("a cluster").Trim();
 
 			if (string.IsNullOrWhiteSpace(input))
 			{
@@ -127,7 +145,7 @@ public class Program
 		while (true)
 		{
 			Console.Write(prompt);
-			input = Console.ReadLine()?.Trim().ToUpper();
+			input = ReadLineOrFail("a section").Trim().ToUpper();
 
 			if (input == "E")
 				return null;
