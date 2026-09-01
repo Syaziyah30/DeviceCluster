@@ -151,7 +151,7 @@
 </header>
 
 <div class="banner">
-  <b>Since the last update:</b> the ML server is live. Python and the models now run on <code>128.100.8.213</code>, your PC calls it over the network, and the distributed run returned <b>90 / 28 / 240 — MATCH</b>. The architecture is proven across two machines, not just described.
+  <b>Since the last update:</b> <code>DevicePipeline.RunAsync</code> can now reach the ML service. It took a concrete <code>PythonClient</code> before, so the one documented entry point could only ever run Python locally — the reason the service app had to duplicate the pipeline. It now takes <code>IPredictionClient</code>, the duplicate is deleted, and both paths return <b>90 / 28 / 240 — MATCH</b> on A9998. The console app also builds from any clone for the first time.
 </div>
 
 <div class="meter">
@@ -174,6 +174,9 @@
   <li><input type="checkbox" checked><div class="txt"><b>Progress callbacks</b><span>Optional hooks so a UI can show stage-by-stage progress</span></div></li>
   <li><input type="checkbox" checked><div class="txt"><b>Headless mode</b><span><code>--unattended</code> for scheduled runs with no prompts</span></div></li>
   <li><input type="checkbox" checked><div class="txt"><b>Nothing hardcoded</b><span>Table names, paths and connection strings all supplied by the caller</span></div></li>
+  <li><input type="checkbox" checked><div class="txt"><b>Pluggable prediction source</b><span><code>RunAsync</code> takes <code>IPredictionClient</code>. <code>PythonClient</code> runs the scripts locally, <code>HttpPredictionClient</code> calls the ML service — the rest of the pipeline is identical either way.</span></div><span class="chip new">New</span></li>
+  <li><input type="checkbox" checked><div class="txt"><b>Builds from any clone</b><span>The console app referenced <code>Logic</code>, <code>Model</code> and <code>AppRegistryEditor.dll</code> by file path, one of them five directories outside the repository. Now project references, and the registry read uses <code>Microsoft.Win32.Registry</code> directly.</span></div><span class="chip new">New</span></li>
+  <li><input type="checkbox" checked><div class="txt"><b>Prompts survive having no console</b><span><code>Console.ReadLine()</code> returns null at end-of-stream, which the prompts read as a blank line and re-asked forever. Mattered under a scheduler, which is how this is meant to run.</span></div><span class="chip new">New</span></li>
 </ul>
 
 <h2>Database <span class="n">— done</span></h2>
@@ -182,6 +185,7 @@
   <li><input type="checkbox" checked><div class="txt"><b>Review queue table</b><span><code>dbo.DeviceReviewQueue</code> — replaced the old JSON files</span></div></li>
   <li><input type="checkbox" checked><div class="txt"><b>Assignment output table</b><span><code>dbo.OutputDeviceAssignment</code> — assigned devices now persisted</span></div></li>
   <li><input type="checkbox" checked><div class="txt"><b>Cross-table reconciliation fixed</b><span>A device that flips outcome no longer appears in both tables — reproduced, fixed, verified</span></div></li>
+  <li><input type="checkbox" checked><div class="txt"><b>Dead JSON dumps deleted</b><span><code>floating_deviceid.json</code> and <code>unallocated_device_ids.json</code> removed. Confirmed unreachable: both dump methods write to SQL, and <code>Logic.dll</code> contains no file-writing call at all.</span></div><span class="chip new">New</span></li>
 </ul>
 
 <h2>Python service <span class="n">— done</span></h2>
@@ -211,6 +215,8 @@
   <li><input type="checkbox" checked><div class="txt"><b>Original app — local Python</b><span><code>DeviceClusterConsoleApp</code>, subprocess predictions</span></div></li>
   <li><input type="checkbox" checked><div class="txt"><b>Service app — predictions over HTTP</b><span><code>DeviceClusterServiceApp</code>, same reports and project picker</span></div><span class="chip new">New</span></li>
   <li><input type="checkbox" checked><div class="txt"><b>Missing requirements.txt fixed</b><span>The ML package list only existed in the gitignored handoff folder, so a fresh clone could not install anything</span></div><span class="chip new">New</span></li>
+  <li><input type="checkbox" checked><div class="txt"><b>One pipeline, both apps</b><span>The service app deleted its hand-written copy of steps 1–3 and calls <code>DevicePipeline.RunAsync</code> like the console app does. 487 → 411 lines, no behaviour change.</span></div><span class="chip new">New</span></li>
+  <li><input type="checkbox" checked><div class="txt"><b>Launcher for the service app</b><span><code>run-service-app.cmd</code> sets <code>ML_SERVICE_URL</code> and starts the app, so double-clicking reaches the server instead of silently looking at <code>127.0.0.1</code>.</span></div><span class="chip new">New</span></li>
 </ul>
 
 <h2>Documentation <span class="n">— done</span></h2>
@@ -220,6 +226,7 @@
   <li><input type="checkbox" checked><div class="txt"><b>Briefing script and slide deck</b><span>For the management presentation</span></div></li>
   <li><input type="checkbox" checked><div class="txt"><b>Handoff bundle built</b><span>DLLs, Python, SQL scripts, docs — 6.1 MB zip</span></div></li>
   <li><input type="checkbox" checked><div class="txt"><b>Committed and pushed</b><span>Everything in Azure DevOps</span></div></li>
+  <li><input type="checkbox" checked><div class="txt"><b>Handover bundle refreshed</b><span>The bundle was a week stale and <code>HANDOFF.md</code> still documented the old <code>RunAsync</code> signature — its example would not have compiled. Rebuilt from the current Release build; every snippet now compiles against the shipped DLLs.</span></div><span class="chip new">New</span></li>
 </ul>
 
 <h2>Project blockers <span class="n">— not started</span></h2>
@@ -232,7 +239,6 @@
 
 <h2>Code improvements <span class="n">— not started</span></h2>
 <ul>
-  <li><input type="checkbox"><div class="txt"><b>Make PythonClient an interface</b><span>Without it, <code>DevicePipeline.RunAsync</code> cannot use the HTTP service — which is why the service console app had to replicate the pipeline steps. About an hour, and it means the developer's code never changes when you switch him to the server.</span></div><span class="chip next">Next</span></li>
   <li><input type="checkbox"><div class="txt"><b>Package the DLLs as NuGet</b><span>Publish to Azure Artifacts instead of sending a zip — roughly 30 minutes</span></div><span class="chip later">Later</span></li>
   <li><input type="checkbox"><div class="txt"><b>Automated test suite</b><span>Every check so far has been manual. Matters once the developer starts changing things.</span></div><span class="chip later">Later</span></li>
   <li><input type="checkbox"><div class="txt"><b>Fix case-sensitive ID comparisons</b><span>DeviceId and ProjectCode are compared case-sensitively in some paths</span></div><span class="chip later">Later</span></li>
@@ -248,9 +254,8 @@
 
 <h2>Housekeeping <span class="n">— small</span></h2>
 <ul>
-  <li><input type="checkbox"><div class="txt"><b>Delete the dead JSON files</b><span><code>floating_deviceid.json</code> and <code>unallocated_device_ids.json</code> — nothing reads them since the SQL migration</span></div><span class="chip later">Later</span></li>
-  <li><input type="checkbox"><div class="txt"><b>Delete <code>C:\dv</code></b><span>Throwaway environment used to build the documents</span></div><span class="chip later">Later</span></li>
-  <li><input type="checkbox"><div class="txt"><b>Save the document generator scripts</b><span>They live in a temporary folder and will be lost — needed to regenerate the Word and PowerPoint files</span></div><span class="chip later">Later</span></li>
+  <li><input type="checkbox"><div class="txt"><b>Delete <code>C:\dv</code></b><span>Throwaway environment used to build the documents. Safe to remove — the package list is captured in <code>requirements-docs.txt</code>, and the only other content was page renders of a document already in git.</span></div><span class="chip later">Later</span></li>
+  <li><input type="checkbox"><div class="txt"><b>Document generator scripts are gone</b><span>Searched for and not found — they were lost with their scratch folder. The five documents themselves are now tracked in git, and the package list they needed is recorded in <code>requirements-docs.txt</code>. Regenerating them would mean rewriting the scripts.</span></div><span class="chip later">Later</span></li>
 </ul>
 
 <div class="note">
@@ -261,7 +266,7 @@
 
 <button class="reset" id="reset">Reset all ticks</button>
 
-<footer>Updated after the server deployment · progress saved in this browser only</footer>
+<footer>Updated 1 September 2026, after the prediction-client refactor · progress saved in this browser only</footer>
 </div>
 
 <script>
