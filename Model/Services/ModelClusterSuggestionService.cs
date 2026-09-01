@@ -9,14 +9,15 @@ namespace Model.Services
 {
 	public class ModelClusterSuggestionService
 	{
-		private readonly PythonClient _client;
-		private readonly string _scriptPath;
+		private readonly IPredictionClient _client;
 		private readonly JsonSerializerOptions _jsonOpts = new() { PropertyNameCaseInsensitive = true };
 
-		public ModelClusterSuggestionService(PythonClient client, string scriptPath)
+		// Takes IPredictionClient, so suggestions work against either local Python
+		// or the ML service. The client knows where its own predictions come from,
+		// so there is no script path to pass in any more.
+		public ModelClusterSuggestionService(IPredictionClient client)
 		{
 			_client = client;
-			_scriptPath = scriptPath;
 		}
 
 		public async Task<List<ClusterSuggestionResult>> GetTopClustersAsync(
@@ -31,7 +32,7 @@ namespace Model.Services
 				top_n = topN
 			};
 
-			string json = await _client.RunAsync(_scriptPath, payload);
+			string json = await _client.PredictTopClustersAsync(payload);
 			var raw = JsonSerializer.Deserialize<List<TopClusterRaw>>(json, _jsonOpts);
 
 			return raw?.Select(r => new ClusterSuggestionResult

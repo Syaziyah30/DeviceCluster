@@ -27,14 +27,15 @@ namespace Logic
 	{
 		private static readonly JsonSerializerOptions JsonOpts = new() { PropertyNameCaseInsensitive = true };
 
+		// client decides where predictions come from: PythonClient runs the scripts
+		// locally, HttpPredictionClient calls the ML service. Everything else in
+		// this method is identical either way, which is the point of the interface.
 		public static async Task<DevicePipelineResult> RunAsync(
 			PythonSQL sqlReader,
-			PythonClient client,
+			IPredictionClient client,
 			LogicAssignment logic,
 			string sqlSourceTable,
 			string sqlQuotaTable,
-			string scriptType,
-			string scriptPipeline,
 			string sqlOutputDir,
 			string projectCode,
 			DevicePipelineCallbacks? callbacks = null)
@@ -57,7 +58,7 @@ namespace Logic
 
 			// ── STEP 2: Predict device type ───────────────────────────────────────────
 			var sw = Stopwatch.StartNew();
-			string typeJson = await client.RunAsync(scriptType, request);
+			string typeJson = await client.PredictDeviceTypeAsync(request);
 			sw.Stop();
 
 			var typeResults = JsonSerializer.Deserialize<List<DeviceTypeResult>>(typeJson, JsonOpts) ?? new();
@@ -79,7 +80,7 @@ namespace Logic
 			};
 
 			sw.Restart();
-			string pipelineJson = await client.RunAsync(scriptPipeline, pipelineRequest);
+			string pipelineJson = await client.PredictSectionClusterAsync(pipelineRequest);
 			sw.Stop();
 			double step3Secs = sw.Elapsed.TotalSeconds;
 

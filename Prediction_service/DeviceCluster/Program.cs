@@ -198,8 +198,10 @@ public class Program
 					?? throw new InvalidOperationException("Project Code is required.");
 			}
 
-			client = new PythonClient(PYTHON_EXE);
-			var clusterService = new ModelClusterSuggestionService(client, SCRIPT_PIPELINE);
+			// Local Python: this app deliberately keeps running the scripts itself.
+			// DeviceClusterServiceApp is the same pipeline against the ML service.
+			client = new PythonClient(PYTHON_EXE, SCRIPT_TYPE, SCRIPT_PIPELINE);
+			var clusterService = new ModelClusterSuggestionService(client);
 			var logic = new LogicAssignment(SQL_CONN, SQL_REVIEW_QUEUE_TABLE, SQL_ASSIGNMENT_TABLE);
 
 			Console.WriteLine($"[Step 1/6] Loading reference data for project '{projectCode}' from SQL Server...");
@@ -289,7 +291,7 @@ public class Program
 
 			var result = await DevicePipeline.RunAsync(
 				sqlReader, client, logic,
-				SQL_SOURCE_TABLE, SQL_QUOTA_TABLE, SCRIPT_TYPE, SCRIPT_PIPELINE, SQL_OUTPUT_DIR,
+				SQL_SOURCE_TABLE, SQL_QUOTA_TABLE, SQL_OUTPUT_DIR,
 				projectCode, callbacks);
 
 

@@ -1,4 +1,4 @@
-// ============================================================
+﻿// ============================================================
 // DeviceClusterServiceApp
 // ============================================================
 // Same inputs, same reports and same expected output as the original
@@ -110,162 +110,96 @@ internal static class Program
 
             var total = Stopwatch.StartNew();
 
-            // ── STEP 1/6: read the project's devices from SQL ─────────────
-            var (requestJson, outputPath) = await sqlReader.LoadProjectDataAsync(
-                SQL_SOURCE_TABLE, projectCode, SQL_OUTPUT_DIR);
+            // ── STEPS 1-6: one call, with predictions served over HTTP ───
+            // This is the same DevicePipeline.RunAsync that DeviceClusterConsoleApp
+            // calls. The only difference is the client handed to it: this app passes
+            // HttpPredictionClient, the console app passes PythonClient.
+            //
+            // Until IPredictionClient existed, RunAsync took PythonClient directly and
+            // could only ever run Python locally, so this whole sequence had to be
+            // written out here by hand - a second copy of the pipeline that could
+            // drift away from the first. That copy is what this call replaces.
+            var predictionClient = new HttpPredictionClient(Http);
 
-            var request = JsonSerializer.Deserialize<DevicePredictRequest>(requestJson, JsonOpts);
-            if (request?.data_ids is null || request.data_ids.Count == 0)
+            var callbacks = new DevicePipelineCallbacks
             {
-                Console.WriteLine($"[!] No devices found in '{SQL_SOURCE_TABLE}' for '{projectCode}'.");
-                return 1;
-            }
-
-            request.data_ids = request.data_ids
-                .Select(id => id.Replace("﻿", "").Trim())
-                .Where(id => !string.IsNullOrEmpty(id))
-                .ToList();
-
-            Console.WriteLine($"[Step 1/6] Reference data saved → {outputPath}\n");
-            Console.WriteLine($"[Step 1/6] Project detected : {request.project_code} ({request.customer_code})");
-            Console.WriteLine($"[Step 1/6] Loaded {request.data_ids.Count} device IDs\n");
-
-            // ── STEP 2/6: device type — over HTTP ─────────────────────────
-            Console.WriteLine("[Step 2/6] Predicting device types...");
-            var sw = Stopwatch.StartNew();
-            var typeResults = await PostAsync<List<DeviceTypeResult>>(
-                "/predict/device-type",
-                new
+                OnProjectLoaded = (req, outputPath) =>
                 {
-                    project_code = request.project_code,
-                    customer_code = request.customer_code,
-                    data_ids = request.data_ids
-                }) ?? new();
-            sw.Stop();
+                    Console.WriteLine($"[Step 1/6] Reference data saved \u2192 {outputPath}\n");
+                    Console.WriteLine($"[Step 1/6] Project detected : {req.project_code} ({req.customer_code})");
+                    Console.WriteLine($"[Step 1/6] Loaded {req.data_ids.Count} device IDs\n");
+                },
 
-            var deviceTypeLookup = typeResults
-                .GroupBy(r => r.data_id)
-                .ToDictionary(g => g.Key, g => g.Last().data_type ?? "N/A");
-
-            PrintDeviceTypeTable(typeResults);
-            Console.WriteLine($"Time taken: {sw.Elapsed.TotalSeconds:F2} secs  (HTTP)");
-            Pause("\nPress Enter to predict Section + Cluster...");
-
-            // ── STEP 3/6: section + cluster — over HTTP ───────────────────
-            var pipelineRequest = new PipelinePredictRequest
-            {
-                records = typeResults.Select(r => new PipelineRecord
+                OnDeviceTypesPredicted = (typeResults, secs) =>
                 {
-                    device_id = r.data_id,
-                    customer = r.customer ?? request.customer_code,
-                    project = request.project_code
-                }).ToList()
+                    Console.WriteLine("[Step 2/6] Predicting device types...");
+                    PrintDeviceTypeTable(typeResults);
+                    Console.WriteLine($"Time taken: {secs:F2} secs  (HTTP)");
+                    Pause("\nPress Enter to predict Section + Cluster...");
+                },
+
+                OnSectionsPredicted = (results, lookup, secs) =>
+                {
+                    Console.WriteLine("[Step 3/6] Predicting sections...");
+                    PrintSectionTable(results, lookup);
+                    Console.WriteLine($"Time taken: {secs:F2} secs  (HTTP)");
+                    Pause("\nPress Enter to predict Cluster...");
+                },
+
+                OnClustersPredicted = (results, lookup, secs) =>
+                {
+                    Console.WriteLine("[Step 3/6] Predicting clusters...");
+                    PrintClusterTable(results, lookup);
+                    Console.WriteLine($"Time taken: {secs:F2} secs  (HTTP)");
+                    Pause("\nPress Enter to run quota allocation...");
+                },
+
+                OnQuotaAllocated = (quotas, allocation) =>
+                {
+                    Console.WriteLine("\n[Step 3.5/6] Running quota-constrained cluster allocation...");
+                    ClusterQuotaAllocator.PrintFulfilledReport(quotas, allocation.VacancyReport);
+                    ClusterQuotaAllocator.PrintVacancyReport(allocation.VacancyReport);
+                    Console.WriteLine($"[Step 3.5/6] {allocation.Assigned.Count} assigned, {allocation.Floating.Count} floating\n");
+                },
+
+                OnFloatingSplit = (floatingDevices, unknown, unalloc) =>
+                {
+                    if (floatingDevices.Count == 0)
+                    {
+                        Console.WriteLine("[Step 3.5/6] No floating devices - all predictions claimed by quota allocation.\n");
+                        return;
+                    }
+
+                    Console.WriteLine($"[Step 3.5/6] {floatingDevices.Count} floating device ID(s) - not claimed by any quota bucket:\n");
+                    Console.WriteLine($"{"Customer",-10} | {"ProjectCode",-12} | {"DeviceId",-25} | {"DeviceType",-25} | {"PredictedSection",-15} | {"PredictedCluster",-15}");
+                    Console.WriteLine(new string('-', 130));
+                    foreach (var d in floatingDevices)
+                        Console.WriteLine($"{d.Customer,-10} | {d.ProjectCode,-12} | {d.DeviceId,-25} | " +
+                                          $"{d.DeviceType,-25} | {d.Section,-15} | {d.Cluster,-15}");
+                    Console.WriteLine();
+                },
+
+                OnClusterGroupsBuilt = (assignedDevices, groups) =>
+                {
+                    Pause("\nPress Enter to run Logic...");
+                    Console.WriteLine("\n[Step 4/6] Passing results into Logic.dll...");
+                    Console.WriteLine($"[Step 4/6] {assignedDevices.Count} devices passed into Logic.dll\n");
+                    Console.WriteLine("[Step 5/6] Building cluster groups...");
+                    Console.WriteLine($"[Step 5/6] {groups.Count} cluster groups built\n");
+                    Console.WriteLine("[Step 6/6] Printing cluster grouping table...");
+                    logic.PrintClusterTable(groups);
+                }
             };
 
-            sw.Restart();
-            var pipelineResults = await PostAsync<List<PipelineResult>>(
-                "/predict/section-cluster", pipelineRequest) ?? new();
-            sw.Stop();
-            double predictSecs = sw.Elapsed.TotalSeconds;
+            var result = await DevicePipeline.RunAsync(
+                sqlReader, predictionClient, logic,
+                SQL_SOURCE_TABLE, SQL_QUOTA_TABLE, SQL_OUTPUT_DIR,
+                projectCode, callbacks);
 
-            Console.WriteLine("[Step 3/6] Predicting sections...");
-            PrintSectionTable(pipelineResults, deviceTypeLookup);
-            Console.WriteLine($"Time taken: {predictSecs:F2} secs  (HTTP)");
-            Pause("\nPress Enter to predict Cluster...");
-
-            Console.WriteLine("[Step 3/6] Predicting clusters...");
-            PrintClusterTable(pipelineResults, deviceTypeLookup);
-            Console.WriteLine($"Time taken: {predictSecs:F2} secs  (HTTP)");
-            Pause("\nPress Enter to run quota allocation...");
-
-            // ══════════════════════════════════════════════════════════════
-            // From here down: unchanged Logic.dll / Model.dll
-            // ══════════════════════════════════════════════════════════════
-
-            var predictions = pipelineResults.Select(r => new DevicePrediction
-            {
-                Section = r.PREDICTED_SECTION ?? "UNKNOWN",
-                Cluster = r.PREDICTED_CLUSTER ?? "UNKNOWN",
-                DeviceId = r.DEVICE_ID,
-                DeviceType = deviceTypeLookup.TryGetValue(r.DEVICE_ID, out var dt) ? dt : "UNKNOWN",
-                Score = r.CLUSTER_CONFIDENCE ?? 0,
-                TopClusters = (r.TOP_CLUSTERS ?? new List<ClusterCandidate>())
-                    .Select(c => new ClusterPrediction { Cluster = c.Cluster, Probability = c.Probability })
-                    .ToList()
-            }).ToList();
-
-            var quotas = await QuotaCatalog.LoadQuotasFromDbAsync(
-                sqlReader.ConnectionString, SQL_QUOTA_TABLE, request.customer_code);
-
-            // ── STEP 3.5/6: quota allocation ──────────────────────────────
-            Console.WriteLine("\n[Step 3.5/6] Running quota-constrained cluster allocation...");
-            var allocation = ClusterQuotaAllocator.Allocate(predictions, quotas);
-            ClusterQuotaAllocator.PrintFulfilledReport(quotas, allocation.VacancyReport);
-            ClusterQuotaAllocator.PrintVacancyReport(allocation.VacancyReport);
-            Console.WriteLine($"[Step 3.5/6] {allocation.Assigned.Count} assigned, {allocation.Floating.Count} floating\n");
-
-            // ── Floating pool → split by cause → SQL review queue ─────────
-            var unknownPrediction = new List<DeviceResult>();
-            var unallocated = new List<DeviceResult>();
-            var floating = new List<DeviceResult>();
-
-            if (allocation.Floating.Count > 0)
-            {
-                floating = allocation.Floating.Select(f => new DeviceResult
-                {
-                    Customer = pipelineResults.FirstOrDefault(r => r.DEVICE_ID == f.DeviceId)?.CUSTOMER
-                               ?? request.customer_code,
-                    ProjectCode = request.project_code,
-                    DeviceId = f.DeviceId,
-                    DeviceType = f.DeviceType,
-                    Section = f.Section,
-                    Cluster = f.Cluster,
-                    Confidence = f.Score
-                }).ToList();
-
-                Console.WriteLine($"[Step 3.5/6] {floating.Count} floating device ID(s) — not claimed by any quota bucket:\n");
-                Console.WriteLine($"{"Customer",-10} | {"ProjectCode",-12} | {"DeviceId",-25} | {"DeviceType",-25} | {"PredictedSection",-15} | {"PredictedCluster",-15}");
-                Console.WriteLine(new string('-', 130));
-                foreach (var d in floating)
-                    Console.WriteLine($"{d.Customer,-10} | {d.ProjectCode,-12} | {d.DeviceId,-25} | " +
-                                      $"{d.DeviceType,-25} | {d.Section,-15} | {d.Cluster,-15}");
-                Console.WriteLine();
-
-                (unknownPrediction, unallocated) = logic.SplitFloatingPool(floating);
-                await logic.DumpFloating(unknownPrediction);
-                await logic.DumpUnallocated(unallocated);
-            }
-            else
-            {
-                Console.WriteLine("[Step 3.5/6] No floating devices — all predictions claimed by quota allocation.\n");
-            }
-
-            Pause("\nPress Enter to run Logic...");
-
-            // ── STEP 4-6/6: cluster groups ────────────────────────────────
-            var assigned = allocation.Assigned.Select(a => new DeviceResult
-            {
-                Customer = pipelineResults.FirstOrDefault(r => r.DEVICE_ID == a.DeviceId)?.CUSTOMER
-                           ?? request.customer_code,
-                ProjectCode = request.project_code,
-                DeviceId = a.DeviceId,
-                DeviceType = a.DeviceType,
-                Section = a.Section,
-                Cluster = a.Cluster,
-                Confidence = a.Score
-            }).ToList();
-
-            Console.WriteLine("\n[Step 4/6] Passing results into Logic.dll...");
-            Console.WriteLine($"[Step 4/6] {assigned.Count} devices passed into Logic.dll\n");
-
-            Console.WriteLine("[Step 5/6] Building cluster groups...");
-            var clusterGroups = logic.BuildClusterGroups(assigned);
-            Console.WriteLine($"[Step 5/6] {clusterGroups.Count} cluster groups built\n");
-
-            await logic.DumpAssigned(assigned, allocation.Assigned);
-
-            Console.WriteLine("[Step 6/6] Printing cluster grouping table...");
-            logic.PrintClusterTable(clusterGroups);
+            var assigned = result.AssignedDevices;
+            var unknownPrediction = result.UnknownPredictionDevices;
+            var unallocated = result.UnallocatedDevices;
+            var clusterGroups = result.ClusterGroups;
 
             // ── STEP 7: unallocated dump table ────────────────────────────
             Console.WriteLine($"\n[Step 7] Unallocated devices pending manual assignment on [Date: {DateTime.Now:yyyy-MM-dd}]:\n");
@@ -290,7 +224,7 @@ internal static class Program
             Console.WriteLine(" RESULT");
             Console.WriteLine("============================================================");
             Console.WriteLine($"  Predictions from : {SERVICE_URL}");
-            Console.WriteLine($"  Total devices    : {predictions.Count}");
+            Console.WriteLine($"  Total devices    : {result.PipelineResults.Count}");
             Console.WriteLine($"  Assigned         : {assigned.Count}");
             Console.WriteLine($"  Unknown          : {unknownPrediction.Count}");
             Console.WriteLine($"  Unallocated      : {unallocated.Count}");
@@ -455,19 +389,9 @@ internal static class Program
         }
     }
 
-    private static async Task<T?> PostAsync<T>(string endpoint, object payload)
-    {
-        var resp = await Http.PostAsJsonAsync(endpoint, payload);
-        string body = await resp.Content.ReadAsStringAsync();
-
-        if (!resp.IsSuccessStatusCode)
-            throw new InvalidOperationException(
-                $"{endpoint} returned {(int)resp.StatusCode}: {Truncate(body, 400)}");
-
-        return JsonSerializer.Deserialize<T>(body, JsonOpts);
-    }
-
-    private static string Truncate(string s, int max) => s.Length <= max ? s : s[..max] + "…";
+    // PostAsync<T> lived here and hand-rolled every call to the prediction
+    // endpoints. HttpPredictionClient in Model.dll does that now, so both apps
+    // share one implementation instead of keeping a second copy in this file.
 
     private static string GetConnectionString()
     {
