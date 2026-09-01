@@ -1,0 +1,22 @@
+# Packages used to generate the handover documents in handoff/
+# (DeviceCluster-API-Reference.docx, DeviceCluster-QuickReference.docx,
+#  DeviceCluster-BriefingScript.docx, DeviceCluster-Briefing.pptx,
+#  DeviceIdentifierProgress.pptx).
+#
+# These are NOT needed to run the models or the service. They are recorded
+# only so the document toolchain can be rebuilt: the scripts that drove
+# these packages were lost with a scratch folder, so this list is the last
+# remaining record of how those documents were produced.
+#
+# Captured from the C:\dv virtual environment before it was deleted.
+# Python 3.13.7.
+
+# Direct
+python-docx==1.2.0
+python-pptx==1.0.2
+pymupdf==1.28.2
+
+# Pulled in by the above; pinned to the versions actually used
+lxml==6.1.2
+pillow==12.3.0
+XlsxWriter==3.2.9
