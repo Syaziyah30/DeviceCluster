@@ -6,6 +6,7 @@ using System.Linq;
 using System.Text;
 using System.Text.Json;
 using System.Threading.Tasks;
+using Microsoft.Win32;
 
 // derived from dll library
 using Model.ModelRequest;
@@ -33,21 +34,16 @@ public class Program
 	private static readonly string SQL_OUTPUT_DIR = Path.Combine(_serviceDir, "data");
 	private static readonly JsonSerializerOptions _jsonOpts = new() { PropertyNameCaseInsensitive = true };
 
-	private const string PROJECT_NAME = "XenxibleIdentifier";
-	private const string PROJECT_FOLDER = "Software";
+	private const string REGISTRY_PATH = @"Software\XenxibleIdentifier";
 
 	private static string GetConnectionString()
 	{
-		Dictionary<string, object?> registryValues = AppRegistryEditor
-			.RegistryEditor
-			.GetAllRegistry(PROJECT_NAME, null);
+		using RegistryKey? key = Registry.CurrentUser.OpenSubKey(REGISTRY_PATH);
 
-		if (!registryValues.TryGetValue("connectionstring", out object? value) || value is null)
+		if (key?.GetValue("connectionstring") is not string connectionString)
 			throw new InvalidOperationException(
 				$"Registry key 'connectionstring' not found under " +
-				$"HKEY_CURRENT_USER\\{PROJECT_FOLDER}\\{PROJECT_NAME}.");
-
-		string connectionString = value.ToString()!;
+				$"HKEY_CURRENT_USER\\{REGISTRY_PATH}.");
 
 		if (string.IsNullOrWhiteSpace(connectionString))
 			throw new InvalidOperationException("'connectionstring' in registry is empty.");
