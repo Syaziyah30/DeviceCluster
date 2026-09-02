@@ -207,7 +207,8 @@
   <li><input type="checkbox" checked><div class="txt"><b>Service running on the server</b><span>Bound to <code>0.0.0.0</code>, models loaded successfully</span></div><span class="chip new">New</span></li>
   <li><input type="checkbox" checked><div class="txt"><b>Reachable from your PC</b><span>Browser test confirmed, returning the server's own paths</span></div><span class="chip new">New</span></li>
   <li><input type="checkbox" checked><div class="txt"><b>Distributed run verified</b><span>DLLs on your PC, models on the server — 90 / 28 / 240 MATCH</span></div><span class="chip new">New</span></li>
-  <li><input type="checkbox"><div class="txt"><b>Register the service with NSSM</b><span>It currently stops when you close the PowerShell window and will not survive a reboot. This is the last step before anyone else can rely on it.</span></div><span class="chip next">Next</span></li>
+  <li><input type="checkbox" checked><div class="txt"><b>Registered as a Windows service</b><span>NSSM 2.24 runs it as <code>DeviceClusterML</code> under the RNDAdmin account, set to start automatically at boot, logging to <code>C:\Users\RNDAdmin\logs</code>. Verified serving live predictions.</span></div><span class="chip new">New</span></li>
+  <li><input type="checkbox"><div class="txt"><b>Verify it survives a reboot</b><span>Configured to start at boot, but the server has not restarted since, so this is unproven. SSSBPD01 also hosts Azure DevOps, so the restart has to be scheduled rather than done casually.</span></div><span class="chip next">Next</span></li>
 </ul>
 
 <h2>Console apps <span class="n">— done</span></h2>
@@ -261,7 +262,7 @@
 <div class="note">
   <b>The one item that matters most:</b> real quota patterns for sections 1 and 3–8. Everything else on this list is work you or the developer can do. That one needs domain knowledge from engineering, it takes the longest to obtain, and until it lands the system can only place a quarter of the devices.
   <br><br>
-  <b>The one item that is urgent:</b> registering the service with NSSM. Right now it dies when you close that PowerShell window — so anyone you hand the URL to could find it broken with no warning.
+  <b>The one item that is urgent:</b> the real quota patterns for sections 1 and 3–8. That is the number behind the 25% figure, it needs domain knowledge rather than development time, and it is the only remaining blocker that someone outside this project has to supply.
 </div>
 
 <button class="reset" id="reset">Reset all ticks</button>
