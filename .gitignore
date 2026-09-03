@@ -368,10 +368,10 @@ FodyWeavers.xsd
 # tracked: they are handover deliverables and the scripts that produced
 # them no longer exist, so these files cannot be regenerated.
 Handoff/*
-!handoff/*.docx
-!handoff/*.pptx
-!handoff/HANDOFF.md
-!handoff/HANDOFF.pdf
+!Handoff/*.docx
+!Handoff/*.pptx
+!Handoff/HANDOFF.md
+!Handoff/HANDOFF.pdf
 DeviceCluster-handoff.zip
 
 # Office lock files (created while a document is open)

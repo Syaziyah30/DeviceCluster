@@ -661,7 +661,7 @@ C# spawns Python as a child process for each prediction step via `System.Diagnos
 | `Prediction_service/DeviceType_Prediction/Config_devicetype.json` | Device Type config |
 | `Prediction_service/DeviceCluster_Prediction/config_sectioncluster.json` | Section/Cluster config |
 | `TestDevice/<project>.json` | Input device IDs per project (now legacy — SQL is the live source) |
-| `1.training_model/Section XGB Model - Model Training.ipynb` | Training notebook |
+| `1.Training_model/model_development/Section XGB Model - Model Training.ipynb` | Training notebook |
 | `data/{ProjectCode}_devices.json` | Raw dump of the SQL source table, named per project (redundant local copy of SQL data, kept for quick inspection) |
 | `Prediction_service/DeviceCluster/sql/DeviceReviewQueue.sql` | Creates `dbo.DeviceReviewQueue` — replaces `floating_deviceid.json` / `unallocated_device_ids.json`, one table with `Category` (`UnknownPrediction` / `Unallocated`) and `Status` (`pending` / `assigned`) columns, unique on `(DeviceId, ProjectCode)` |
 | `Prediction_service/DeviceCluster/sql/OutputDeviceAssignment.sql` 🆕 | Creates `dbo.OutputDeviceAssignment` — persists successfully assigned devices (previously only returned in-memory to the caller), includes `IsBackfill`/`OriginalCluster` diagnostics, unique on `(DeviceId, ProjectCode)` |
