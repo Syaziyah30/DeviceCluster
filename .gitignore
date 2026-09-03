@@ -370,8 +370,9 @@ FodyWeavers.xsd
 Handoff/*
 !Handoff/*.docx
 !Handoff/*.pptx
-!Handoff/HANDOFF.md
-!Handoff/HANDOFF.pdf
+!Handoff/*.md
+!Handoff/*.pdf
+!Handoff/*.txt
 DeviceCluster-handoff.zip
 
 # Office lock files (created while a document is open)
