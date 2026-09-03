@@ -367,7 +367,7 @@ FodyWeavers.xsd
 # The DLLs, models and zip are ignored, but the generated documents are
 # tracked: they are handover deliverables and the scripts that produced
 # them no longer exist, so these files cannot be regenerated.
-handoff/*
+Handoff/*
 !handoff/*.docx
 !handoff/*.pptx
 !handoff/HANDOFF.md
