@@ -373,6 +373,7 @@ Handoff/*
 !Handoff/*.md
 !Handoff/*.pdf
 !Handoff/*.txt
+!Handoff/*.xlsx
 DeviceCluster-handoff.zip
 
 # Office lock files (created while a document is open)
