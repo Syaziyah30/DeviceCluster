@@ -1,0 +1,85 @@
+device_id,block,expected
+A101,A. Known prefix,type = On/Off Valve, confidence 1.00
+AG102,A. Known prefix,type = Agitator, confidence 1.00
+AGM103,A. Known prefix,type = Agitator, confidence 1.00
+CPM104,A. Known prefix,type = Pump, confidence 1.00
+CT105,A. Known prefix,type = Fan, confidence 1.00
+CV106,A. Known prefix,type = Control Valve, confidence 1.00
+DV107,A. Known prefix,type = On/Off Valve, confidence 1.00
+EP108,A. Known prefix,type = Blower, confidence 1.00
+ES109,A. Known prefix,type = On/Off Valve, confidence 1.00
+F110,A. Known prefix,type = Fan, confidence 1.00
+FB111,A. Known prefix,type = Fan, confidence 1.00
+FCV112,A. Known prefix,type = Control Valve, confidence 1.00
+FIT113,A. Known prefix,type = Flow Transmitter, confidence 1.00
+FITQ114,A. Known prefix,type = Flow Transmitter, confidence 1.00
+FL115,A. Known prefix,type = On/Off Valve, confidence 1.00
+FM116,A. Known prefix,type = Fan, confidence 1.00
+FN117,A. Known prefix,type = Fan, confidence 1.00
+FP118,A. Known prefix,type = Pump, confidence 1.00
+FS119,A. Known prefix,type = Switch, confidence 1.00
+FT120,A. Known prefix,type = Flow Transmitter, confidence 1.00
+FTM121,A. Known prefix,type = Flow Transmitter, confidence 1.00
+FTPL122,A. Known prefix,type = Flow Transmitter, confidence 1.00
+HHLA123,A. Known prefix,type = High Level Switch, confidence 1.00
+HL124,A. Known prefix,type = High Level Switch, confidence 1.00
+HLA125,A. Known prefix,type = High Level Switch, confidence 1.00
+HLAT126,A. Known prefix,type = High Level Switch, confidence 1.00
+HM127,A. Known prefix,type = Pump, confidence 1.00
+HPP128,A. Known prefix,type = Pressure Transmitter, confidence 1.00
+HST129,A. Known prefix,type = Pump, confidence 1.00
+HT130,A. Known prefix,type = Heater, confidence 1.00
+ICM131,A. Known prefix,type = Control Valve, confidence 1.00
+KB132,A. Known prefix,type = Kombinator, confidence 1.00
+LAH133,A. Known prefix,type = High Level Switch, confidence 1.00
+LAHH134,A. Known prefix,type = High Level Switch, confidence 1.00
+LAL135,A. Known prefix,type = Low Level Switch, confidence 1.00
+LCV136,A. Known prefix,type = Control Valve, confidence 1.00
+LL137,A. Known prefix,type = Low Level Switch, confidence 1.00
+LLA138,A. Known prefix,type = Low Level Switch, confidence 1.00
+LLAT139,A. Known prefix,type = Low Level Switch, confidence 1.00
+LPM140,A. Known prefix,type = Pump, confidence 1.00
+LS141,A. Known prefix,type = Switch, confidence 1.00
+LSH142,A. Known prefix,type = High Level Switch, confidence 1.00
+LSL143,A. Known prefix,type = Low Level Switch, confidence 1.00
+LT144,A. Known prefix,type = Level Transmitter, confidence 1.00
+LTT145,A. Known prefix,type = Level Transmitter, confidence 1.00
+LTTU146,A. Known prefix,type = Level Transmitter, confidence 1.00
+M147,A. Known prefix,type = Pump, confidence 1.00
+MF148,A. Known prefix,type = Flow Transmitter, confidence 1.00
+ML149,A. Known prefix,type = Mid Level Switch, confidence 1.00
+MU150,A. Known prefix,type = Pump, confidence 1.00
+NV151,A. Known prefix,type = On/Off Valve, confidence 1.00
+OC152,A. Known prefix,type = Pump, confidence 1.00
+P153,A. Known prefix,type = Pump, confidence 1.00
+PC154,A. Known prefix,type = Pressure Transmitter, confidence 1.00
+PF155,A. Known prefix,type = Pump, confidence 1.00
+PFM156,A. Known prefix,type = Pump, confidence 1.00
+PLM157,A. Known prefix,type = Pump, confidence 1.00
+PRM158,A. Known prefix,type = Pin Rotot Motor, confidence 1.00
+PRV159,A. Known prefix,type = Control Valve, confidence 1.00
+PS160,A. Known prefix,type = Switch, confidence 1.00
+ZZQ201,B. Unknown prefix,UNKNOWN, 0.00 -> review queue
+QXX202,B. Unknown prefix,UNKNOWN, 0.00 -> review queue
+YYK203,B. Unknown prefix,UNKNOWN, 0.00 -> review queue
+WWJ204,B. Unknown prefix,UNKNOWN, 0.00 -> review queue
+VVN205,B. Unknown prefix,UNKNOWN, 0.00 -> review queue
+UUB206,B. Unknown prefix,UNKNOWN, 0.00 -> review queue
+TTG207,B. Unknown prefix,UNKNOWN, 0.00 -> review queue
+SSD208,B. Unknown prefix,UNKNOWN, 0.00 -> review queue
+HT301,C. Case variant,same type as its lower-case twin
+ht301,C. Case variant,C# treats this as a SECOND device
+PT301,C. Case variant,same type as its lower-case twin
+pt301,C. Case variant,C# treats this as a SECOND device
+DV301,C. Case variant,same type as its lower-case twin
+dv301,C. Case variant,C# treats this as a SECOND device
+FT301,C. Case variant,same type as its lower-case twin
+ft301,C. Case variant,C# treats this as a SECOND device
+A401,D. Ambiguous prefix A,whichever of On/Off Signal / On/Off Valve was loaded last
+A402,D. Ambiguous prefix A,whichever of On/Off Signal / On/Off Valve was loaded last
+A403,D. Ambiguous prefix A,whichever of On/Off Signal / On/Off Valve was loaded last
+A404,D. Ambiguous prefix A,whichever of On/Off Signal / On/Off Valve was loaded last
+V001.21,E. Formatting,dot preserved; prefix V
+HT501,E. Formatting,trimmed, classified as Heater
+PT-502,E. Formatting,separator normalised
+LL_503,E. Formatting,separator normalised
