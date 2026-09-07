@@ -6,8 +6,10 @@ each block has a predictable outcome, which is what makes the run checkable.
 """
 import csv, io, os, collections
 
-REF = r'C:\Users\sitisyaziyah\source\repos\DeviceCluster\Reference\initial_dictionary.csv'
 OUT = os.path.dirname(os.path.abspath(__file__))
+# Resolved from this file's location, so the repository can live on any drive.
+_REPO_ROOT = os.path.abspath(os.path.join(OUT, '..', '..'))
+REF = os.path.join(_REPO_ROOT, 'Reference', 'initial_dictionary.csv')
 PROJECT, CUSTOMER = 'A9997', 'OILTEK'
 
 # prefix -> type, last row winning, exactly as initial_map is built

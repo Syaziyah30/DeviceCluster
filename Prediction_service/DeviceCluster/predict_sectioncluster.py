@@ -55,10 +55,13 @@ UNKNOWN_THRESHOLD = float(_cfg["unknown_threshold"])
 # ◄── ADDED: corrections file path — sits beside config in predict_sectioncluster_folder/
 MANUAL_ASSIGN_SECTION_CLUSTER = os.path.join(_BASE_DIR, "manual_assign_sectioncluster.json")
 
-# ◄── ADDED: default output path for the raw cluster-probability CSV export
-DEFAULT_RAW_CLUSTER_CSV_PATH = (
-    r"C:\Users\sitisyaziyah\source\repos\DeviceCluster"
-    r"\1.training_model\output_prediction\raw_clusterprediction.csv"
+# ◄── ADDED: default output path for the raw cluster-probability CSV export.
+# Resolved from this file's own location, so the repository can live anywhere.
+# It was previously hardcoded to one machine's C:\Users path, which also still
+# said "1.training_model" after that folder was renamed to "1.Training_model".
+_REPO_ROOT = os.path.abspath(os.path.join(os.path.dirname(os.path.abspath(__file__)), "..", ".."))
+DEFAULT_RAW_CLUSTER_CSV_PATH = os.path.join(
+    _REPO_ROOT, "1.Training_model", "output_prediction", "raw_clusterprediction.csv"
 )
 
 # ============================================================
