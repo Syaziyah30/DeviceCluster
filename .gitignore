@@ -376,5 +376,8 @@ Handoff/*
 !Handoff/*.xlsx
 DeviceCluster-handoff.zip
 
+# Observation/scratch folder - not tracked in DevOps
+1.Training_model/supplementary/Obs/
+
 # Office lock files (created while a document is open)
 ~$*
