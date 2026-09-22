@@ -8,7 +8,7 @@ Everything needed to call the device-clustering pipeline from a UI.
 
 | Folder | Contents |
 |--------|----------|
-| `lib/` | `Logic.dll`, `Model.dll` + 22 dependency DLLs (Release build, .NET 10) |
+| `lib/` | `XenAnalyticDevice.dll`, `XenAnalyticModel.dll` + 22 dependency DLLs (Release build, .NET 10) |
 | `python/` | The two prediction scripts and their trained model files (~8.5 MB) |
 | `sql/` | Three scripts that create the required SQL Server tables |
 | `requirements.txt` | Python package versions the models were trained against |
@@ -17,7 +17,7 @@ Everything needed to call the device-clustering pipeline from a UI.
 
 ## Prerequisites
 
-- **.NET 10 runtime**, **Windows x64**. `Model.dll` is built with `RuntimeIdentifier=win-x64` and `SelfContained=false`, so the runtime must be installed on the machine — it isn't embedded. This is a Windows-only library.
+- **.NET 10 runtime**, **Windows x64**. `XenAnalyticModel.dll` is built with `RuntimeIdentifier=win-x64` and `SelfContained=false`, so the runtime must be installed on the machine — it isn't embedded. This is a Windows-only library.
 - **SQL Server** access to the `XenCreator` database on **Neptune** (`128.100.20.33`).
 - **One of two prediction sources** — see *Choosing a prediction client* below:
   - *Recommended* — network access to the **ML service** at `http://128.100.8.213:8000` (SSSBPD01). Nothing to install: no Python, no packages, no model files.
@@ -39,7 +39,7 @@ The source table (`dbo.DummyTestingData` by default) is expected to already exis
 
 **2. Only if you are running predictions locally — keep the `python/` folder structure intact.** Both scripts resolve their model paths relative to their own file location, so `predict_equipment.py` must stay next to `predict_equipment_folder/`, and likewise for `predict_sectioncluster.py`. Moving a script away from its folder breaks it. If you use the ML service you can ignore the `python/` folder entirely.
 
-**3. Reference `lib/Logic.dll`** from your project. It pulls in `Model.dll` automatically. Keep the whole `lib/` folder together — including `runtimes/`, which holds the native SQL Server networking library. Without it, connections fail at run time with an error that does not name the cause.
+**3. Reference `lib/XenAnalyticDevice.dll`** from your project. It pulls in `XenAnalyticModel.dll` automatically. Keep the whole `lib/` folder together — including `runtimes/`, which holds the native SQL Server networking library. Without it, connections fail at run time with an error that does not name the cause.
 
 ---
 
@@ -70,7 +70,7 @@ var result = await DevicePipeline.RunAsync(
 
 ### Choosing a prediction client
 
-`RunAsync` takes an `IPredictionClient`. Two implementations ship in `Model.dll`, and
+`RunAsync` takes an `IPredictionClient`. Two implementations ship in `XenAnalyticModel.dll`, and
 everything else about the call is identical either way.
 
 ```csharp

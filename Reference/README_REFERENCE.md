@@ -3,7 +3,7 @@
 | | |
 |---|---|
 | **Full pipeline** | SQL (per-project, filtered) → Device Type → Section → Cluster → Quota Allocation (device-centric reassignment) → Logic Placement |
-| **Runtime** | `Model.dll` reads SQL Server → JSON → Python scripts resolve device type (rule) and predict section/cluster (XGBoost) → `Logic.dll`'s `DevicePipeline` fits quotas, splits floating devices, groups clusters → `Program.cs` (or any other caller) renders output |
+| **Runtime** | `XenAnalyticModel.dll` reads SQL Server → JSON → Python scripts resolve device type (rule) and predict section/cluster (XGBoost) → `XenAnalyticDevice.dll`'s `DevicePipeline` fits quotas, splits floating devices, groups clusters → `Program.cs` (or any other caller) renders output |
 
 > Last synced 28 August 2026 (previous version: 21 August 2026). Changes are marked with 🆕 where useful.
 >
@@ -22,10 +22,10 @@
 | C# Service Integration              | ✅ Completed |
 | SQL Integration (`PythonSQL.cs`)    | ✅ Completed — filter by project code |
 | Correction Feedback Loop            | ✅ Completed — 🆕 dictionary edit (device type); queued for retrain (section/cluster). Not incremental learning |
-| DLL Development (`AppRegistryEditor.dll`, `Logic.dll`, `Model.dll`) | ✅ Completed |
+| DLL Development (`AppRegistryEditor.dll`, `XenAnalyticDevice.dll`, `XenAnalyticModel.dll`) | ✅ Completed |
 | Model-based Top-3 Cluster Suggestion `predict_sectioncluster.py` from XGBoost | ✅ Completed |
 | Update Model                        | ✅ Completed (Once workflow is complete, need retraining) |
-| 🆕 `Logic.dll` orchestration (`DevicePipeline`) | ✅ Completed — single callable entry point, no console dependency |
+| 🆕 `XenAnalyticDevice.dll` orchestration (`DevicePipeline`) | ✅ Completed — single callable entry point, no console dependency |
 | 🆕 Quota patterns sourced from SQL (`dbo.PatternCluster`) | ✅ Completed for `SECTION 2` (real); Sections 1, 3-8 are placeholder/dummy data pending real numbers |
 | 🆕 Device-centric reassignment pool (Stage 3) | ✅ Completed — matches the flowchart design, uses per-device ranked cluster candidates |
 | Unattended / headless mode (`--unattended`) | ✅ Completed |
@@ -37,7 +37,7 @@
 ---
 Script active : DeviceClusterConsoleApp [`Program.cs`]
 ---
-# 📍 `Logic.dll` Status
+# 📍 `XenAnalyticDevice.dll` Status
 
 | Stage | Status |
 |-------|--------|
@@ -47,7 +47,7 @@ Script active : DeviceClusterConsoleApp [`Program.cs`]
 | Model-based Top-3 Cluster Prediction | ✅ Completed |
 | Floating device handling (unknown-prediction vs known-but-unallocated) | ✅ Completed — persisted to `dbo.DeviceReviewQueue`, reclassification via SQL `MERGE` |
 | `DevicePipeline` orchestration entry point | ✅ Completed |
-| Logic.dll ↔ Model.dll dependency | ✅ `ProjectReference` (was previously undocumented/absent) |
+| XenAnalyticDevice.dll ↔ XenAnalyticModel.dll dependency | ✅ `ProjectReference` (was previously undocumented/absent) |
 | Automated test suite | ❌ Not started — verification so far is manual, live-run based |
 
 ---
@@ -55,7 +55,7 @@ Script active : DeviceClusterConsoleApp [`Program.cs`]
 ## 📍 Recent Fixes
 
 - 🆕 **Device Type reduced from a hybrid ML model to a prefix rule.** `predict_equipment.py` no longer imports scikit-learn at all. A prefix either resolves to an equipment type (confidence `1.0`) or it does not (`UNKNOWN`, `0.0`). The old `.pkl` model artefacts are still present in `model_config_devicetype/` but are never loaded — see §1️⃣ for the deletable list.
-- ✅ `Logic.dll` now has a `ProjectReference` to `Model.dll` — fixes stale-DLL rebuild issues from the old `HintPath`-only setup
+- ✅ `XenAnalyticDevice.dll` now has a `ProjectReference` to `XenAnalyticModel.dll` — fixes stale-DLL rebuild issues from the old `HintPath`-only setup
 - 🆕 `floating_deviceid.json` / `unallocated_device_ids.json` replaced by a single SQL table (`dbo.DeviceReviewQueue`, `Category` column) — reclassification is now a plain SQL `MERGE` (UPDATE on conflict), eliminating the cross-file reconciliation logic entirely
 - 🆕 Cross-**table** reconciliation between `dbo.OutputDeviceAssignment` and `dbo.DeviceReviewQueue` — a device that flips outcome between runs (assigned → floating, or floating → assigned) has its stale row deleted from the other table in the same statement, so a device is never recorded in both at once
 - ✅ Quota allocator's Stage 3 rewritten from bucket-centric backfill to device-centric reassignment (matches the flowchart: each floating device tries its own ranked cluster candidates by model percentage, highest-scoring device first)
@@ -71,7 +71,7 @@ Script active : DeviceClusterConsoleApp [`Program.cs`]
      Data Source: SQL Server (XenCreator DB → dbo.DummyTestingData table)
      One shared table, many projects — every query filtered by ProjectCode
                     │
-                    │  PythonSQL.cs (Model.dll): ListAvailableProjectsAsync,
+                    │  PythonSQL.cs (XenAnalyticModel.dll): ListAvailableProjectsAsync,
                     │  LoadProjectDataAsync(table, projectCode, outputDir)
                     ▼
                 Input JSON  (data/{ProjectCode}_devices.json)
@@ -107,7 +107,7 @@ Script active : DeviceClusterConsoleApp [`Program.cs`]
                     │  PipelineResult[] (PREDICTED_CLUSTER + TOP_CLUSTERS)
                     ▼
 ┌─────────────────────────────────────────────────────┐
-│ Step 3.5 — Quota Allocation [Logic.dll]             │
+│ Step 3.5 — Quota Allocation [XenAnalyticDevice.dll]             │
 │ Quotas loaded from dbo.PatternCluster, filtered by  │
 │ CustomerCode (QuotaCatalog.LoadQuotasFromDbAsync)   │
 │                                                      │
@@ -133,7 +133,7 @@ Script active : DeviceClusterConsoleApp [`Program.cs`]
                     │  InitialDeficits / VacancyReport)
                     ▼
 ┌───────────────────────────────────────────────────┐
-│ Step 4/5 — Logic Placement [Logic.dll]            │
+│ Step 4/5 — Logic Placement [XenAnalyticDevice.dll]            │
 │ Cluster grouping → ClusterGroup / ScoredDevice    │
 │ (Assigned devices are already known by construction│
 │  — no separate known/unknown split needed here)   │
@@ -152,7 +152,7 @@ Script active : DeviceClusterConsoleApp [`Program.cs`]
         prompts for manual correction, exits
 ```
 
-**Orchestration note:** the entire Step 1 → Step 5 sequence above is one callable method — `Logic.DevicePipeline.RunAsync(sqlReader, client, logic, sqlSourceTable, sqlQuotaTable, scriptType, scriptPipeline, sqlOutputDir, projectCode, callbacks)` — living in `Logic.dll`, not hardcoded into `Program.cs`. Any caller (a future UI, a scheduler, an API) can call it directly with no console dependency; `callbacks` is fully optional and the method never touches `Console` itself.
+**Orchestration note:** the entire Step 1 → Step 5 sequence above is one callable method — `Logic.DevicePipeline.RunAsync(sqlReader, client, logic, sqlSourceTable, sqlQuotaTable, scriptType, scriptPipeline, sqlOutputDir, projectCode, callbacks)` — living in `XenAnalyticDevice.dll`, not hardcoded into `Program.cs`. Any caller (a future UI, a scheduler, an API) can call it directly with no console dependency; `callbacks` is fully optional and the method never touches `Console` itself.
 
 ---
 
@@ -391,7 +391,7 @@ cluster_conf_final = cluster_raw_conf × section_conf   (when section_conf < 0.6
 
 ---
 
-# 🆕 3. Quota Allocation (`ClusterQuotaAllocator`, `Logic.dll`)
+# 🆕 3. Quota Allocation (`ClusterQuotaAllocator`, `XenAnalyticDevice.dll`)
 
 Allocates devices to clusters based on predefined quotas before cascading placement.
 
@@ -450,7 +450,7 @@ QuotaCatalog.LoadQuotasFromDbAsync(connectionString, tableName, customerCode)
 
 ---
 
-# 4️⃣ Logic Placement (`Logic.dll`, C#)
+# 4️⃣ Logic Placement (`XenAnalyticDevice.dll`, C#)
 
 
 Processes the prediction results after quota allocation and determines the final device placement.
@@ -520,7 +520,7 @@ Processes user corrections for device predictions across the C# and Python layer
   - No incremental model update.
 
 - **After Any Correction**
-  - `Logic.dll` re-runs the placement process to generate the updated device assignment.
+  - `XenAnalyticDevice.dll` re-runs the placement process to generate the updated device assignment.
 ---
 
 # 6️⃣ C# Orchestration (`Program.cs`)
@@ -560,7 +560,7 @@ Every hook is nullable — a caller that supplies none of them gets a fully sile
 
 ---
 
-# 7️⃣ SQL Integration (`PythonSQL.cs`, `Model.dll`)
+# 7️⃣ SQL Integration (`PythonSQL.cs`, `XenAnalyticModel.dll`)
 
 Retrieves device data from SQL Server and converts it to the JSON input format the Python pipeline expects. Lives in `Model/Services/PythonSQL.cs` — has no knowledge of table names, project codes, or quota patterns; every method takes them as parameters.
 
@@ -671,11 +671,11 @@ C# spawns Python as a child process for each prediction step via `System.Diagnos
 | `Prediction_service/DeviceCluster/obs_predict_equipment.py` | 🆕 Obsolete previous version (the SGD hybrid). Kept for reference only; not called by anything |
 | `Prediction_service/DeviceCluster/predict_sectioncluster.py` | Section & Cluster inference script |
 | `Prediction_service/DeviceCluster/sql/PatternCluster.sql` 🆕 | Creates & seeds `dbo.PatternCluster` (real `SECTION 2` + placeholder Sections 1, 3-8) |
-| `Model/Model.csproj` | `Model.dll` class library project |
+| `Model/Model.csproj` | `XenAnalyticModel.dll` class library project |
 | `Model/Services/PythonSQL.cs` | SQL Server → JSON retrieval |
 | `Model/Services/PythonClient.cs` | Python subprocess invocation wrapper |
 | `Model/ModelResult/ClusterCandidate.cs` 🆕 | `{Cluster, Probability}` shape for `TOP_CLUSTERS` |
-| `Logic/Logic.csproj` | `Logic.dll` class library project — `ProjectReference` to `Model.csproj` |
+| `Logic/Logic.csproj` | `XenAnalyticDevice.dll` class library project — `ProjectReference` to `Model.csproj` |
 | `Logic/DevicePipeline.cs` 🆕 | Single-entry-point pipeline orchestration |
 | `Logic/DevicePipelineCallbacks.cs` / `DevicePipelineResult.cs` 🆕 | Progress hooks / bundled output for `DevicePipeline.RunAsync` |
 | `Logic/QuotaCatalog.cs` 🆕 | Loads quota patterns from `dbo.PatternCluster` |
@@ -700,10 +700,10 @@ C# spawns Python as a child process for each prediction step via `System.Diagnos
 - Device input is retrieved from SQL (`XenCreator` → `SQL_SOURCE_TABLE`, default `DummyTestingData`); JSON input is for legacy/testing only.
 - Quota patterns are retrieved from SQL (`SQL_QUOTA_TABLE`, default `dbo.PatternCluster`) — run `Prediction_service/DeviceCluster/sql/PatternCluster.sql` once to create/seed the table. Only `SECTION 2` is real data; other sections are placeholders.
 - Runs entirely locally; SQL Server is the only external dependency (plus a Python environment for the ML scripts).
-- `Logic.dll` and `Model.dll` both target **.NET 10.0** (SDK-style projects). `Logic.dll` has a proper `ProjectReference` to `Model.dll`.
-- `DeviceClusterConsoleApp` still references `Model.dll`/`Logic.dll` via `HintPath` to prebuilt binaries, not `ProjectReference` — remember to rebuild `Model.dll` → `Logic.dll` → the console app in that order after any library change, or switch this to `ProjectReference` too.
+- `XenAnalyticDevice.dll` and `XenAnalyticModel.dll` both target **.NET 10.0** (SDK-style projects). `XenAnalyticDevice.dll` has a proper `ProjectReference` to `XenAnalyticModel.dll`.
+- `DeviceClusterConsoleApp` still references `XenAnalyticModel.dll`/`XenAnalyticDevice.dll` via `HintPath` to prebuilt binaries, not `ProjectReference` — remember to rebuild `XenAnalyticModel.dll` → `XenAnalyticDevice.dll` → the console app in that order after any library change, or switch this to `ProjectReference` too.
 - For unattended/scheduled runs, use `DeviceClusterConsoleApp.exe <ProjectCode> --unattended` — no console interaction, no manual-correction prompt.
-- For a UI or other non-console caller, reference `Model.dll` + `Logic.dll` directly and call `Logic.DevicePipeline.RunAsync(...)` — it has no console dependency of its own.
+- For a UI or other non-console caller, reference `XenAnalyticModel.dll` + `XenAnalyticDevice.dll` directly and call `Logic.DevicePipeline.RunAsync(...)` — it has no console dependency of its own.
 - Use `dotnet publish` for production deployment.
 
 ---
